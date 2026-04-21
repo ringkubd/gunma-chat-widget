@@ -1,0 +1,126 @@
+'use client';
+
+import React, { useState, useCallback } from 'react';
+import type { ChatWidgetConfig } from '../types';
+import { useChat } from '../hooks/useChat';
+import { useCartActions } from '../hooks/useCartActions';
+import { ChatBubble } from './ChatBubble';
+import { ChatHeader } from './ChatHeader';
+import { MessageList } from './MessageList';
+import { MessageInput } from './MessageInput';
+import { TypingIndicator } from './TypingIndicator';
+
+export function ChatWidget(config: ChatWidgetConfig) {
+  const {
+    isOpen,
+    isLoading,
+    messages,
+    error,
+    toolStatus,
+    isAiEnabled,
+    toggle,
+    sendMessage,
+    endChat,
+    cancelRequest,
+  } = useChat(config);
+
+  const { handleMessageClick } = useCartActions({ apiUrl: config.apiUrl });
+  const [lastMessage, setLastMessage] = useState('');
+
+  const position = config.position || 'bottom-right';
+  const brandColor = config.brandColor || '#10b981';
+  const brandName = config.brandName || 'AI Assistant';
+  const welcomeMessage = config.welcomeMessage || 'Hi! How can I help you today?';
+
+  const positionStyle: React.CSSProperties = {
+    position: 'fixed',
+    zIndex: config.zIndex || 9999,
+    ...(position === 'bottom-right'
+      ? { bottom: '24px', right: '24px' }
+      : { bottom: '24px', left: '24px' }),
+  };
+
+  const handleSend = useCallback((text: string) => {
+    setLastMessage(text);
+    sendMessage(text);
+  }, [sendMessage]);
+
+  const handleRetry = useCallback(() => {
+    if (lastMessage) {
+      sendMessage(lastMessage);
+    }
+  }, [lastMessage, sendMessage]);
+
+  return (
+    <div style={positionStyle} className="gunma-chat-root">
+      {/* Floating Chat Panel */}
+      {isOpen && (
+        <div
+          className="gunma-chat-panel"
+          style={{ '--gunma-brand': brandColor } as React.CSSProperties}
+        >
+          <ChatHeader
+            brandName={brandName}
+            brandColor={brandColor}
+            onClose={toggle}
+            onEndChat={endChat}
+            isConnected={true}
+          />
+
+          <div onClick={handleMessageClick}>
+            <MessageList
+              messages={messages}
+              welcomeMessage={welcomeMessage}
+              brandColor={brandColor}
+              websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
+            />
+          </div>
+
+          {/* Tool Status / Typing Indicator */}
+          {(isLoading || toolStatus) && (
+            <div className="gunma-status-bar">
+              <TypingIndicator />
+              {toolStatus && (
+                <span className="gunma-tool-status">{toolStatus}</span>
+              )}
+              {isLoading && (
+                <button
+                  className="gunma-cancel-btn"
+                  onClick={cancelRequest}
+                  aria-label="Cancel request"
+                  title="Cancel"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Error Bar with Retry */}
+          {error && (
+            <div className="gunma-error-bar">
+              <span>{error}</span>
+              <button className="gunma-retry-btn" onClick={handleRetry}>
+                Retry
+              </button>
+            </div>
+          )}
+
+          <MessageInput
+            onSend={handleSend}
+            isLoading={isLoading}
+            placeholder={config.placeholder || 'Type a message...'}
+          />
+        </div>
+      )}
+
+      {/* Floating Bubble Button */}
+      <ChatBubble
+        isOpen={isOpen}
+        onClick={toggle}
+        brandColor={brandColor}
+        unreadCount={0}
+      />
+    </div>
+  );
+}

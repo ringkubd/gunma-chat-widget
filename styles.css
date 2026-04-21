@@ -1,0 +1,981 @@
+/* ═══════════════════════════════════════════════════════════════════
+   @gunma/chat-widget — Premium Floating Chat Widget Styles
+   ═══════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── CSS Custom Properties ──────────────────────────────────────── */
+:root {
+  --gunma-brand: #10b981;
+  --gunma-brand-dark: #059669;
+  --gunma-bg: #ffffff;
+  --gunma-bg-secondary: #f8fafc;
+  --gunma-bg-tertiary: #f1f5f9;
+  --gunma-text: #0f172a;
+  --gunma-text-secondary: #64748b;
+  --gunma-text-muted: #94a3b8;
+  --gunma-border: #e2e8f0;
+  --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  --gunma-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  --gunma-radius: 16px;
+  --gunma-radius-sm: 12px;
+  --gunma-radius-xs: 8px;
+  --gunma-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --gunma-panel-width: 400px;
+  --gunma-panel-height: 600px;
+  --gunma-transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Dark Mode ──────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gunma-bg: #0f172a;
+    --gunma-bg-secondary: #1e293b;
+    --gunma-bg-tertiary: #334155;
+    --gunma-text: #f1f5f9;
+    --gunma-text-secondary: #94a3b8;
+    --gunma-text-muted: #64748b;
+    --gunma-border: #334155;
+    --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── Root Container ─────────────────────────────────────────────── */
+.gunma-chat-root {
+  font-family: var(--gunma-font);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gunma-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Floating Chat Panel ────────────────────────────────────────── */
+.gunma-chat-panel {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: var(--gunma-panel-width);
+  max-height: var(--gunma-panel-height);
+  background: var(--gunma-bg);
+  border-radius: var(--gunma-radius);
+  box-shadow: var(--gunma-shadow);
+  border: 1px solid var(--gunma-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gunma-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom right;
+}
+
+@keyframes gunma-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.gunma-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.gunma-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gunma-header-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+.gunma-header-avatar svg {
+  width: 22px;
+  height: 22px;
+}
+
+.gunma-header-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.gunma-header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.gunma-online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: gunma-pulse 2s ease-in-out infinite;
+}
+
+@keyframes gunma-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.gunma-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.gunma-header-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: background var(--gunma-transition);
+}
+
+.gunma-header-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.gunma-header-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Message Area ───────────────────────────────────────────────── */
+.gunma-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--gunma-bg-secondary);
+  min-height: 300px;
+  max-height: 380px;
+  scroll-behavior: smooth;
+}
+
+.gunma-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.gunma-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gunma-messages::-webkit-scrollbar-thumb {
+  background: var(--gunma-border);
+  border-radius: 4px;
+}
+
+/* ── Welcome Screen ─────────────────────────────────────────────── */
+.gunma-welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.gunma-welcome-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gunma-welcome-text {
+  color: var(--gunma-text-secondary);
+  font-size: 15px;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.6;
+}
+
+/* ── Message Bubble ─────────────────────────────────────────────── */
+.gunma-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  animation: gunma-fade-in 0.2s ease-out;
+}
+
+@keyframes gunma-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gunma-msg--user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.gunma-msg--assistant {
+  align-self: flex-start;
+}
+
+.gunma-msg-avatar {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gunma-msg-bubble {
+  padding: 10px 14px;
+  border-radius: var(--gunma-radius-sm);
+  position: relative;
+  word-break: break-word;
+}
+
+.gunma-msg-bubble--user {
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.gunma-msg-bubble--assistant {
+  background: var(--gunma-bg);
+  color: var(--gunma-text);
+  border: 1px solid var(--gunma-border);
+  border-bottom-left-radius: 4px;
+}
+
+.gunma-msg-content {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--gunma-text);
+}
+
+/* ── Headers inside messages ───────────────────────────────────── */
+.gunma-msg-content .gunma-h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gunma-brand);
+  margin: 8px 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gunma-msg-content .gunma-h3 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gunma-brand);
+  margin: 6px 0 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gunma-msg-content .gunma-h4 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gunma-brand);
+  margin: 6px 0 2px;
+}
+
+/* ── Numbered instruction steps ─────────────────────────────────── */
+.gunma-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.gunma-step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  background: var(--gunma-brand);
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* ── Lists ──────────────────────────────────────────────────────── */
+.gunma-msg-content .gunma-list {
+  margin: 4px 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.gunma-msg-content .gunma-list li {
+  margin: 2px 0;
+  font-size: 12px;
+}
+
+/* ── Inline image ───────────────────────────────────────────────── */
+.gunma-msg-img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  margin: 6px 0;
+  display: block;
+  object-fit: cover;
+}
+
+/* ── Divider ────────────────────────────────────────────────────── */
+.gunma-msg-content .gunma-hr {
+  border: none;
+  border-top: 1px dashed var(--gunma-border);
+  margin: 12px 0;
+}
+
+/* ── 3-column Product grid ──────────────────────────────────────── */
+.gunma-product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 10px 0 6px;
+  width: 100%;
+}
+
+.gunma-product-mini-card {
+  background: var(--gunma-bg-secondary);
+  border: 1px solid var(--gunma-border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 150ms ease;
+}
+
+.gunma-product-mini-card:hover {
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.gunma-product-mini-img-link {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #fff;
+  max-height: 80px;
+}
+
+.gunma-product-mini-img-link img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 200ms ease;
+}
+
+.gunma-product-mini-card:hover .gunma-product-mini-img-link img {
+  transform: scale(1.05);
+}
+
+.gunma-product-mini-body {
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.gunma-product-mini-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gunma-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gunma-product-mini-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.gunma-product-mini-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gunma-brand);
+}
+
+.gunma-product-mini-add {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gunma-brand);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 150ms ease, background 150ms ease;
+  padding: 0;
+}
+
+.gunma-product-mini-add:hover {
+  transform: scale(1.15);
+  background: var(--gunma-brand-dark);
+}
+
+/* ── Bulk cart button ───────────────────────────────────────────── */
+.gunma-bulk-cart-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--gunma-brand);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 4px;
+  transition: background 150ms ease, transform 150ms ease;
+  font-family: inherit;
+}
+
+.gunma-bulk-cart-btn:hover {
+  background: var(--gunma-brand-dark);
+  transform: translateY(-1px);
+}
+
+.gunma-bulk-cart-btn:active {
+  transform: scale(0.98);
+}
+
+/* ── Links ──────────────────────────────────────────────────────── */
+.gunma-msg-content .gunma-link {
+  color: var(--gunma-brand);
+  text-decoration: none;
+  font-weight: 500;
+}
+.gunma-msg-content .gunma-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Inline code ────────────────────────────────────────────────── */
+.gunma-msg-content .gunma-code {
+  background: var(--gunma-bg-tertiary);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+
+.gunma-msg-img {
+  width: auto;
+  max-width: 100%;
+  max-height: 150px;
+  border-radius: var(--gunma-radius-xs);
+  margin: 4px 0;
+  display: block;
+  object-fit: contain;
+  box-shadow: var(--gunma-shadow-sm);
+  border: 1px solid var(--gunma-border);
+}
+
+.gunma-msg-content strong {
+  font-weight: 600;
+}
+
+.gunma-msg-content em {
+  font-style: italic;
+}
+
+.gunma-msg-content .gunma-link {
+  color: var(--gunma-brand);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity var(--gunma-transition);
+}
+
+.gunma-msg-content .gunma-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.gunma-msg-content .gunma-code {
+  background: var(--gunma-bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.gunma-msg-content .gunma-list {
+  margin: 8px 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.gunma-msg-content .gunma-list li {
+  margin: 4px 0;
+}
+
+.gunma-msg-content .gunma-hr {
+  border: none;
+  border-top: 1px solid var(--gunma-border);
+  margin: 12px 0;
+}
+
+/* ── Product Cards ─────────────────────────────────────────────── */
+.gunma-product-card {
+  background: var(--gunma-bg);
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm);
+  padding: 12px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform var(--gunma-transition), box-shadow var(--gunma-transition);
+}
+
+.gunma-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--gunma-shadow-sm);
+}
+
+.gunma-product-image-wrapper {
+  width: 100%;
+  height: 120px;
+  background: var(--gunma-bg-secondary);
+  border-radius: var(--gunma-radius-xs);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gunma-product-card img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.gunma-product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gunma-product-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--gunma-text);
+  margin: 0;
+}
+
+.gunma-product-price {
+  font-size: 13px;
+  color: var(--gunma-brand);
+  font-weight: 700;
+}
+
+.gunma-product-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.gunma-product-btn {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all var(--gunma-transition);
+}
+
+.gunma-product-btn--primary {
+  background: var(--gunma-brand);
+  color: white !important;
+}
+
+.gunma-product-btn--secondary {
+  background: var(--gunma-bg-tertiary);
+  color: var(--gunma-text-secondary) !important;
+  border: 1px solid var(--gunma-border);
+}
+
+.gunma-product-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.gunma-msg-time {
+  display: block;
+  font-size: 10px;
+  color: var(--gunma-text-muted);
+  margin-top: 6px;
+  opacity: 0.7;
+}
+
+.gunma-msg-bubble--user .gunma-msg-time {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Status Bar ─────────────────────────────────────────────────── */
+.gunma-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--gunma-bg-secondary);
+  border-top: 1px solid var(--gunma-border);
+}
+
+.gunma-tool-status {
+  font-size: 12px;
+  color: var(--gunma-text-secondary);
+  font-weight: 500;
+}
+
+/* ── Typing Indicator ───────────────────────────────────────────── */
+.gunma-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gunma-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gunma-text-muted);
+  animation: gunma-bounce 1.4s ease-in-out infinite;
+}
+
+.gunma-typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.gunma-typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes gunma-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+/* ── Typing Indicator ───────────────────────────────────────────── */
+.gunma-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--gunma-bg);
+  border-top: 1px solid var(--gunma-border);
+}
+
+.gunma-input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 100px;
+  padding: 10px 14px;
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm);
+  background: var(--gunma-bg-secondary);
+  color: var(--gunma-text);
+  font-family: var(--gunma-font);
+  font-size: 14px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  transition: border-color var(--gunma-transition), box-shadow var(--gunma-transition);
+}
+
+.gunma-input::placeholder {
+  color: var(--gunma-text-muted);
+}
+
+.gunma-input:focus {
+  border-color: var(--gunma-brand);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.gunma-send-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border: none;
+  border-radius: var(--gunma-radius-xs);
+  background: var(--gunma-brand);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--gunma-transition);
+}
+
+.gunma-send-btn:hover:not(:disabled) {
+  background: var(--gunma-brand-dark);
+  transform: scale(1.05);
+}
+
+.gunma-send-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.gunma-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gunma-send-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ── Floating Bubble Button ─────────────────────────────────────── */
+.gunma-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: var(--gunma-shadow-sm);
+  transition: all var(--gunma-transition);
+  position: relative;
+}
+
+.gunma-bubble:hover {
+  transform: scale(1.08);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.gunma-bubble:active {
+  transform: scale(0.95);
+}
+
+.gunma-bubble-icon {
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  transition: all 0.25s ease;
+}
+
+.gunma-bubble-icon--hidden {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
+}
+
+.gunma-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  animation: gunma-badge-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes gunma-badge-pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* ── Mobile Responsive ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .gunma-chat-panel {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    max-height: 100% !important;
+    border-radius: 0;
+    z-index: 10000;
+  }
+
+  .gunma-messages {
+    max-height: none;
+    flex: 1;
+  }
+
+  .gunma-bubble {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+/* ── Print Hidden ───────────────────────────────────────────────── */
+@media print {
+  .gunma-chat-root {
+    display: none !important;
+  }
+}
+
+/* ── Auto-resize Textarea ───────────────────────────────────────── */
+.gunma-input--autoresize {
+  overflow: hidden;
+  resize: none;
+}
+
+/* ── Connection Status Dot ──────────────────────────────────────── */
+.gunma-connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.gunma-offline-dot {
+  background: #f59e0b;
+  animation: gunma-pulse 1s ease-in-out infinite;
+}
+
+/* ── Error Bar with Retry ───────────────────────────────────────── */
+.gunma-error-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  border-top: 1px solid #fecaca;
+}
+
+.gunma-retry-btn {
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+
+.gunma-retry-btn:hover {
+  background: #dc2626;
+  color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gunma-error-bar {
+    background: #451a03;
+    color: #fca5a5;
+    border-color: #7f1d1d;
+  }
+  .gunma-retry-btn {
+    border-color: #fca5a5;
+    color: #fca5a5;
+  }
+  .gunma-retry-btn:hover {
+    background: #dc2626;
+    color: white;
+  }
+}
+
+/* ── Cancel Button (in status bar) ──────────────────────────────── */
+.gunma-cancel-btn {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--gunma-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gunma-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+}
+
+.gunma-cancel-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+@media (prefers-color-scheme: dark) {
+  .gunma-cancel-btn:hover {
+    background: #451a03;
+    color: #fca5a5;
+    border-color: #7f1d1d;
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "@gunma/chat-widget",
+  "version": "1.0.0",
+  "description": "Premium AI chat widget for Gunma Halal Food — Next.js/React",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "styles.css"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsc -b --watch"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./styles.css": "./styles.css"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.0"
+  },
+  "keywords": [
+    "chat",
+    "widget",
+    "ai",
+    "nextjs",
+    "react",
+    "halal",
+    "ecommerce"
+  ],
+  "license": "MIT",
+  "author": "Anwar",
+  "dependencies": {
+    "laravel-echo": "^2.3.4",
+    "pusher-js": "^8.5.0"
+  }
+}
