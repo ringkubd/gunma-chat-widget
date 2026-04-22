@@ -45,11 +45,11 @@ export function useChat(config: ChatWidgetConfig) {
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
-  
+
   // Sync apiToken if it changes, or auto-detect from localStorage
   useEffect(() => {
     const token = config.apiToken || (typeof window !== 'undefined' ? localStorage.getItem('tk') : undefined);
-    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token);
+    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token ?? "");
   }, [config.apiUrl, config.cookieId, config.apiToken]);
 
   // Initialize Echo
@@ -60,7 +60,7 @@ export function useChat(config: ChatWidgetConfig) {
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('tk') : null;
-      
+
       echoRef.current = new Echo({
         broadcaster: 'pusher',
         key: process.env.NEXT_PUBLIC_PUSHER_KEY || '3e004c455a5824baf3a03f6d9cc6bcc5',
