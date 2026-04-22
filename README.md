@@ -1,38 +1,34 @@
-# Gunma Chat Widget
+# gunma-chat-widget
 
-A premium, real-time AI chat widget for the Gunma Halal Food storefront.
+Premium, humanoid AI chat widget for Gunma Halal Food. Supports multilingual interactions (English, Bengali, Japanese) and real-time shopping features.
 
 ## Features
-- **Streaming Responses**: Real-time message streaming via SSE.
-- **Smart Actions**: Automatically handles redirects (e.g., to checkout) triggered by the AI.
-- **Real-time Monitoring**: Integrates with Laravel Echo/Pusher for human-takeover support.
-- **Halal Optimized**: Pre-configured system prompts for food and dietary support.
+- **Piku AI**: Empathetic, neighborhood-style AI assistant.
+- **Smart Cart**: Add products directly to cart from chat.
+- **Order Tracking**: Real-time order status and smart cancellation rules.
+- **Claims & Tickets**: Formal claims (damage/missing items) and support tickets.
+- **Echo/Pusher Support**: Real-time message broadcasting.
+- **Auto-Auth**: Detects customer tokens from `localStorage` ('tk').
 
 ## Installation
-
 ```bash
 npm install gunma-chat-widget
 ```
 
 ## Usage
-
 ```tsx
-import { GunmaChatWidget } from 'gunma-chat-widget';
+import { ChatWidget } from 'gunma-chat-widget';
+import 'gunma-chat-widget/styles.css';
 
 function App() {
   return (
-    <GunmaChatWidget 
-      apiUrl="https://your-api.com/api/chat"
-      echoConfig={{
-        key: 'your-pusher-key',
-        cluster: 'mt1'
-      }}
+    <ChatWidget 
+      apiUrl="https://your-api-domain.com"
+      apiToken="your-passport-token"
     />
   );
 }
 ```
 
-## Props
-- `apiUrl`: The base URL for the chat API.
-- `visitorId`: (Optional) Custom visitor ID for persistence.
-- `initialMessage`: (Optional) Custom greeting.
+## License
+MIT © Anwar
