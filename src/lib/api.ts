@@ -12,10 +12,32 @@ const MAX_RETRIES = 2;
 export class ChatApi {
   private baseUrl: string;
   private cookieId?: string;
+  private apiToken?: string;
 
-  constructor(apiUrl: string, cookieId?: string) {
+  constructor(apiUrl: string, cookieId?: string, apiToken?: string) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
     this.cookieId = cookieId;
+    this.apiToken = apiToken;
+  }
+
+  private getHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...additionalHeaders,
+    };
+
+    if (this.apiToken) {
+      headers['Authorization'] = `Bearer ${this.apiToken}`;
+    }
+
+    // Remove headers with empty values (useful for FormData)
+    Object.keys(headers).forEach(key => {
+        if (headers[key] === '') {
+            delete headers[key];
+        }
+    });
+
+    return headers;
   }
 
   /**
@@ -65,7 +87,7 @@ export class ChatApi {
   ): Promise<ChatSession> {
     const response = await this.fetchWithRetry(`${this.baseUrl}/sessions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify({
         visitor_id: visitorId,
         customer_name: customerName || null,
@@ -86,7 +108,9 @@ export class ChatApi {
    * Get session details with messages.
    */
   async getSession(sessionId: string): Promise<{ session: ChatSession & { messages: ChatMessage[] } }> {
-    const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}`);
+    const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}`, {
+        headers: this.getHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`Failed to get session: ${response.status}`);
     }
@@ -97,7 +121,9 @@ export class ChatApi {
    * Get message history for a session.
    */
   async getMessages(sessionId: string, limit: number = 50): Promise<ChatMessage[]> {
-    const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages?limit=${limit}`);
+    const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages?limit=${limit}`, {
+        headers: this.getHeaders(),
+    });
     if (!response.ok) {
       throw new Error(`Failed to get messages: ${response.status}`);
     }
@@ -120,7 +146,7 @@ export class ChatApi {
 
     fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify({ message, cookie_id: this.cookieId }),
       signal: controller.signal,
     })
@@ -194,7 +220,7 @@ export class ChatApi {
   async sendMessageSync(sessionId: string, message: string): Promise<string> {
     const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages/sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.getHeaders(),
       body: JSON.stringify({ message }),
     });
 
@@ -212,6 +238,31 @@ export class ChatApi {
   async endSession(sessionId: string): Promise<void> {
     await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/end`, {
       method: 'POST',
+      headers: this.getHeaders(),
     });
+  }
+
+  /**
+   * Upload a file (image).
+   */
+  async uploadFile(file: File): Promise<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.baseUrl}/upload`, {
+      method: 'POST',
+      headers: this.getHeaders({
+        // Do not set Content-Type for FormData, browser will do it with boundary
+        'Content-Type': '',
+      }),
+      body: formData,
+    });
+
+    // Cleanup hack for the header (browser needs it empty to set boundary)
+    if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+    }
+
+    return response.json();
   }
 }

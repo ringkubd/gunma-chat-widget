@@ -12,6 +12,7 @@ export declare function useChat(config: ChatWidgetConfig): {
     isAiEnabled: boolean;
     toggle: () => void;
     sendMessage: (text: string) => Promise<void>;
+    uploadFile: (file: File) => Promise<void>;
     endChat: () => Promise<void>;
     cancelRequest: () => void;
 };

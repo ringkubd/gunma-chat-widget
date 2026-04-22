@@ -20,6 +20,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     isAiEnabled,
     toggle,
     sendMessage,
+    uploadFile,
     endChat,
     cancelRequest,
   } = useChat(config);
@@ -29,8 +30,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
   const position = config.position || 'bottom-right';
   const brandColor = config.brandColor || '#10b981';
-  const brandName = config.brandName || 'AI Assistant';
-  const welcomeMessage = config.welcomeMessage || 'Hi! How can I help you today?';
+  const brandName = config.brandName || 'Piku';
+  const welcomeMessage = config.welcomeMessage || 'Hello, this is Piku from Gunma Halal Food Customer Support. How may I assist you today?';
 
   const positionStyle: React.CSSProperties = {
     position: 'fixed',
@@ -108,6 +109,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
           <MessageInput
             onSend={handleSend}
+            onUpload={uploadFile}
             isLoading={isLoading}
             placeholder={config.placeholder || 'Type a message...'}
           />

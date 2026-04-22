@@ -6,9 +6,26 @@ const MAX_RETRIES = 2;
  * API client for the Gunma AI Agent Laravel backend.
  */
 export class ChatApi {
-    constructor(apiUrl, cookieId) {
+    constructor(apiUrl, cookieId, apiToken) {
         this.baseUrl = apiUrl.replace(/\/$/, '');
         this.cookieId = cookieId;
+        this.apiToken = apiToken;
+    }
+    getHeaders(additionalHeaders = {}) {
+        const headers = {
+            'Content-Type': 'application/json',
+            ...additionalHeaders,
+        };
+        if (this.apiToken) {
+            headers['Authorization'] = `Bearer ${this.apiToken}`;
+        }
+        // Remove headers with empty values (useful for FormData)
+        Object.keys(headers).forEach(key => {
+            if (headers[key] === '') {
+                delete headers[key];
+            }
+        });
+        return headers;
     }
     /**
      * Fetch with timeout and retry for transient failures.
@@ -47,7 +64,7 @@ export class ChatApi {
     async createSession(visitorId, customerName, channel = 'web') {
         const response = await this.fetchWithRetry(`${this.baseUrl}/sessions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getHeaders(),
             body: JSON.stringify({
                 visitor_id: visitorId,
                 customer_name: customerName || null,
@@ -65,7 +82,9 @@ export class ChatApi {
      * Get session details with messages.
      */
     async getSession(sessionId) {
-        const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}`);
+        const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}`, {
+            headers: this.getHeaders(),
+        });
         if (!response.ok) {
             throw new Error(`Failed to get session: ${response.status}`);
         }
@@ -75,7 +94,9 @@ export class ChatApi {
      * Get message history for a session.
      */
     async getMessages(sessionId, limit = 50) {
-        const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages?limit=${limit}`);
+        const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages?limit=${limit}`, {
+            headers: this.getHeaders(),
+        });
         if (!response.ok) {
             throw new Error(`Failed to get messages: ${response.status}`);
         }
@@ -90,7 +111,7 @@ export class ChatApi {
         const controller = new AbortController();
         fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getHeaders(),
             body: JSON.stringify({ message, cookie_id: this.cookieId }),
             signal: controller.signal,
         })
@@ -155,7 +176,7 @@ export class ChatApi {
     async sendMessageSync(sessionId, message) {
         const response = await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/messages/sync`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: this.getHeaders(),
             body: JSON.stringify({ message }),
         });
         if (!response.ok) {
@@ -170,6 +191,27 @@ export class ChatApi {
     async endSession(sessionId) {
         await this.fetchWithRetry(`${this.baseUrl}/sessions/${sessionId}/end`, {
             method: 'POST',
+            headers: this.getHeaders(),
         });
+    }
+    /**
+     * Upload a file (image).
+     */
+    async uploadFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${this.baseUrl}/upload`, {
+            method: 'POST',
+            headers: this.getHeaders({
+                // Do not set Content-Type for FormData, browser will do it with boundary
+                'Content-Type': '',
+            }),
+            body: formData,
+        });
+        // Cleanup hack for the header (browser needs it empty to set boundary)
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status}`);
+        }
+        return response.json();
     }
 }

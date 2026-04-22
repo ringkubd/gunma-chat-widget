@@ -14,6 +14,7 @@ export interface ChatWidgetConfig {
   zIndex?: number;
   websiteUrl?: string;
   cookieId?: string;
+  apiToken?: string;
 }
 
 export interface ChatMessage {

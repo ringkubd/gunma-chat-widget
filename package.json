@@ -1,9 +1,8 @@
 {
-  "name": "@gunma/chat-widget",
-  "version": "1.0.0",
+  "name": "gunma-chat-widget",
+  "version": "1.0.3",
   "description": "Premium AI chat widget for Gunma Halal Food — Next.js/React",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "files": [
@@ -13,8 +12,17 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist",
-    "dev": "tsc -b --watch"
+    "dev": "tsc -b --watch",
+    "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ringkubd/gunma-chat-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ringkubd/gunma-chat-widget/issues"
+  },
+  "homepage": "https://github.com/ringkubd/gunma-chat-widget#readme",
   "exports": {
     ".": "./dist/index.js",
     "./styles.css": "./styles.css"

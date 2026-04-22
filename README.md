@@ -11,13 +11,13 @@ A premium, real-time AI chat widget for the Gunma Halal Food storefront.
 ## Installation
 
 ```bash
-npm install @gunma/chat-widget
+npm install gunma-chat-widget
 ```
 
 ## Usage
 
 ```tsx
-import { GunmaChatWidget } from '@gunma/chat-widget';
+import { GunmaChatWidget } from 'gunma-chat-widget';
 
 function App() {
   return (

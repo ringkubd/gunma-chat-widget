@@ -32,7 +32,7 @@ export function useChat(config) {
     const [error, setError] = useState(null);
     const [toolStatus, setToolStatus] = useState(null);
     const [isAiEnabled, setIsAiEnabled] = useState(true);
-    const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId));
+    const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId, config.apiToken));
     const echoRef = useRef(null);
     const abortRef = useRef(null);
     const initRef = useRef(false);
@@ -41,12 +41,17 @@ export function useChat(config) {
     // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
     useEffect(() => { sessionRef.current = session; }, [session]);
     useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+    // Sync apiToken if it changes
+    useEffect(() => {
+        apiRef.current = new ChatApi(config.apiUrl, config.cookieId, config.apiToken);
+    }, [config.apiUrl, config.cookieId, config.apiToken]);
     // Initialize Echo
     useEffect(() => {
         if (typeof window === 'undefined' || !config.apiUrl)
             return;
         window.Pusher = Pusher;
         try {
+            const token = typeof window !== 'undefined' ? localStorage.getItem('tk') : null;
             echoRef.current = new Echo({
                 broadcaster: 'pusher',
                 key: process.env.NEXT_PUBLIC_PUSHER_KEY || '3e004c455a5824baf3a03f6d9cc6bcc5',
@@ -56,14 +61,24 @@ export function useChat(config) {
                 forceTLS: process.env.NEXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
                 enabledTransports: ['ws', 'wss'],
                 disableStats: true,
-                authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8100/broadcasting/auth',
+                authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8100/api/broadcasting/auth',
+                auth: {
+                    headers: {
+                        Authorization: token ? `Bearer ${token}` : '',
+                    }
+                }
             });
         }
         catch (err) {
             console.warn('[useChat] Echo init failed:', err);
         }
         return () => {
-            echoRef.current?.disconnect();
+            if (sessionRef.current?.id) {
+                echoRef.current?.leave(`gunma-chat.${sessionRef.current.id}`);
+            }
+            // Only disconnect if we are the sole owner, but usually it's safer 
+            // in a SPA to just leave channels.
+            // echoRef.current?.disconnect();
         };
     }, [config.apiUrl]);
     // Listen for WebSocket events when session exists
@@ -257,6 +272,22 @@ export function useChat(config) {
         setIsLoading(false);
         setToolStatus(null);
     }, []);
+    /**
+     * Upload a file and send it as a message.
+     */
+    const uploadFile = useCallback(async (file) => {
+        setIsLoading(true);
+        setToolStatus('Uploading image...');
+        try {
+            const { url } = await apiRef.current.uploadFile(file);
+            await sendMessage(`[IMAGE: ${url}]`);
+        }
+        catch (err) {
+            setError('Upload failed. Please try again.');
+            setIsLoading(false);
+            setToolStatus(null);
+        }
+    }, [sendMessage]);
     return {
         isOpen,
         isLoading,
@@ -267,6 +298,7 @@ export function useChat(config) {
         isAiEnabled,
         toggle,
         sendMessage,
+        uploadFile,
         endChat,
         cancelRequest,
     };

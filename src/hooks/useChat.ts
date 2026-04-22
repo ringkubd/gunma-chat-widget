@@ -35,7 +35,7 @@ export function useChat(config: ChatWidgetConfig) {
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [isAiEnabled, setIsAiEnabled] = useState(true);
 
-  const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId));
+  const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId, config.apiToken));
   const echoRef = useRef<Echo<any> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -45,6 +45,11 @@ export function useChat(config: ChatWidgetConfig) {
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+  
+  // Sync apiToken if it changes
+  useEffect(() => {
+    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, config.apiToken);
+  }, [config.apiUrl, config.cookieId, config.apiToken]);
 
   // Initialize Echo
   useEffect(() => {
@@ -53,6 +58,8 @@ export function useChat(config: ChatWidgetConfig) {
     (window as any).Pusher = Pusher;
 
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('tk') : null;
+      
       echoRef.current = new Echo({
         broadcaster: 'pusher',
         key: process.env.NEXT_PUBLIC_PUSHER_KEY || '3e004c455a5824baf3a03f6d9cc6bcc5',
@@ -62,14 +69,24 @@ export function useChat(config: ChatWidgetConfig) {
         forceTLS: process.env.NEXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
-        authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8100/broadcasting/auth',
+        authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8100/api/broadcasting/auth',
+        auth: {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : '',
+          }
+        }
       });
     } catch (err) {
       console.warn('[useChat] Echo init failed:', err);
     }
 
     return () => {
-      echoRef.current?.disconnect();
+      if (sessionRef.current?.id) {
+        echoRef.current?.leave(`gunma-chat.${sessionRef.current.id}`);
+      }
+      // Only disconnect if we are the sole owner, but usually it's safer 
+      // in a SPA to just leave channels.
+      // echoRef.current?.disconnect();
     };
   }, [config.apiUrl]);
 
@@ -286,6 +303,22 @@ export function useChat(config: ChatWidgetConfig) {
     setToolStatus(null);
   }, []);
 
+  /**
+   * Upload a file and send it as a message.
+   */
+  const uploadFile = useCallback(async (file: File) => {
+    setIsLoading(true);
+    setToolStatus('Uploading image...');
+    try {
+      const { url } = await apiRef.current.uploadFile(file);
+      await sendMessage(`[IMAGE: ${url}]`);
+    } catch (err) {
+      setError('Upload failed. Please try again.');
+      setIsLoading(false);
+      setToolStatus(null);
+    }
+  }, [sendMessage]);
+
   return {
     isOpen,
     isLoading,
@@ -296,6 +329,7 @@ export function useChat(config: ChatWidgetConfig) {
     isAiEnabled,
     toggle,
     sendMessage,
+    uploadFile,
     endChat,
     cancelRequest,
   };

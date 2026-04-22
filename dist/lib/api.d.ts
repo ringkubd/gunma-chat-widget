@@ -5,7 +5,9 @@ import type { ChatSession, ChatMessage } from '../types';
 export declare class ChatApi {
     private baseUrl;
     private cookieId?;
-    constructor(apiUrl: string, cookieId?: string);
+    private apiToken?;
+    constructor(apiUrl: string, cookieId?: string, apiToken?: string);
+    private getHeaders;
     /**
      * Fetch with timeout and retry for transient failures.
      */
@@ -39,4 +41,10 @@ export declare class ChatApi {
      * End a chat session.
      */
     endSession(sessionId: string): Promise<void>;
+    /**
+     * Upload a file (image).
+     */
+    uploadFile(file: File): Promise<{
+        url: string;
+    }>;
 }
