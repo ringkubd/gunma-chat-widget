@@ -46,9 +46,10 @@ export function useChat(config: ChatWidgetConfig) {
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
   
-  // Sync apiToken if it changes
+  // Sync apiToken if it changes, or auto-detect from localStorage
   useEffect(() => {
-    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, config.apiToken);
+    const token = config.apiToken || (typeof window !== 'undefined' ? localStorage.getItem('tk') : undefined);
+    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token);
   }, [config.apiUrl, config.cookieId, config.apiToken]);
 
   // Initialize Echo
