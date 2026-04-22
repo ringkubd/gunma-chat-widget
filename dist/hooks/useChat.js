@@ -44,7 +44,7 @@ export function useChat(config) {
     // Sync apiToken if it changes, or auto-detect from localStorage
     useEffect(() => {
         const token = config.apiToken || (typeof window !== 'undefined' ? localStorage.getItem('tk') : undefined);
-        apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token);
+        apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token ?? "");
     }, [config.apiUrl, config.cookieId, config.apiToken]);
     // Initialize Echo
     useEffect(() => {
