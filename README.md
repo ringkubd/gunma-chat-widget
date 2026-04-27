@@ -10,10 +10,25 @@ Premium, humanoid AI chat widget for Gunma Halal Food. Supports multilingual int
 - **Echo/Pusher Support**: Real-time message broadcasting.
 - **Auto-Auth**: Detects customer tokens from `localStorage` ('tk').
 
-## Installation
+## Installation & Update
+
+### Install
 ```bash
 npm install gunma-chat-widget
 ```
+
+### Update
+```bash
+npm install gunma-chat-widget@latest
+```
+
+## Development & Pushing to GitHub
+If you are modifying the package locally in the `packages/` directory:
+1. **Navigate to the package**: `cd packages/gunma-chat-widget`
+2. **Build the package**: `npm run build`
+3. **Commit changes**: `git add . && git commit -m "your message"`
+4. **Push to GitHub**: `git push origin main`
+5. **Update Host App**: Run `npm install` in your `front_entry` project.
 
 ## Usage
 ```tsx
@@ -24,7 +39,8 @@ function App() {
   return (
     <ChatWidget 
       apiUrl="https://your-api-domain.com"
-      apiToken="your-passport-token"
+      brandColor="#10b981"
+      brandName="Piku"
     />
   );
 }
@@ -32,3 +48,4 @@ function App() {
 
 ## License
 MIT © Anwar
+
