@@ -18,8 +18,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
     error,
     toolStatus,
     isAiEnabled,
+    isAgentTyping,
     toggle,
     sendMessage,
+    sendTyping,
     uploadFile,
     endChat,
     cancelRequest,
@@ -78,9 +80,9 @@ export function ChatWidget(config: ChatWidgetConfig) {
           </div>
 
           {/* Tool Status / Typing Indicator */}
-          {(isLoading || toolStatus) && (
+          {(isLoading || toolStatus || isAgentTyping) && (
             <div className="gunma-status-bar">
-              <TypingIndicator />
+              {(isLoading || isAgentTyping) && <TypingIndicator />}
               {toolStatus && (
                 <span className="gunma-tool-status">{toolStatus}</span>
               )}
@@ -110,6 +112,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
           <MessageInput
             onSend={handleSend}
             onUpload={uploadFile}
+            onTyping={sendTyping}
             isLoading={isLoading}
             placeholder={config.placeholder || 'Type a message...'}
           />

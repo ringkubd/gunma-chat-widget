@@ -1,12 +1,14 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useState, useRef, useCallback } from 'react';
-export function MessageInput({ onSend, onUpload, isLoading, placeholder }) {
+export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder }) {
     const [value, setValue] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
     const recognitionRef = useRef(null);
+    const typingTimerRef = useRef(null);
+    const isTypingRef = useRef(false);
     const handleSubmit = useCallback(() => {
         if (!value.trim() || isLoading)
             return;
@@ -29,7 +31,20 @@ export function MessageInput({ onSend, onUpload, isLoading, placeholder }) {
         const el = e.target;
         el.style.height = 'auto';
         el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-    }, []);
+        // Typing logic
+        if (!isTypingRef.current && onTyping) {
+            isTypingRef.current = true;
+            onTyping(true);
+        }
+        if (typingTimerRef.current)
+            clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(() => {
+            if (isTypingRef.current && onTyping) {
+                isTypingRef.current = false;
+                onTyping(false);
+            }
+        }, 3000);
+    }, [onTyping]);
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file && onUpload) {

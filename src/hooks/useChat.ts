@@ -34,6 +34,7 @@ export function useChat(config: ChatWidgetConfig) {
   const [error, setError] = useState<string | null>(null);
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [isAiEnabled, setIsAiEnabled] = useState(true);
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
 
   const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId, config.apiToken));
   const echoRef = useRef<Echo<any> | null>(null);
@@ -41,6 +42,7 @@ export function useChat(config: ChatWidgetConfig) {
   const initRef = useRef(false);
   const sessionRef = useRef<ChatSession | null>(null);
   const isOpenRef = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -70,7 +72,7 @@ export function useChat(config: ChatWidgetConfig) {
         forceTLS: process.env.NEXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
-        authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8100/api/broadcasting/auth',
+        authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8000/api/broadcasting/auth',
         auth: {
           headers: {
             Authorization: token ? `Bearer ${token}` : '',
@@ -101,7 +103,7 @@ export function useChat(config: ChatWidgetConfig) {
     channel.listen('.message.new', (data: any) => {
       setMessages((prev) => {
         // Prevent duplicate messages (since SSE also adds them)
-        if (prev.some(m => m.id === data.id)) return prev;
+        if (prev.some(m => String(m.id) === String(data.id))) return prev;
 
         return [...prev, {
           id: data.id,
@@ -111,10 +113,11 @@ export function useChat(config: ChatWidgetConfig) {
         }];
       });
 
-      // If message is from assistant/agent, stop loading
+      // If message is from assistant/agent, stop loading and typing
       if (data.role === 'assistant') {
         setIsLoading(false);
         setToolStatus(null);
+        setIsAgentTyping(false);
       }
     });
 
@@ -122,10 +125,24 @@ export function useChat(config: ChatWidgetConfig) {
       setIsAiEnabled(data.is_ai_enabled);
     });
 
+    channel.listen('.user.typing', (data: any) => {
+        if (data.role === 'assistant') {
+            setIsAgentTyping(data.is_typing);
+        }
+    });
+
     return () => {
       echoRef.current?.leave(`gunma-chat.${sessionId}`);
     };
   }, [session?.id]);
+
+  /**
+   * Send typing status
+   */
+  const sendTyping = useCallback((isTyping: boolean) => {
+      if (!sessionRef.current) return;
+      apiRef.current.sendTyping(sessionRef.current.id, 'user', isTyping);
+  }, []);
 
   // Restore session from localStorage
   useEffect(() => {
@@ -191,6 +208,7 @@ export function useChat(config: ChatWidgetConfig) {
     setError(null);
     setIsLoading(true);
     setToolStatus(null);
+    sendTyping(false); // Stop typing when sending
 
     // Ensure session exists
     let currentSession = sessionRef.current;
@@ -238,8 +256,12 @@ export function useChat(config: ChatWidgetConfig) {
               content: String(data.content || ''),
               created_at: new Date().toISOString(),
             };
-            setMessages((prev) => [...prev, assistantMsg]);
+            setMessages((prev) => {
+                if (prev.some(m => String(m.id) === String(assistantMsg.id))) return prev;
+                return [...prev, assistantMsg];
+            });
             setToolStatus(null);
+            setIsAgentTyping(false);
             break;
           }
           case 'error':
@@ -252,6 +274,7 @@ export function useChat(config: ChatWidgetConfig) {
       () => {
         setIsLoading(false);
         setToolStatus(null);
+        setIsAgentTyping(false);
       },
       // onError
       (err) => {
@@ -260,7 +283,7 @@ export function useChat(config: ChatWidgetConfig) {
         setToolStatus(null);
       },
     );
-  }, [isLoading, initSession]);
+  }, [isLoading, initSession, sendTyping]);
 
   /**
    * Toggle chat open/close.
@@ -302,6 +325,7 @@ export function useChat(config: ChatWidgetConfig) {
     abortRef.current?.abort();
     setIsLoading(false);
     setToolStatus(null);
+    setIsAgentTyping(false);
   }, []);
 
   /**
@@ -328,8 +352,10 @@ export function useChat(config: ChatWidgetConfig) {
     error,
     toolStatus,
     isAiEnabled,
+    isAgentTyping,
     toggle,
     sendMessage,
+    sendTyping,
     uploadFile,
     endChat,
     cancelRequest,

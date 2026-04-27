@@ -5,16 +5,19 @@ import React, { useState, useRef, useCallback } from 'react';
 interface MessageInputProps {
   onSend: (text: string) => void;
   onUpload?: (file: File) => void;
+  onTyping?: (isTyping: boolean) => void;
   isLoading: boolean;
   placeholder: string;
 }
 
-export function MessageInput({ onSend, onUpload, isLoading, placeholder }: MessageInputProps) {
+export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder }: MessageInputProps) {
   const [value, setValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
 
   const handleSubmit = useCallback(() => {
     if (!value.trim() || isLoading) return;
@@ -39,7 +42,21 @@ export function MessageInput({ onSend, onUpload, isLoading, placeholder }: Messa
     const el = e.target;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-  }, []);
+
+    // Typing logic
+    if (!isTypingRef.current && onTyping) {
+        isTypingRef.current = true;
+        onTyping(true);
+    }
+
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+        if (isTypingRef.current && onTyping) {
+            isTypingRef.current = false;
+            onTyping(false);
+        }
+    }, 3000);
+  }, [onTyping]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

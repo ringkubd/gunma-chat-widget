@@ -47,4 +47,8 @@ export declare class ChatApi {
     uploadFile(file: File): Promise<{
         url: string;
     }>;
+    /**
+     * Broadcast typing status.
+     */
+    sendTyping(sessionId: string, role: 'user' | 'assistant', isTyping: boolean): Promise<void>;
 }

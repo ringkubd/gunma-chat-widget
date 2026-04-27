@@ -214,4 +214,19 @@ export class ChatApi {
         }
         return response.json();
     }
+    /**
+     * Broadcast typing status.
+     */
+    async sendTyping(sessionId, role, isTyping) {
+        try {
+            await fetch(`${this.baseUrl}/sessions/${sessionId}/typing`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify({ role, is_typing: isTyping }),
+            });
+        }
+        catch (err) {
+            // Silent fail for typing indicators
+        }
+    }
 }
