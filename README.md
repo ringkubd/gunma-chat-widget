@@ -22,6 +22,16 @@ npm install gunma-chat-widget
 npm install gunma-chat-widget@latest
 ```
 
+## Configuration (.env.local)
+The widget requires these Next.js public variables:
+```env
+NEXT_PUBLIC_PUSHER_KEY=your_key
+NEXT_PUBLIC_PUSHER_CLUSTER=mt1
+NEXT_PUBLIC_PUSHER_HOST=localhost
+NEXT_PUBLIC_PUSHER_PORT=6001
+NEXT_PUBLIC_PUSHER_FORCE_TLS=false
+```
+
 ## Development & Pushing to GitHub
 If you are modifying the package locally in the `packages/` directory:
 1. **Navigate to the package**: `cd packages/gunma-chat-widget`
