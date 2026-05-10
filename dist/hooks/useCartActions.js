@@ -3,20 +3,50 @@ import { useCallback } from 'react';
 /**
  * Extracted cart action logic — keeps ChatWidget.tsx clean.
  * Handles single-product "Add to Cart" and bulk "Add ALL Ingredients" clicks.
+ *
+ * Works for both guests (cookie-based) and authenticated customers (token-based).
  */
 export function useCartActions(config) {
+    const routePrefix = config.routePrefix ?? 'api/chat';
+    const cookieKey = config.cookieKey ?? 'gunma_cookie';
+    /** Resolve token: explicit > getToken() > undefined */
+    const resolveToken = () => {
+        if (config.apiToken)
+            return config.apiToken;
+        if (config.getToken)
+            return config.getToken();
+        return null;
+    };
+    const buildHeaders = () => {
+        const headers = {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        };
+        const token = resolveToken();
+        if (token) {
+            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        }
+        return headers;
+    };
     const addToCart = useCallback(async (btn) => {
         const productId = btn.getAttribute('data-product-id');
         const productPrice = btn.getAttribute('data-product-price');
         if (!productId)
             return;
+        // Single-product cart requires a host-app cart URL
+        if (!config.cartUrl) {
+            console.warn('[useCartActions] cartUrl not configured — single-product add-to-cart disabled.');
+            return;
+        }
         const originalContent = btn.innerHTML;
         btn.innerHTML = '<span style="font-size: 8px;">...</span>';
         btn.style.opacity = '0.7';
         try {
-            const res = await fetch(`${config.apiUrl.replace('/api/chat', '')}/customer/Frontend/Carts`, {
+            const token = resolveToken();
+            const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+            const res = await fetch(config.cartUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                headers: buildHeaders(),
                 body: JSON.stringify({
                     product_id: productId,
                     product_option_id: '',
@@ -24,7 +54,8 @@ export function useCartActions(config) {
                     item_price: productPrice || 0,
                     discount_amount: 0,
                     tax_percent: 0,
-                    cookie: localStorage.getItem('gunma_cookie') || Date.now().toString(),
+                    // Send cookie for guest carts; server ignores it when token is present
+                    cookie: token ? undefined : cookie,
                 }),
             });
             if (res.ok) {
@@ -45,7 +76,7 @@ export function useCartActions(config) {
             btn.style.opacity = '1';
             btn.style.backgroundColor = '';
         }, 2000);
-    }, [config.apiUrl]);
+    }, [config.cartUrl, config.apiToken, config.getToken, cookieKey]);
     const bulkAddToCart = useCallback(async (target) => {
         const productIdsStr = target.getAttribute('data-product-ids');
         if (!productIdsStr)
@@ -55,12 +86,15 @@ export function useCartActions(config) {
         target.textContent = 'Adding All...';
         target.style.opacity = '0.7';
         try {
-            const res = await fetch(`${config.apiUrl}/cart/bulk`, {
+            const token = resolveToken();
+            const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+            const res = await fetch(`${config.apiUrl}/${routePrefix}/cart/bulk`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                headers: buildHeaders(),
                 body: JSON.stringify({
                     product_ids: productIds,
-                    cookie: localStorage.getItem('gunma_cookie') || Date.now().toString(),
+                    // Send cookie for guest carts; server ignores it when token is present
+                    cookie: token ? undefined : cookie,
                 }),
             });
             if (res.ok) {
@@ -83,7 +117,7 @@ export function useCartActions(config) {
                 target.style.backgroundColor = '';
             }
         }, 2000);
-    }, [config.apiUrl]);
+    }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey]);
     const handleMessageClick = useCallback(async (e) => {
         const target = e.target;
         // Single product add-to-cart

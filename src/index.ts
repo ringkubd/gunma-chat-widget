@@ -19,6 +19,9 @@ export { ChatApi } from './lib/api';
 // Types
 export type {
   ChatWidgetConfig,
+  ChatPusherConfig,
+  ChatRouteConfig,
+  ChatStorageConfig,
   ChatMessage,
   ChatSession,
   ChatState,

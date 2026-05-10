@@ -6,11 +6,10 @@ import type { ChatMessage, ChatSession, ChatWidgetConfig } from '../types';
 
 /**
  * Generate a stable visitor ID from the browser.
+ * @param storageKey - localStorage key to use (default: 'gunma_visitor_id')
  */
-function getVisitorId(): string {
+function getVisitorId(storageKey = 'gunma_visitor_id'): string {
   if (typeof window === 'undefined') return 'ssr';
-
-  const storageKey = 'gunma_visitor_id';
   try {
     let id = localStorage.getItem(storageKey);
     if (!id) {
@@ -36,7 +35,27 @@ export function useChat(config: ChatWidgetConfig) {
   const [isAiEnabled, setIsAiEnabled] = useState(true);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
 
-  const apiRef = useRef(new ChatApi(config.apiUrl, config.cookieId, config.apiToken));
+  // --- Resolved configurable values ---
+  const sessionIdKey  = config.storage?.sessionIdKey  ?? 'gunma_session_id';
+  const visitorIdKey  = config.storage?.visitorIdKey  ?? 'gunma_visitor_id';
+  const tokenKeys     = config.storage?.tokenKeys     ?? ['tk', 'token'];
+  const routePrefix   = config.routes?.prefix         ?? 'api/chat';
+  const broadcastAuth = config.pusher?.authEndpoint   ?? '/api/broadcasting/auth';
+
+  /** Resolve the auth token: explicit > getToken() > localStorage scan */
+  const resolveToken = useCallback((): string => {
+    if (config.apiToken) return config.apiToken;
+    if (config.getToken) return config.getToken() ?? '';
+    if (typeof window === 'undefined') return '';
+    for (const key of tokenKeys) {
+      const t = localStorage.getItem(key);
+      if (t) return t;
+    }
+    return '';
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.apiToken, config.getToken, tokenKeys.join(',')]);
+
+  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken()));
   const echoRef = useRef<Echo<any> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -48,36 +67,38 @@ export function useChat(config: ChatWidgetConfig) {
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
-  // Sync apiToken if it changes, or auto-detect from localStorage
+  // Sync apiToken when config changes
   useEffect(() => {
-    const token = config.apiToken || (typeof window !== 'undefined' ? localStorage.getItem('tk') : undefined);
-    apiRef.current = new ChatApi(config.apiUrl, config.cookieId, token ?? "");
-  }, [config.apiUrl, config.cookieId, config.apiToken]);
+    const token = resolveToken();
+    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token);
+  }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, routePrefix, resolveToken]);
 
   // Initialize Echo
   useEffect(() => {
     if (typeof window === 'undefined' || !config.apiUrl) return;
+    if (!config.pusher?.key) {
+      // Real-time disabled — widget still works via SSE streaming
+      return;
+    }
 
     (window as any).Pusher = Pusher;
 
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('tk') : null;
-
       echoRef.current = new Echo({
         broadcaster: 'pusher',
-        key: process.env.NEXT_PUBLIC_PUSHER_KEY || '3e004c455a5824baf3a03f6d9cc6bcc5',
-        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1',
-        wsHost: process.env.NEXT_PUBLIC_PUSHER_HOST || 'localhost',
-        wsPort: Number(process.env.NEXT_PUBLIC_PUSHER_PORT || 6001),
-        forceTLS: process.env.NEXT_PUBLIC_PUSHER_FORCE_TLS === 'true',
+        key: config.pusher.key,
+        cluster: config.pusher.cluster,
+        wsHost: config.pusher.wsHost ?? 'localhost',
+        wsPort: config.pusher.wsPort ?? 6001,
+        forceTLS: config.pusher.forceTLS ?? false,
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
-        authEndpoint: process.env.NEXT_PUBLIC_PUSHER_AUTH_ENDPOINT || 'http://localhost:8000/api/broadcasting/auth',
+        authEndpoint: broadcastAuth,
         auth: {
           headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-          }
-        }
+            Authorization: resolveToken() ? `Bearer ${resolveToken()}` : '',
+          },
+        },
       });
     } catch (err) {
       console.warn('[useChat] Echo init failed:', err);
@@ -87,11 +108,8 @@ export function useChat(config: ChatWidgetConfig) {
       if (sessionRef.current?.id) {
         echoRef.current?.leave(`gunma-chat.${sessionRef.current.id}`);
       }
-      // Only disconnect if we are the sole owner, but usually it's safer 
-      // in a SPA to just leave channels.
-      // echoRef.current?.disconnect();
     };
-  }, [config.apiUrl]);
+  }, [config.apiUrl, config.pusher?.key, broadcastAuth, resolveToken]);
 
   // Listen for WebSocket events when session exists
   useEffect(() => {
@@ -149,7 +167,7 @@ export function useChat(config: ChatWidgetConfig) {
     if (typeof window === 'undefined' || initRef.current) return;
     initRef.current = true;
 
-    const savedSessionId = localStorage.getItem('gunma_session_id');
+    const savedSessionId = localStorage.getItem(sessionIdKey);
     if (savedSessionId) {
       apiRef.current.getMessages(savedSessionId)
         .then((msgs) => {
@@ -157,7 +175,7 @@ export function useChat(config: ChatWidgetConfig) {
           setMessages(msgs);
         })
         .catch(() => {
-          localStorage.removeItem('gunma_session_id');
+          localStorage.removeItem(sessionIdKey);
         });
     }
   }, []);
@@ -169,7 +187,7 @@ export function useChat(config: ChatWidgetConfig) {
     if (sessionRef.current) return sessionRef.current;
 
     try {
-      const visitorId = config.visitorId || getVisitorId();
+      const visitorId = config.visitorId || getVisitorId(visitorIdKey);
       const newSession = await apiRef.current.createSession(
         visitorId,
         config.customerName,
@@ -178,7 +196,7 @@ export function useChat(config: ChatWidgetConfig) {
 
       setSession(newSession);
       sessionRef.current = newSession;
-      localStorage.setItem('gunma_session_id', newSession.id);
+      localStorage.setItem(sessionIdKey, newSession.id);
 
       // Load existing messages if any
       if (newSession.id) {
@@ -251,7 +269,7 @@ export function useChat(config: ChatWidgetConfig) {
             break;
           case 'message': {
             const assistantMsg: ChatMessage = {
-              id: `asst_${Date.now()}`,
+              id: data.id ? String(data.id) : `asst_${Date.now()}`,
               role: 'assistant',
               content: String(data.content || ''),
               created_at: new Date().toISOString(),
@@ -315,7 +333,7 @@ export function useChat(config: ChatWidgetConfig) {
     setSession(null);
     setMessages([]);
     setIsOpen(false);
-    localStorage.removeItem('gunma_session_id');
+    localStorage.removeItem(sessionIdKey);
   }, []);
 
   /**

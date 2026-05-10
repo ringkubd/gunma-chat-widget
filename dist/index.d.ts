@@ -8,4 +8,4 @@ export { TypingIndicator } from './components/TypingIndicator';
 export { useChat } from './hooks/useChat';
 export { useCartActions } from './hooks/useCartActions';
 export { ChatApi } from './lib/api';
-export type { ChatWidgetConfig, ChatMessage, ChatSession, ChatState, SSEEvent, SSEEventType, } from './types';
+export type { ChatWidgetConfig, ChatPusherConfig, ChatRouteConfig, ChatStorageConfig, ChatMessage, ChatSession, ChatState, SSEEvent, SSEEventType, } from './types';
