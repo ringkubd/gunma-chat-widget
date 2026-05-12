@@ -28,6 +28,7 @@ function getVisitorId(storageKey = 'gunma_visitor_id'): string {
 export function useChat(config: ChatWidgetConfig) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -221,8 +222,8 @@ export function useChat(config: ChatWidgetConfig) {
    * Send a message and handle SSE response.
    */
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || isLoading) return;
-
+    if (!text.trim() || loadingRef.current) return;
+    loadingRef.current = true;
     setError(null);
     setIsLoading(true);
     setToolStatus(null);
@@ -290,18 +291,20 @@ export function useChat(config: ChatWidgetConfig) {
       },
       // onDone
       () => {
+        loadingRef.current = false;
         setIsLoading(false);
         setToolStatus(null);
         setIsAgentTyping(false);
       },
       // onError
       (err) => {
+        loadingRef.current = false;
         setError(err.message);
         setIsLoading(false);
         setToolStatus(null);
       },
     );
-  }, [isLoading, initSession, sendTyping]);
+  }, [initSession, sendTyping]);
 
   /**
    * Toggle chat open/close.
