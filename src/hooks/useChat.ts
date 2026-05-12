@@ -121,8 +121,12 @@ export function useChat(config: ChatWidgetConfig) {
 
     channel.listen('.message.new', (data: any) => {
       setMessages((prev) => {
-        // Prevent duplicate messages (since SSE also adds them)
-        if (prev.some(m => String(m.id) === String(data.id))) return prev;
+        // Deduplicate by ID or by same role+content (catches optimistic vs server ID mismatch)
+        const isDuplicate = prev.some(m =>
+          String(m.id) === String(data.id) ||
+          (m.role === data.role && m.content === data.content)
+        );
+        if (isDuplicate) return prev;
 
         return [...prev, {
           id: data.id,
@@ -276,7 +280,11 @@ export function useChat(config: ChatWidgetConfig) {
               created_at: new Date().toISOString(),
             };
             setMessages((prev) => {
-                if (prev.some(m => String(m.id) === String(assistantMsg.id))) return prev;
+                const exists = prev.some(m =>
+                    String(m.id) === String(assistantMsg.id) ||
+                    (m.role === assistantMsg.role && m.content === assistantMsg.content)
+                );
+                if (exists) return prev;
                 return [...prev, assistantMsg];
             });
             setToolStatus(null);

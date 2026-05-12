@@ -115,8 +115,10 @@ export function useChat(config) {
         const channel = echoRef.current.channel(`gunma-chat.${sessionId}`);
         channel.listen('.message.new', (data) => {
             setMessages((prev) => {
-                // Prevent duplicate messages (since SSE also adds them)
-                if (prev.some(m => String(m.id) === String(data.id)))
+                // Deduplicate by ID or by same role+content (catches optimistic vs server ID mismatch)
+                const isDuplicate = prev.some(m => String(m.id) === String(data.id) ||
+                    (m.role === data.role && m.content === data.content));
+                if (isDuplicate)
                     return prev;
                 return [...prev, {
                         id: data.id,
@@ -254,7 +256,9 @@ export function useChat(config) {
                         created_at: new Date().toISOString(),
                     };
                     setMessages((prev) => {
-                        if (prev.some(m => String(m.id) === String(assistantMsg.id)))
+                        const exists = prev.some(m => String(m.id) === String(assistantMsg.id) ||
+                            (m.role === assistantMsg.role && m.content === assistantMsg.content));
+                        if (exists)
                             return prev;
                         return [...prev, assistantMsg];
                     });
