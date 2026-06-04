@@ -78,6 +78,28 @@ export class ChatApi {
   }
 
   /**
+   * Link guest session to authenticated customer after login.
+   */
+  async linkSession(visitorId: string, customerId: number): Promise<void> {
+    await this.fetchWithRetry(`${this.baseUrl.replace('/api/chat', '/api/admin/chat')}/link-session`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ visitor_id: visitorId, customer_id: customerId }),
+    });
+  }
+
+  /**
+   * Submit feedback after chat ends.
+   */
+  async submitFeedback(sessionId: string, rating: number, comment?: string): Promise<void> {
+    await this.fetchWithRetry(`${this.baseUrl.replace('/api/chat', '/api/admin/chat')}/sessions/${sessionId}/feedback`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ rating, comment }),
+    });
+  }
+
+  /**
    * Create or resume a chat session.
    */
   async createSession(

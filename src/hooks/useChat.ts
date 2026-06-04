@@ -378,6 +378,19 @@ export function useChat(config: ChatWidgetConfig) {
     }
   }, [sendMessage]);
 
+  const linkSession = useCallback(async (customerId: number) => {
+    const visitorId = config.visitorId || getVisitorId(visitorIdKey);
+    await apiRef.current.linkSession(visitorId, customerId);
+    if (sessionRef.current) {
+      setSession(prev => prev ? { ...prev, customer_id: customerId } : prev);
+    }
+  }, [config.visitorId]);
+
+  const submitFeedback = useCallback(async (rating: number, comment?: string) => {
+    if (!sessionRef.current) return;
+    await apiRef.current.submitFeedback(sessionRef.current.id, rating, comment);
+  }, []);
+
   return {
     isOpen,
     isLoading,
@@ -393,5 +406,7 @@ export function useChat(config: ChatWidgetConfig) {
     uploadFile,
     endChat,
     cancelRequest,
+    linkSession,
+    submitFeedback,
   };
 }
