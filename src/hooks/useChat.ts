@@ -63,6 +63,7 @@ export function useChat(config: ChatWidgetConfig) {
   const sessionRef = useRef<ChatSession | null>(null);
   const isOpenRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const channelListenersRef = useRef<Set<string>>(new Set());
 
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -117,11 +118,15 @@ export function useChat(config: ChatWidgetConfig) {
     if (!session || !echoRef.current) return;
 
     const sessionId = session.id;
-    const channel = echoRef.current.channel(`gunma-chat.${sessionId}`);
+    const channelKey = `gunma-chat.${sessionId}`;
+    const channel = echoRef.current.channel(channelKey);
+
+    // Prevent double-registering listeners (React Strict Mode / re-renders)
+    if (channelListenersRef.current.has(channelKey)) return;
+    channelListenersRef.current.add(channelKey);
 
     channel.listen('.message.new', (data: any) => {
       setMessages((prev) => {
-        // Deduplicate by ID or by same role+content (catches optimistic vs server ID mismatch)
         const isDuplicate = prev.some(m =>
           String(m.id) === String(data.id) ||
           (m.role === data.role && m.content === data.content)
@@ -136,7 +141,6 @@ export function useChat(config: ChatWidgetConfig) {
         }];
       });
 
-      // If message is from assistant/agent, stop loading and typing
       if (data.role === 'assistant') {
         setIsLoading(false);
         setToolStatus(null);
@@ -155,7 +159,8 @@ export function useChat(config: ChatWidgetConfig) {
     });
 
     return () => {
-      echoRef.current?.leave(`gunma-chat.${sessionId}`);
+      echoRef.current?.leave(channelKey);
+      channelListenersRef.current.delete(channelKey);
     };
   }, [session?.id]);
 
