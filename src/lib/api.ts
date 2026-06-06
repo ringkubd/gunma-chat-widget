@@ -52,10 +52,11 @@ export class ChatApi {
     const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
 
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'include',
+                signal: controller.signal,
+            });
 
       // Retry on 429 (rate limit) or 5xx (server error)
       if (!response.ok && retries > 0 && (response.status === 429 || response.status >= 500)) {
@@ -166,12 +167,13 @@ export class ChatApi {
   ): AbortController {
     const controller = new AbortController();
 
-    fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ message, cookie_id: this.cookieId }),
-      signal: controller.signal,
-    })
+        fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
+                    method: 'POST',
+                    headers: this.getHeaders(),
+                    credentials: 'include',
+                    body: JSON.stringify({ message, cookie_id: this.cookieId }),
+                    signal: controller.signal,
+                })
       .then(async (response) => {
         if (!response.ok) {
           throw new Error(`Message failed: ${response.status}`);
@@ -268,17 +270,17 @@ export class ChatApi {
    * Upload a file (image).
    */
   async uploadFile(file: File): Promise<{ url: string }> {
-    const formData = new FormData();
-    formData.append('file', file);
+        const formData = new FormData();
+        formData.append('file', file);
 
-    const response = await fetch(`${this.baseUrl}/upload`, {
-      method: 'POST',
-      headers: this.getHeaders({
-        // Do not set Content-Type for FormData, browser will do it with boundary
-        'Content-Type': '',
-      }),
-      body: formData,
-    });
+        const response = await fetch(`${this.baseUrl}/upload`, {
+          method: 'POST',
+          headers: this.getHeaders({
+            'Content-Type': '',
+          }),
+          credentials: 'include',
+          body: formData,
+        });
 
     // Cleanup hack for the header (browser needs it empty to set boundary)
     if (!response.ok) {
@@ -293,11 +295,12 @@ export class ChatApi {
    */
   async sendTyping(sessionId: string, role: 'user' | 'assistant', isTyping: boolean): Promise<void> {
     try {
-      await fetch(`${this.baseUrl}/sessions/${sessionId}/typing`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({ role, is_typing: isTyping }),
-      });
+                    await fetch(`${this.baseUrl}/sessions/${sessionId}/typing`, {
+                        method: 'POST',
+                        headers: this.getHeaders(),
+                        credentials: 'include',
+                        body: JSON.stringify({ role, is_typing: isTyping }),
+                    });
     } catch (err) {
       // Silent fail for typing indicators
     }
