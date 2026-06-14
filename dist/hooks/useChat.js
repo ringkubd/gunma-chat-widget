@@ -169,7 +169,9 @@ export function useChat(config) {
         if (savedSessionId) {
             apiRef.current.getMessages(savedSessionId)
                 .then((msgs) => {
-                setSession({ id: savedSessionId });
+                const restored = { id: savedSessionId };
+                setSession(restored);
+                sessionRef.current = restored;
                 setMessages(msgs);
             })
                 .catch(() => {

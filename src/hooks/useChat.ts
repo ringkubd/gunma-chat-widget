@@ -182,7 +182,9 @@ export function useChat(config: ChatWidgetConfig) {
     if (savedSessionId) {
       apiRef.current.getMessages(savedSessionId)
         .then((msgs) => {
-          setSession({ id: savedSessionId } as ChatSession);
+          const restored: ChatSession = { id: savedSessionId } as ChatSession;
+          setSession(restored);
+          sessionRef.current = restored;
           setMessages(msgs);
         })
         .catch(() => {
