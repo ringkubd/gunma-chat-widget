@@ -1,6 +1,6 @@
-{
+  {
   "name": "gunma-chat-widget",
-  "version": "1.0.19",
+  "version": "1.0.21",
   "description": "Premium AI chat widget for Gunma Halal Food — Next.js/React",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

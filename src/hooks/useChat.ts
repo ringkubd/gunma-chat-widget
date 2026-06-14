@@ -233,6 +233,21 @@ export function useChat(config: ChatWidgetConfig) {
   const initSession = useCallback(async () => {
     if (sessionRef.current) return sessionRef.current;
 
+    // If a previous session ID is saved, try to reuse it before creating a new one.
+    const savedSessionId = typeof window !== 'undefined' ? localStorage.getItem(sessionIdKey) : null;
+    if (savedSessionId) {
+      try {
+        const msgs = await apiRef.current.getMessages(savedSessionId);
+        const restored: ChatSession = { id: savedSessionId } as ChatSession;
+        setSession(restored);
+        sessionRef.current = restored;
+        setMessages(msgs);
+        return restored;
+      } catch {
+        localStorage.removeItem(sessionIdKey);
+      }
+    }
+
     try {
       const visitorId = config.visitorId || getVisitorId(visitorIdKey);
       const newSession = await apiRef.current.createSession(
@@ -245,24 +260,12 @@ export function useChat(config: ChatWidgetConfig) {
       sessionRef.current = newSession;
       localStorage.setItem(sessionIdKey, newSession.id);
 
-      // Load existing messages if any
-      if (newSession.id) {
-        try {
-          const msgs = await apiRef.current.getMessages(newSession.id);
-          if (msgs.length > 0) {
-            setMessages(msgs);
-          }
-        } catch {
-          // New session, no messages yet
-        }
-      }
-
       return newSession;
     } catch (err) {
       setError('Failed to connect. Please try again.');
       return null;
     }
-  }, [config.visitorId, config.customerName, config.channel]);
+  }, [config.visitorId, config.customerName, config.channel, sessionIdKey]);
 
   /**
    * Send a message and handle SSE response.
