@@ -76,11 +76,23 @@ function renderMarkdown(text: string, websiteUrl: string): string {
     }
   );
 
-  // ── Step 2: Extract the "Add ALL" bulk link ──
-  const bulkPattern = /\*?\*?\[?🛒 Add ALL Ingredients? to Cart\]?\(?[^)]*\)?\*?\*?/gi;
-  const hasBulk = bulkPattern.test(text);
+  // ── Step 2: Extract {{BULK_BUTTON}} with markdown product list ──
+  const bulkProducts: Array<{ id: string; title: string; price: string; slug: string }> = [];
+  const hasBulk = text.includes('{{BULK_BUTTON}}');
   if (hasBulk) {
-    text = text.replace(bulkPattern, '{{BULK_BUTTON}}');
+    text = text.replace(/\{\{BULK_BUTTON\}\}\n?([\s\S]*?)(?=\n\n|\nReply|$)/, (match, listBlock) => {
+      const lines = listBlock.split('\n').filter(Boolean);
+      lines.forEach((line: string) => {
+        // Match: 1. [Title](slug) - ¥price - product_id:123
+        const m = line.match(/^\d+\.\s*\[([^\]]+)\]\(([^)]+)\)\s*-\s*¥?([\d,]+)\s*-\s*product_id:(\d+)(?:\s*\(not in stock right now\))?/);
+        if (m) {
+          const [, title, slug, price, id] = m;
+          bulkProducts.push({ id, title, price: price.replace(/,/g, ''), slug });
+          productIds.push(id);
+        }
+      });
+      return '{{BULK_BUTTON}}';
+    });
   }
 
   // ── Step 3: Escape HTML (but NOT our placeholders) ──
@@ -143,7 +155,19 @@ function renderMarkdown(text: string, websiteUrl: string): string {
   );
 
   // ── Step 13: Restore bulk button ──
-  if (hasBulk && productIds.length > 0) {
+  if (bulkProducts.length > 0) {
+    const cardsHtml = bulkProducts.map(p => productMiniCard(p.id, p.title, p.price, '', p.slug, websiteUrl)).join('');
+    const bulkHtml = `
+      <div class="gunma-bulk-section">
+        <div class="gunma-product-grid">${cardsHtml}</div>
+        <div class="gunma-bulk-actions">
+          <button class="gunma-bulk-cart-btn" data-product-ids="${bulkProducts.map(p => p.id).join(',')}">
+            🛒 Add ALL to Cart
+          </button>
+        </div>
+      </div>`;
+    text = text.replace('{{BULK_BUTTON}}', bulkHtml);
+  } else if (hasBulk && productIds.length > 0) {
     const bulkHtml = `
       <div class="gunma-bulk-container">
         <button class="gunma-bulk-cart-btn" data-product-ids="${productIds.join(',')}">
@@ -154,6 +178,27 @@ function renderMarkdown(text: string, websiteUrl: string): string {
   }
 
   return text;
+}
+
+function productMiniCard(id: string, title: string, price: string, image: string, slug: string, websiteUrl: string): string {
+  const cleanPrice = Number(price).toLocaleString();
+  const imgHtml = image
+    ? `<a href="${websiteUrl}/${slug}" target="_blank" rel="noopener" class="gunma-product-mini-img-link"><img src="${image}" alt="${title}" loading="lazy"/></a>`
+    : `<a href="${websiteUrl}/${slug}" target="_blank" rel="noopener" class="gunma-product-mini-img-link gunma-product-mini-img-link--placeholder"><span>${title[0] || 'P'}</span></a>`;
+
+  return `
+    <div class="gunma-product-mini-card" data-id="${id}">
+      ${imgHtml}
+      <div class="gunma-product-mini-body">
+        <span class="gunma-product-mini-title">${title}</span>
+        <div class="gunma-product-mini-footer">
+          <span class="gunma-product-mini-price">¥${cleanPrice}</span>
+          <button data-product-id="${id}" data-product-price="${price}" class="gunma-add-to-cart-btn gunma-product-mini-add" title="Add to Cart">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`;
 }
 
 function formatTime(isoString: string): string {

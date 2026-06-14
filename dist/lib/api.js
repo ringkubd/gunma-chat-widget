@@ -36,6 +36,7 @@ export class ChatApi {
         try {
             const response = await fetch(url, {
                 ...options,
+                credentials: 'include',
                 signal: controller.signal,
             });
             // Retry on 429 (rate limit) or 5xx (server error)
@@ -57,6 +58,26 @@ export class ChatApi {
         finally {
             clearTimeout(timeoutId);
         }
+    }
+    /**
+     * Link guest session to authenticated customer after login.
+     */
+    async linkSession(visitorId, customerId) {
+        await this.fetchWithRetry(`${this.baseUrl.replace('/api/chat', '/api/admin/chat')}/link-session`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ visitor_id: visitorId, customer_id: customerId }),
+        });
+    }
+    /**
+     * Submit feedback after chat ends.
+     */
+    async submitFeedback(sessionId, rating, comment) {
+        await this.fetchWithRetry(`${this.baseUrl.replace('/api/chat', '/api/admin/chat')}/sessions/${sessionId}/feedback`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ rating, comment }),
+        });
     }
     /**
      * Create or resume a chat session.
@@ -112,6 +133,7 @@ export class ChatApi {
         fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
             method: 'POST',
             headers: this.getHeaders(),
+            credentials: 'include',
             body: JSON.stringify({ message, cookie_id: this.cookieId }),
             signal: controller.signal,
         })
@@ -203,9 +225,9 @@ export class ChatApi {
         const response = await fetch(`${this.baseUrl}/upload`, {
             method: 'POST',
             headers: this.getHeaders({
-                // Do not set Content-Type for FormData, browser will do it with boundary
                 'Content-Type': '',
             }),
+            credentials: 'include',
             body: formData,
         });
         // Cleanup hack for the header (browser needs it empty to set boundary)
@@ -222,6 +244,7 @@ export class ChatApi {
             await fetch(`${this.baseUrl}/sessions/${sessionId}/typing`, {
                 method: 'POST',
                 headers: this.getHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({ role, is_typing: isTyping }),
             });
         }

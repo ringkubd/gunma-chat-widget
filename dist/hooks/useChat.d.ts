@@ -17,4 +17,6 @@ export declare function useChat(config: ChatWidgetConfig): {
     uploadFile: (file: File) => Promise<void>;
     endChat: () => Promise<void>;
     cancelRequest: () => void;
+    linkSession: (customerId: number) => Promise<void>;
+    submitFeedback: (rating: number, comment?: string) => Promise<void>;
 };

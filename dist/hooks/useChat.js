@@ -63,6 +63,7 @@ export function useChat(config) {
     const sessionRef = useRef(null);
     const isOpenRef = useRef(false);
     const typingTimeoutRef = useRef(null);
+    const channelListenersRef = useRef(new Set());
     // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
     useEffect(() => { sessionRef.current = session; }, [session]);
     useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
@@ -112,10 +113,14 @@ export function useChat(config) {
         if (!session || !echoRef.current)
             return;
         const sessionId = session.id;
-        const channel = echoRef.current.channel(`gunma-chat.${sessionId}`);
+        const channelKey = `gunma-chat.${sessionId}`;
+        const channel = echoRef.current.channel(channelKey);
+        // Prevent double-registering listeners (React Strict Mode / re-renders)
+        if (channelListenersRef.current.has(channelKey))
+            return;
+        channelListenersRef.current.add(channelKey);
         channel.listen('.message.new', (data) => {
             setMessages((prev) => {
-                // Deduplicate by ID or by same role+content (catches optimistic vs server ID mismatch)
                 const isDuplicate = prev.some(m => String(m.id) === String(data.id) ||
                     (m.role === data.role && m.content === data.content));
                 if (isDuplicate)
@@ -127,7 +132,6 @@ export function useChat(config) {
                         created_at: data.created_at
                     }];
             });
-            // If message is from assistant/agent, stop loading and typing
             if (data.role === 'assistant') {
                 setIsLoading(false);
                 setToolStatus(null);
@@ -143,7 +147,8 @@ export function useChat(config) {
             }
         });
         return () => {
-            echoRef.current?.leave(`gunma-chat.${sessionId}`);
+            echoRef.current?.leave(channelKey);
+            channelListenersRef.current.delete(channelKey);
         };
     }, [session?.id]);
     /**
@@ -343,6 +348,18 @@ export function useChat(config) {
             setToolStatus(null);
         }
     }, [sendMessage]);
+    const linkSession = useCallback(async (customerId) => {
+        const visitorId = config.visitorId || getVisitorId(visitorIdKey);
+        await apiRef.current.linkSession(visitorId, customerId);
+        if (sessionRef.current) {
+            setSession(prev => prev ? { ...prev, customer_id: customerId } : prev);
+        }
+    }, [config.visitorId]);
+    const submitFeedback = useCallback(async (rating, comment) => {
+        if (!sessionRef.current)
+            return;
+        await apiRef.current.submitFeedback(sessionRef.current.id, rating, comment);
+    }, []);
     return {
         isOpen,
         isLoading,
@@ -358,5 +375,7 @@ export function useChat(config) {
         uploadFile,
         endChat,
         cancelRequest,
+        linkSession,
+        submitFeedback,
     };
 }

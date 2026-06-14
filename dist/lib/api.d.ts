@@ -13,6 +13,14 @@ export declare class ChatApi {
      */
     private fetchWithRetry;
     /**
+     * Link guest session to authenticated customer after login.
+     */
+    linkSession(visitorId: string, customerId: number): Promise<void>;
+    /**
+     * Submit feedback after chat ends.
+     */
+    submitFeedback(sessionId: string, rating: number, comment?: string): Promise<void>;
+    /**
      * Create or resume a chat session.
      */
     createSession(visitorId: string, customerName?: string, channel?: string): Promise<ChatSession>;
