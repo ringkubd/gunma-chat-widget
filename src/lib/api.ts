@@ -80,9 +80,10 @@ export class ChatApi {
 
   /**
    * Link guest session to authenticated customer after login.
+   * Uses the public chat route so the widget can call it with a Bearer token.
    */
   async linkSession(visitorId: string, customerId: number): Promise<void> {
-    await this.fetchWithRetry(`${this.baseUrl.replace('/api/chat', '/api/admin/chat')}/link-session`, {
+    await this.fetchWithRetry(`${this.baseUrl}/link-session`, {
       method: 'POST',
       headers: this.getHeaders(),
       body: JSON.stringify({ visitor_id: visitorId, customer_id: customerId }),

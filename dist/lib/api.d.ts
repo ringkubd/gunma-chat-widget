@@ -14,6 +14,7 @@ export declare class ChatApi {
     private fetchWithRetry;
     /**
      * Link guest session to authenticated customer after login.
+     * Uses the public chat route so the widget can call it with a Bearer token.
      */
     linkSession(visitorId: string, customerId: number): Promise<void>;
     /**
