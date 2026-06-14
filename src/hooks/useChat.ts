@@ -64,6 +64,7 @@ export function useChat(config: ChatWidgetConfig) {
   const isOpenRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const channelListenersRef = useRef<Set<string>>(new Set());
+  const linkSessionRef = useRef<(customerId: number) => Promise<void>>();
 
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
@@ -189,6 +190,40 @@ export function useChat(config: ChatWidgetConfig) {
         });
     }
   }, []);
+
+  /**
+   * Detect login state changes and link guest session to the authenticated customer.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined' || !sessionRef.current) return;
+
+    const token = resolveToken();
+    const stored = localStorage.getItem('gunma_chat_customer_id');
+    const customerId = stored ? parseInt(stored, 10) : null;
+
+    // Also listen for custom login event fired by host app after login.
+    const handleLogin = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const cid = detail?.customer_id ?? detail?.customerId ?? null;
+      if (cid) {
+        localStorage.setItem('gunma_chat_customer_id', String(cid));
+        linkSessionRef.current?.(cid).catch((err) => {
+          console.warn('[useChat] linkSession on gunma:login failed:', err);
+        });
+      }
+    };
+
+    window.addEventListener('gunma:login', handleLogin);
+
+    // If we now have a token + known customer ID and the session is still a guest, link it.
+    if (token && customerId && !sessionRef.current.customer_id) {
+      linkSessionRef.current?.(customerId).catch((err) => {
+        console.warn('[useChat] linkSession failed:', err);
+      });
+    }
+
+    return () => window.removeEventListener('gunma:login', handleLogin);
+  }, [session?.id, resolveToken]);
 
   /**
    * Initialize or resume a chat session.
@@ -382,9 +417,24 @@ export function useChat(config: ChatWidgetConfig) {
     const visitorId = config.visitorId || getVisitorId(visitorIdKey);
     await apiRef.current.linkSession(visitorId, customerId);
     if (sessionRef.current) {
+      const sessionId = sessionRef.current.id;
       setSession(prev => prev ? { ...prev, customer_id: customerId } : prev);
+      // Refresh session details from backend so the backend session reflects the customer name/email.
+      try {
+        const refreshed = await apiRef.current.getSession(sessionId);
+        if (refreshed?.session) {
+          setSession(refreshed.session);
+        }
+      } catch {
+        // Best-effort refresh.
+      }
     }
   }, [config.visitorId]);
+
+  // Expose stable linkSession via ref so the login listener can call it without circular deps.
+  useEffect(() => {
+    linkSessionRef.current = linkSession;
+  }, [linkSession]);
 
   const submitFeedback = useCallback(async (rating: number, comment?: string) => {
     if (!sessionRef.current) return;
