@@ -108,8 +108,9 @@ export function useCartActions(config: UseCartActionsConfig) {
       const cookie = resolveCookie();
 
       const body: Record<string, unknown> = {
-        product_id:      productId,
-        quantity:        1,
+        product_id:        productId,
+        product_option_id: null,
+        quantity:          1,
         item_price:      productPrice || 0,
         discount_amount: 0,
         tax_percent:     0,
