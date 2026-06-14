@@ -27,7 +27,14 @@ export function ChatWidget(config: ChatWidgetConfig) {
     cancelRequest,
   } = useChat(config);
 
-  const { handleMessageClick } = useCartActions({ apiUrl: config.apiUrl });
+  const { handleMessageClick } = useCartActions({
+    apiUrl: config.apiUrl,
+    routePrefix: config.routes?.prefix,
+    cartUrl: config.cartUrl,
+    cookieId: config.cookieId,
+    apiToken: config.apiToken,
+    getToken: config.getToken,
+  });
   const [lastMessage, setLastMessage] = useState('');
 
   const position = config.position || 'bottom-right';

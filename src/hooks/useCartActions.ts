@@ -23,6 +23,11 @@ interface UseCartActionsConfig {
   cartUrl?: string;
 
   /**
+   * Explicit guest cookie/cart identifier. Takes precedence over localStorage/cookie lookup.
+   */
+  cookieId?: string;
+
+  /**
    * localStorage key for the guest cookie/cart identifier.
    * Default: 'gunma_cookie'
    */
@@ -45,9 +50,24 @@ interface UseCartActionsConfig {
  *
  * Works for both guests (cookie-based) and authenticated customers (token-based).
  */
+function getCookieValue(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;)\\s*' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 export function useCartActions(config: UseCartActionsConfig) {
   const routePrefix = config.routePrefix ?? 'api/chat';
   const cookieKey   = config.cookieKey   ?? 'gunma_cookie';
+
+  const resolveCookie = (): string => {
+    if (config.cookieId) return config.cookieId;
+    const ls = localStorage.getItem(cookieKey);
+    if (ls) return ls;
+    const guestId = getCookieValue('guest_id');
+    if (guestId) return guestId;
+    return Date.now().toString();
+  };
 
   /** Resolve token: explicit > getToken() > undefined */
   const resolveToken = (): string | null => {
@@ -85,21 +105,22 @@ export function useCartActions(config: UseCartActionsConfig) {
 
     try {
       const token  = resolveToken();
-      const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+      const cookie = resolveCookie();
+
+      const body: Record<string, unknown> = {
+        product_id:      productId,
+        quantity:        1,
+        item_price:      productPrice || 0,
+        discount_amount: 0,
+        tax_percent:     0,
+        // Send cookie for guest carts; server ignores it when token is present
+        cookie: token ? undefined : cookie,
+      };
 
       const res = await fetch(config.cartUrl, {
         method: 'POST',
         headers: buildHeaders(),
-        body: JSON.stringify({
-          product_id:        productId,
-          product_option_id: '',
-          quantity:          1,
-          item_price:        productPrice || 0,
-          discount_amount:   0,
-          tax_percent:       0,
-          // Send cookie for guest carts; server ignores it when token is present
-          cookie: token ? undefined : cookie,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (res.ok) {
@@ -119,7 +140,7 @@ export function useCartActions(config: UseCartActionsConfig) {
       btn.style.opacity = '1';
       btn.style.backgroundColor = '';
     }, 2000);
-  }, [config.cartUrl, config.apiToken, config.getToken, cookieKey]);
+  }, [config.cartUrl, config.apiToken, config.getToken, config.cookieId, cookieKey]);
 
   const bulkAddToCart = useCallback(async (target: HTMLElement) => {
     const productIdsStr = target.getAttribute('data-product-ids');
@@ -132,7 +153,7 @@ export function useCartActions(config: UseCartActionsConfig) {
 
     try {
       const token  = resolveToken();
-      const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+      const cookie = resolveCookie();
 
       const res = await fetch(`${config.apiUrl}/${routePrefix}/cart/bulk`, {
         method: 'POST',
@@ -163,7 +184,7 @@ export function useCartActions(config: UseCartActionsConfig) {
         target.style.backgroundColor = '';
       }
     }, 2000);
-  }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey]);
+  }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, config.cookieId, cookieKey]);
 
   const handleMessageClick = useCallback(
     async (e: React.MouseEvent) => {
