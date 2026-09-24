@@ -74,11 +74,14 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     coins, appliedCoins, setAppliedCoins,
     email, setEmail, customerName,
     successOrderId, errorMessage, loading,
-    refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login,
+    refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register,
   } = commerce as UseCommerceResult & { email: string; setEmail: (v: string) => void };
 
   const [loginEmail, setLoginEmail] = useState(email || '');
   const [loginPassword, setLoginPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [regName, setRegName] = useState(customerName || '');
+  const [regPhone, setRegPhone] = useState('');
   const [payMode, setPayMode] = useState<'Cash' | 'Card'>('Cash');
 
   React.useEffect(() => {
@@ -110,13 +113,59 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     );
   }
 
-  /* ── Login ───────────────────────────────────────────────── */
+  /* ── Login / Register ────────────────────────────────────── */
   if (step === 'auth') {
+    const isRegister = authMode === 'register';
+    const canSubmitLogin = !loading && !!loginEmail && !!loginPassword;
+    const canSubmitRegister =
+      !loading &&
+      !!regName.trim() &&
+      !!regPhone.trim() &&
+      !!loginEmail &&
+      loginPassword.length >= 6;
+
     return (
       <div className="gunma-commerce">
         {header}
         <div className="gunma-commerce-section">
-          <p className="gunma-commerce-muted">{s.loginToContinue}</p>
+          <div className="gunma-commerce-modes" style={{ marginBottom: 12 }}>
+            <button
+              className={`gunma-commerce-mode ${!isRegister ? 'is-active' : ''}`}
+              onClick={() => { setAuthMode('login'); }}
+            >
+              {s.loginTab}
+            </button>
+            <button
+              className={`gunma-commerce-mode ${isRegister ? 'is-active' : ''}`}
+              onClick={() => { setAuthMode('register'); }}
+            >
+              {s.registerTab}
+            </button>
+          </div>
+
+          <p className="gunma-commerce-muted">
+            {isRegister ? s.noAccount : s.loginToContinue}
+          </p>
+
+          {isRegister && (
+            <>
+              <input
+                className="gunma-commerce-input"
+                type="text"
+                placeholder={s.fullName}
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+              />
+              <input
+                className="gunma-commerce-input"
+                type="tel"
+                placeholder={s.phone}
+                value={regPhone}
+                onChange={(e) => setRegPhone(e.target.value)}
+              />
+            </>
+          )}
+
           <input
             className="gunma-commerce-input"
             type="email"
@@ -131,18 +180,39 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
           />
-          <button
-            className="gunma-commerce-primary"
-            style={{ backgroundColor: brandColor }}
-            disabled={loading || !loginEmail || !loginPassword}
-            onClick={() => login(loginEmail, loginPassword)}
-          >
-            {loading ? 'Logging in…' : s.loginAndContinue}
-          </button>
+
+          {isRegister ? (
+            <button
+              className="gunma-commerce-primary"
+              style={{ backgroundColor: brandColor }}
+              disabled={!canSubmitRegister}
+              onClick={() =>
+                register({ name: regName.trim(), contact_no: regPhone.trim(), email: loginEmail, password: loginPassword })
+              }
+            >
+              {loading ? '…' : s.createAccount}
+            </button>
+          ) : (
+            <button
+              className="gunma-commerce-primary"
+              style={{ backgroundColor: brandColor }}
+              disabled={!canSubmitLogin}
+              onClick={() => login(loginEmail, loginPassword)}
+            >
+              {loading ? '…' : s.loginAndContinue}
+            </button>
+          )}
+
           {errorMessage && <p className="gunma-commerce-error">{errorMessage}</p>}
+
           <p className="gunma-commerce-muted">
-            Prefer the website?{' '}
-            <a href="/login?redirect=/checkout" target="_blank" rel="noreferrer">Log in here</a>, then reopen chat.
+            {isRegister ? s.haveAccount : s.noAccount}{' '}
+            <a
+              href="#"
+              onClick={(e) => { e.preventDefault(); setAuthMode(isRegister ? 'login' : 'register'); }}
+            >
+              {isRegister ? s.loginTab : s.registerTab}
+            </a>
           </p>
         </div>
       </div>

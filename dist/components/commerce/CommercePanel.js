@@ -25,9 +25,12 @@ function StripePaymentForm({ commerce, brandColor, symbol, strings, }) {
 export function CommercePanel({ commerce, brandColor, onClose, strings }) {
     const s = strings ?? getStrings('en');
     const symbol = commerce.currencySymbol;
-    const { step, cart, subtotal, shippingCharge, totalTax, total, grandTotal, addresses, selectedAddress, selectAddress, deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime, coins, appliedCoins, setAppliedCoins, email, setEmail, customerName, successOrderId, errorMessage, loading, refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, } = commerce;
+    const { step, cart, subtotal, shippingCharge, totalTax, total, grandTotal, addresses, selectedAddress, selectAddress, deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime, coins, appliedCoins, setAppliedCoins, email, setEmail, customerName, successOrderId, errorMessage, loading, refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register, } = commerce;
     const [loginEmail, setLoginEmail] = useState(email || '');
     const [loginPassword, setLoginPassword] = useState('');
+    const [authMode, setAuthMode] = useState('login');
+    const [regName, setRegName] = useState(customerName || '');
+    const [regPhone, setRegPhone] = useState('');
     const [payMode, setPayMode] = useState('Cash');
     React.useEffect(() => {
         refreshCart();
@@ -38,9 +41,16 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }) {
     if (step === 'success') {
         return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-success", children: [_jsx("div", { className: "gunma-commerce-check", children: "\u2713" }), _jsx("p", { children: s.orderPlaced }), successOrderId != null && _jsxs("p", { className: "gunma-commerce-order", children: [s.orderNo, " #", successOrderId] }), _jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, onClick: onClose, children: s.done })] })] }));
     }
-    /* ── Login ───────────────────────────────────────────────── */
+    /* ── Login / Register ────────────────────────────────────── */
     if (step === 'auth') {
-        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-section", children: [_jsx("p", { className: "gunma-commerce-muted", children: s.loginToContinue }), _jsx("input", { className: "gunma-commerce-input", type: "email", placeholder: s.email, value: loginEmail, onChange: (e) => setLoginEmail(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", type: "password", placeholder: s.password, value: loginPassword, onChange: (e) => setLoginPassword(e.target.value) }), _jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, disabled: loading || !loginEmail || !loginPassword, onClick: () => login(loginEmail, loginPassword), children: loading ? 'Logging in…' : s.loginAndContinue }), errorMessage && _jsx("p", { className: "gunma-commerce-error", children: errorMessage }), _jsxs("p", { className: "gunma-commerce-muted", children: ["Prefer the website?", ' ', _jsx("a", { href: "/login?redirect=/checkout", target: "_blank", rel: "noreferrer", children: "Log in here" }), ", then reopen chat."] })] })] }));
+        const isRegister = authMode === 'register';
+        const canSubmitLogin = !loading && !!loginEmail && !!loginPassword;
+        const canSubmitRegister = !loading &&
+            !!regName.trim() &&
+            !!regPhone.trim() &&
+            !!loginEmail &&
+            loginPassword.length >= 6;
+        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-section", children: [_jsxs("div", { className: "gunma-commerce-modes", style: { marginBottom: 12 }, children: [_jsx("button", { className: `gunma-commerce-mode ${!isRegister ? 'is-active' : ''}`, onClick: () => { setAuthMode('login'); }, children: s.loginTab }), _jsx("button", { className: `gunma-commerce-mode ${isRegister ? 'is-active' : ''}`, onClick: () => { setAuthMode('register'); }, children: s.registerTab })] }), _jsx("p", { className: "gunma-commerce-muted", children: isRegister ? s.noAccount : s.loginToContinue }), isRegister && (_jsxs(_Fragment, { children: [_jsx("input", { className: "gunma-commerce-input", type: "text", placeholder: s.fullName, value: regName, onChange: (e) => setRegName(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", type: "tel", placeholder: s.phone, value: regPhone, onChange: (e) => setRegPhone(e.target.value) })] })), _jsx("input", { className: "gunma-commerce-input", type: "email", placeholder: s.email, value: loginEmail, onChange: (e) => setLoginEmail(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", type: "password", placeholder: s.password, value: loginPassword, onChange: (e) => setLoginPassword(e.target.value) }), isRegister ? (_jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, disabled: !canSubmitRegister, onClick: () => register({ name: regName.trim(), contact_no: regPhone.trim(), email: loginEmail, password: loginPassword }), children: loading ? '…' : s.createAccount })) : (_jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, disabled: !canSubmitLogin, onClick: () => login(loginEmail, loginPassword), children: loading ? '…' : s.loginAndContinue })), errorMessage && _jsx("p", { className: "gunma-commerce-error", children: errorMessage }), _jsxs("p", { className: "gunma-commerce-muted", children: [isRegister ? s.haveAccount : s.noAccount, ' ', _jsx("a", { href: "#", onClick: (e) => { e.preventDefault(); setAuthMode(isRegister ? 'login' : 'register'); }, children: isRegister ? s.loginTab : s.registerTab })] })] })] }));
     }
     /* ── Processing ──────────────────────────────────────────── */
     if (step === 'processing') {

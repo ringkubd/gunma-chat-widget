@@ -50,6 +50,21 @@ export declare class CommerceApi {
         token: string;
         user?: any;
     }>;
+    /**
+     * Register a new customer. Mirrors the storefront /Register payload
+     * (name, contact_no, email, password, cookie) and stores the returned token.
+     */
+    register(payload: {
+        name: string;
+        contact_no: string;
+        email: string;
+        password: string;
+        country?: string;
+        native_language?: string;
+    }): Promise<{
+        token: string;
+        user?: any;
+    }>;
     isLoggedIn(): Promise<boolean>;
     createOrder(payload: Record<string, any>): Promise<CommerceOrderResult>;
     getStripeSecret(amount: number, email: string, orderId: number | string): Promise<string>;

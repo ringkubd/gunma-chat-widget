@@ -38,6 +38,13 @@ export interface WidgetStrings {
   email: string;
   password: string;
   loginAndContinue: string;
+  registerTab: string;
+  loginTab: string;
+  fullName: string;
+  phone: string;
+  createAccount: string;
+  haveAccount: string;
+  noAccount: string;
   orderPlaced: string;
   orderNo: string;
   done: string;
@@ -80,6 +87,13 @@ const en: WidgetStrings = {
   email: 'Email',
   password: 'Password',
   loginAndContinue: 'Log in & continue',
+  registerTab: 'Create account',
+  loginTab: 'Log in',
+  fullName: 'Full name',
+  phone: 'Phone number',
+  createAccount: 'Create account & continue',
+  haveAccount: 'Already have an account?',
+  noAccount: "Don't have an account?",
   orderPlaced: 'Order placed successfully!',
   orderNo: 'Order No.',
   done: 'Done',
@@ -123,6 +137,13 @@ const bn: WidgetStrings = {
   email: 'ইমেইল',
   password: 'পাসওয়ার্ড',
   loginAndContinue: 'লগইন করে চালিয়ে যান',
+  registerTab: 'অ্যাকাউন্ট খুলুন',
+  loginTab: 'লগইন',
+  fullName: 'পুরো নাম',
+  phone: 'ফোন নম্বর',
+  createAccount: 'অ্যাকাউন্ট খুলে চালিয়ে যান',
+  haveAccount: 'আগে থেকেই অ্যাকাউন্ট আছে?',
+  noAccount: 'অ্যাকাউন্ট নেই?',
   orderPlaced: 'অর্ডার সফলভাবে সম্পন্ন হয়েছে!',
   orderNo: 'অর্ডার নম্বর',
   done: 'সম্পন্ন',
@@ -166,6 +187,13 @@ const ja: WidgetStrings = {
   email: 'メール',
   password: 'パスワード',
   loginAndContinue: 'ログインして続行',
+  registerTab: 'アカウント作成',
+  loginTab: 'ログイン',
+  fullName: 'お名前',
+  phone: '電話番号',
+  createAccount: 'アカウントを作成して続行',
+  haveAccount: 'すでにアカウントをお持ちですか？',
+  noAccount: 'アカウントをお持ちでないですか？',
   orderPlaced: 'ご注文が完了しました！',
   orderNo: '注文番号',
   done: '完了',

@@ -1261,3 +1261,18 @@
 @keyframes gunma-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Uploaded / inline images ── */
+.gunma-msg-img-container {
+  margin: 6px 0;
+}
+.gunma-msg-img {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: var(--gunma-radius-sm, 10px);
+  display: block;
+  object-fit: cover;
+}
+.gunma-msg-img--uploaded {
+  border: 1px solid var(--gunma-border, #e2e8f0);
+}

@@ -36,6 +36,12 @@ export interface UseCommerceResult {
     prepareCard: () => Promise<void>;
     confirmCard: (stripe: any, elements: any) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
+    register: (payload: {
+        name: string;
+        contact_no: string;
+        email: string;
+        password: string;
+    }) => Promise<void>;
     api: CommerceApi;
     stripePublishableKey?: string;
     currencySymbol: string;

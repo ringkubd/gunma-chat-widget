@@ -90,6 +90,12 @@ export interface UseCommerceResult {
   prepareCard: () => Promise<void>;
   confirmCard: (stripe: any, elements: any) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: {
+    name: string;
+    contact_no: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
 
   api: CommerceApi;
   stripePublishableKey?: string;
@@ -462,6 +468,29 @@ export function useCommerce(
     [api, startCheckout],
   );
 
+  const register = useCallback(
+    async (payload: { name: string; contact_no: string; email: string; password: string }) => {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const res = await api.register(payload);
+        setEmail(payload.email);
+        setCustomerName(payload.name);
+        const cid = res?.user?.id ?? (res?.user as any)?.customer_id ?? null;
+        if (typeof window !== 'undefined') {
+          if (cid) localStorage.setItem('gunma_chat_customer_id', String(cid));
+          window.dispatchEvent(new CustomEvent('gunma:login', { detail: { customer_id: cid, user: res?.user } }));
+        }
+        await startCheckout();
+      } catch (e: any) {
+        setErrorMessage(e?.message ?? 'Registration failed.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [api, startCheckout],
+  );
+
   return {
     enabled,
     step,
@@ -498,6 +527,7 @@ export function useCommerce(
     prepareCard,
     confirmCard,
     login,
+    register,
     api,
     stripePublishableKey: cfg?.stripePublishableKey,
     currencySymbol,

@@ -205,6 +205,38 @@ export class CommerceApi {
     return { token, user: data?.user ?? data?.data?.user };
   }
 
+  /**
+   * Register a new customer. Mirrors the storefront /Register payload
+   * (name, contact_no, email, password, cookie) and stores the returned token.
+   */
+  async register(payload: {
+    name: string;
+    contact_no: string;
+    email: string;
+    password: string;
+    country?: string;
+    native_language?: string;
+  }): Promise<{ token: string; user?: any }> {
+    const cookie = this.getCookie() ?? '';
+    const data = await this.request<any>('/Register', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, cookie }),
+    });
+    const token = data?.token ?? data?.data?.token;
+    if (!token) {
+      // 400 validation errors come back with a message object.
+      const msg = data?.message ?? data?.data?.message;
+      const text = typeof msg === 'string'
+        ? msg
+        : msg
+          ? Object.values(msg).flat().join(' ')
+          : 'Registration failed.';
+      throw new Error(text);
+    }
+    if (typeof window !== 'undefined') localStorage.setItem('tk', token);
+    return { token, user: data?.user ?? data?.data?.user };
+  }
+
   async isLoggedIn(): Promise<boolean> {
     return !!this.getToken();
   }

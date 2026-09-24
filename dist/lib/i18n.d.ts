@@ -36,6 +36,13 @@ export interface WidgetStrings {
     email: string;
     password: string;
     loginAndContinue: string;
+    registerTab: string;
+    loginTab: string;
+    fullName: string;
+    phone: string;
+    createAccount: string;
+    haveAccount: string;
+    noAccount: string;
     orderPlaced: string;
     orderNo: string;
     done: string;
