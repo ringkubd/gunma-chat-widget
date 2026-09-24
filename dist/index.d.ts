@@ -10,4 +10,7 @@ export { useCartActions } from './hooks/useCartActions';
 export { useCommerce } from './hooks/useCommerce';
 export { CommercePanel } from './components/commerce/CommercePanel';
 export { ChatApi } from './lib/api';
+export { sanitizeHtml, escapeHtml, escapeAttr } from './lib/sanitize';
+export { getStrings } from './lib/i18n';
+export type { WidgetLocale, WidgetStrings } from './lib/i18n';
 export type { ChatWidgetConfig, ChatPusherConfig, ChatRouteConfig, ChatStorageConfig, ChatCommerceConfig, ChatMessage, ChatSession, ChatState, SSEEvent, SSEEventType, CommerceAddress, CommerceCartItem, CommerceDeliveryInfo, CommerceOrderResult, CommerceStep, } from './types';

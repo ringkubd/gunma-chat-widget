@@ -11,6 +11,8 @@ export declare function useChat(config: ChatWidgetConfig): {
     toolStatus: string | null;
     isAiEnabled: boolean;
     isAgentTyping: boolean;
+    isConnected: boolean;
+    unreadCount: number;
     toggle: () => void;
     sendMessage: (text: string) => Promise<void>;
     sendTyping: (isTyping: boolean) => void;

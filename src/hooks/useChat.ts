@@ -35,6 +35,8 @@ export function useChat(config: ChatWidgetConfig) {
   const [toolStatus, setToolStatus] = useState<string | null>(null);
   const [isAiEnabled, setIsAiEnabled] = useState(true);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // --- Resolved configurable values ---
   const sessionIdKey  = config.storage?.sessionIdKey  ?? 'gunma_session_id';
@@ -103,6 +105,15 @@ export function useChat(config: ChatWidgetConfig) {
           },
         },
       });
+
+      // Track real connection status for the header indicator.
+      const connection = (echoRef.current as any)?.connector?.pusher?.connection;
+      if (connection) {
+        connection.bind('connected', () => setIsConnected(true));
+        connection.bind('disconnected', () => setIsConnected(false));
+        connection.bind('unavailable', () => setIsConnected(false));
+        setIsConnected(connection.state === 'connected');
+      }
     } catch (err) {
       console.warn('[useChat] Echo init failed:', err);
     }
@@ -146,6 +157,8 @@ export function useChat(config: ChatWidgetConfig) {
         setIsLoading(false);
         setToolStatus(null);
         setIsAgentTyping(false);
+        // Count as unread when the panel is closed.
+        if (!isOpenRef.current) setUnreadCount((c) => c + 1);
       }
     });
 
@@ -385,6 +398,7 @@ export function useChat(config: ChatWidgetConfig) {
     if (willOpen && !sessionRef.current) {
       initSession();
     }
+    if (willOpen) setUnreadCount(0);
     setIsOpen(willOpen);
     isOpenRef.current = willOpen;
   }, [initSession]);
@@ -491,6 +505,8 @@ export function useChat(config: ChatWidgetConfig) {
     toolStatus,
     isAiEnabled,
     isAgentTyping,
+    isConnected,
+    unreadCount,
     toggle,
     sendMessage,
     sendTyping,

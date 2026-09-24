@@ -11,6 +11,7 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
+import { getStrings } from '../lib/i18n';
 
 export function ChatWidget(config: ChatWidgetConfig) {
   const {
@@ -21,6 +22,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
     toolStatus,
     isAiEnabled,
     isAgentTyping,
+    isConnected,
+    unreadCount,
     toggle,
     sendMessage,
     sendTyping,
@@ -74,6 +77,9 @@ export function ChatWidget(config: ChatWidgetConfig) {
   const brandColor = config.brandColor || '#10b981';
   const brandName = config.brandName || 'Piku';
   const welcomeMessage = config.welcomeMessage || 'Hello, this is Piku from Gunma Halal Food Customer Support. How may I assist you today?';
+  const theme = config.theme || 'auto';
+  const themeClass = theme === 'dark' ? 'gunma-theme-dark' : theme === 'light' ? 'gunma-theme-light' : 'gunma-theme-auto';
+  const strings = getStrings(config.locale);
 
   const positionStyle: React.CSSProperties = {
     position: 'fixed',
@@ -95,7 +101,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   }, [lastMessage, sendMessage]);
 
   return (
-    <div style={positionStyle} className="gunma-chat-root">
+    <div style={positionStyle} className={`gunma-chat-root ${themeClass}`}>
       {/* Floating Chat Panel */}
       {isOpen && (
         <div
@@ -107,9 +113,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
             brandColor={brandColor}
             onClose={toggle}
             onEndChat={endChat}
-            isConnected={true}
+            isConnected={isConnected}
             onCartClick={commerce.enabled ? () => setShowCommerce((v) => !v) : undefined}
             cartCount={commerce.enabled ? commerce.cart.length : 0}
+            strings={strings}
           />
 
           {commerce.enabled && showCommerce ? (
@@ -118,6 +125,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
               brandColor={brandColor}
               onClose={() => setShowCommerce(false)}
               freeShippingThreshold={commerce.freeShippingThreshold}
+              strings={strings}
             />
           ) : (
             <>
@@ -127,6 +135,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
                   welcomeMessage={welcomeMessage}
                   brandColor={brandColor}
                   websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
+                  currencySymbol={config.commerce?.currencySymbol ?? '¥'}
                 />
               </div>
 
@@ -165,7 +174,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
                 onUpload={uploadFile}
                 onTyping={sendTyping}
                 isLoading={isLoading}
-                placeholder={config.placeholder || 'Type a message...'}
+                placeholder={config.placeholder || strings.placeholder}
               />
             </>
           )}
@@ -177,7 +186,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
         isOpen={isOpen}
         onClick={toggle}
         brandColor={brandColor}
-        unreadCount={0}
+        unreadCount={unreadCount}
       />
     </div>
   );

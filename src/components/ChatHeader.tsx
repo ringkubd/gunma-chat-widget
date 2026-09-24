@@ -12,9 +12,33 @@ interface ChatHeaderProps {
   onCartClick?: () => void;
   /** Number of items in the cart (shows a badge when > 0). */
   cartCount?: number;
+  /** UI strings (i18n). */
+  strings?: {
+    online: string;
+    reconnecting: string;
+    endChat: string;
+    minimize: string;
+    cart: string;
+  };
 }
 
-export function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnected = true, onCartClick, cartCount = 0 }: ChatHeaderProps) {
+export function ChatHeader({
+  brandName,
+  brandColor,
+  onClose,
+  onEndChat,
+  isConnected = true,
+  onCartClick,
+  cartCount = 0,
+  strings,
+}: ChatHeaderProps) {
+  const s = strings ?? {
+    online: 'Online',
+    reconnecting: 'Reconnecting...',
+    endChat: 'End chat',
+    minimize: 'Minimize',
+    cart: 'Cart & checkout',
+  };
   return (
     <div className="gunma-header" style={{ background: `linear-gradient(135deg, ${brandColor}, ${adjustColor(brandColor, -30)})` }}>
       <div className="gunma-header-info">
@@ -28,7 +52,7 @@ export function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnec
           <h3 className="gunma-header-title">{brandName}</h3>
           <span className="gunma-header-status">
             <span className={`gunma-connection-dot ${isConnected ? 'gunma-online-dot' : 'gunma-offline-dot'}`} />
-            {isConnected ? 'Online' : 'Reconnecting...'}
+            {isConnected ? s.online : s.reconnecting}
           </span>
         </div>
       </div>
@@ -38,8 +62,8 @@ export function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnec
           <button
             className="gunma-header-btn gunma-header-cart"
             onClick={onCartClick}
-            title="Cart & checkout"
-            aria-label="Open cart and checkout"
+            title={s.cart}
+            aria-label={s.cart}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="9" cy="21" r="1" />
@@ -53,8 +77,8 @@ export function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnec
         <button
           className="gunma-header-btn"
           onClick={onEndChat}
-          title="End chat"
-          aria-label="End chat session"
+          title={s.endChat}
+          aria-label={s.endChat}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
@@ -64,8 +88,8 @@ export function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnec
         <button
           className="gunma-header-btn"
           onClick={onClose}
-          title="Minimize"
-          aria-label="Minimize chat"
+          title={s.minimize}
+          aria-label={s.minimize}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="5" y1="12" x2="19" y2="12" />

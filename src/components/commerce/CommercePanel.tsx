@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import type { UseCommerceResult } from '../../hooks/useCommerce';
+import { getStrings, type WidgetStrings } from '../../lib/i18n';
 
 /** Cache Stripe.js instances per publishable key. */
 const stripeCache: Record<string, ReturnType<typeof loadStripe>> = {};
@@ -18,6 +19,8 @@ interface CommercePanelProps {
   onClose: () => void;
   /** Whether the chat header's cart button opened this panel. */
   freeShippingThreshold: number;
+  /** UI strings (i18n). */
+  strings?: WidgetStrings;
 }
 
 function money(symbol: string, n: number): string {
@@ -29,10 +32,12 @@ function StripePaymentForm({
   commerce,
   brandColor,
   symbol,
+  strings,
 }: {
   commerce: UseCommerceResult;
   brandColor: string;
   symbol: string;
+  strings: WidgetStrings;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -42,7 +47,7 @@ function StripePaymentForm({
   return (
     <div className="gunma-commerce-section">
       <div className="gunma-commerce-total-row">
-        <span>Amount to pay</span>
+        <span>{strings.total}</span>
         <strong>{money(symbol, commerce.grandTotal)}</strong>
       </div>
       <PaymentElement id="payment-element" onChange={(e) => setComplete(e.complete)} />
@@ -52,14 +57,15 @@ function StripePaymentForm({
         disabled={busy || !stripe || !elements || !complete}
         onClick={() => commerce.confirmCard(stripe, elements)}
       >
-        {busy ? 'Processing…' : `Pay ${money(symbol, commerce.grandTotal)}`}
+        {busy ? '…' : strings.payNow(money(symbol, commerce.grandTotal))}
       </button>
       {commerce.errorMessage && <p className="gunma-commerce-error">{commerce.errorMessage}</p>}
     </div>
   );
 }
 
-export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelProps) {
+export function CommercePanel({ commerce, brandColor, onClose, strings }: CommercePanelProps) {
+  const s = strings ?? getStrings('en');
   const symbol = commerce.currencySymbol;
   const {
     step, cart, subtotal, shippingCharge, totalTax, total, grandTotal,
@@ -82,7 +88,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
 
   const header = (
     <div className="gunma-commerce-head">
-      <span>Checkout</span>
+      <span>{s.checkout}</span>
       <button className="gunma-commerce-close" onClick={onClose} aria-label="Close">✕</button>
     </div>
   );
@@ -94,10 +100,10 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
         {header}
         <div className="gunma-commerce-success">
           <div className="gunma-commerce-check">✓</div>
-          <p>Order placed successfully!</p>
-          {successOrderId != null && <p className="gunma-commerce-order">Order No. #{successOrderId}</p>}
+          <p>{s.orderPlaced}</p>
+          {successOrderId != null && <p className="gunma-commerce-order">{s.orderNo} #{successOrderId}</p>}
           <button className="gunma-commerce-primary" style={{ backgroundColor: brandColor }} onClick={onClose}>
-            Done
+            {s.done}
           </button>
         </div>
       </div>
@@ -110,18 +116,18 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
       <div className="gunma-commerce">
         {header}
         <div className="gunma-commerce-section">
-          <p className="gunma-commerce-muted">Please log in to continue checkout.</p>
+          <p className="gunma-commerce-muted">{s.loginToContinue}</p>
           <input
             className="gunma-commerce-input"
             type="email"
-            placeholder="Email"
+            placeholder={s.email}
             value={loginEmail}
             onChange={(e) => setLoginEmail(e.target.value)}
           />
           <input
             className="gunma-commerce-input"
             type="password"
-            placeholder="Password"
+            placeholder={s.password}
             value={loginPassword}
             onChange={(e) => setLoginPassword(e.target.value)}
           />
@@ -131,7 +137,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
             disabled={loading || !loginEmail || !loginPassword}
             onClick={() => login(loginEmail, loginPassword)}
           >
-            {loading ? 'Logging in…' : 'Log in & continue'}
+            {loading ? 'Logging in…' : s.loginAndContinue}
           </button>
           {errorMessage && <p className="gunma-commerce-error">{errorMessage}</p>}
           <p className="gunma-commerce-muted">
@@ -150,7 +156,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
         {header}
         <div className="gunma-commerce-success">
           <div className="gunma-commerce-spinner" />
-          <p>Processing your order…</p>
+          <p>{s.processing}</p>
         </div>
       </div>
     );
@@ -164,7 +170,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
         <div className="gunma-commerce-section">
           <p className="gunma-commerce-error">{errorMessage ?? 'Something went wrong.'}</p>
           <button className="gunma-commerce-primary" style={{ backgroundColor: brandColor }} onClick={() => startCheckout()}>
-            Try again
+            {s.tryAgain}
           </button>
         </div>
       </div>
@@ -178,7 +184,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
       <div className="gunma-commerce">
         {header}
         <div className="gunma-commerce-section">
-          <h4 className="gunma-commerce-h">Delivery</h4>
+          <h4 className="gunma-commerce-h">{s.delivery}</h4>
           {selectedAddress ? (
             <div className="gunma-commerce-address">
               <strong>{selectedAddress.name}</strong>
@@ -210,7 +216,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
             </select>
           )}
 
-          <label className="gunma-commerce-label">Delivery date</label>
+          <label className="gunma-commerce-label">{s.deliveryDate}</label>
           <input
             className="gunma-commerce-input"
             type="date"
@@ -220,7 +226,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
           />
           {deliveryInfo?.schedules?.length ? (
             <>
-              <label className="gunma-commerce-label">Delivery time</label>
+              <label className="gunma-commerce-label">{s.deliveryTime}</label>
               <select
                 className="gunma-commerce-input"
                 value={deliveryTime}
@@ -240,46 +246,46 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
                 checked={appliedCoins > 0}
                 onChange={(e) => setAppliedCoins(e.target.checked ? coins : 0)}
               />
-              Use {coins} loyalty coins
+              {s.useCoins(coins)}
             </label>
           )}
         </div>
 
         <div className="gunma-commerce-section">
-          <h4 className="gunma-commerce-h">Payment</h4>
+          <h4 className="gunma-commerce-h">{s.payment}</h4>
           <div className="gunma-commerce-modes">
             <button
               className={`gunma-commerce-mode ${payMode === 'Cash' ? 'is-active' : ''}`}
               onClick={() => setPayMode('Cash')}
             >
-              Cash on Delivery
+              {s.cashOnDelivery}
             </button>
             {cardEnabled && (
               <button
                 className={`gunma-commerce-mode ${payMode === 'Card' ? 'is-active' : ''}`}
                 onClick={() => setPayMode('Card')}
               >
-                Credit / Debit Card
+                {s.card}
               </button>
             )}
           </div>
 
           <div className="gunma-commerce-total-row">
-            <span>Subtotal</span><span>{money(symbol, subtotal)}</span>
+            <span>{s.subtotal}</span><span>{money(symbol, subtotal)}</span>
           </div>
           <div className="gunma-commerce-total-row">
-            <span>Tax</span><span>{money(symbol, totalTax)}</span>
+            <span>{s.tax}</span><span>{money(symbol, totalTax)}</span>
           </div>
           <div className="gunma-commerce-total-row">
-            <span>Shipping</span><span>{shippingCharge === 0 ? 'Free' : money(symbol, shippingCharge)}</span>
+            <span>{s.shipping}</span><span>{shippingCharge === 0 ? s.free : money(symbol, shippingCharge)}</span>
           </div>
           {appliedCoins > 0 && (
             <div className="gunma-commerce-total-row">
-              <span>Coins</span><span>-{money(symbol, appliedCoins)}</span>
+              <span>{s.coins}</span><span>-{money(symbol, appliedCoins)}</span>
             </div>
           )}
           <div className="gunma-commerce-total-row gunma-commerce-grand">
-            <span>Total</span><strong>{money(symbol, grandTotal)}</strong>
+            <span>{s.total}</span><strong>{money(symbol, grandTotal)}</strong>
           </div>
 
           {payMode === 'Cash' ? (
@@ -289,7 +295,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
               disabled={loading || !deliveryDate || !deliveryTime}
               onClick={() => confirmCash()}
             >
-              {loading ? 'Placing order…' : 'Place order (Cash)'}
+              {loading ? 'Placing…' : s.placeOrderCash}
             </button>
           ) : (
             <button
@@ -298,7 +304,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
               disabled={loading || !deliveryDate || !deliveryTime}
               onClick={() => prepareCard()}
             >
-              Continue to payment
+              {s.continueToPayment}
             </button>
           )}
           {errorMessage && <p className="gunma-commerce-error">{errorMessage}</p>}
@@ -309,7 +315,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
             stripe={getStripePromise(commerce.stripePublishableKey!)}
             options={{ clientSecret: commerce.stripeSecret }}
           >
-            <StripePaymentForm commerce={commerce} brandColor={brandColor} symbol={symbol} />
+            <StripePaymentForm commerce={commerce} brandColor={brandColor} symbol={symbol} strings={s} />
           </Elements>
         )}
       </div>
@@ -322,10 +328,10 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
       <div className="gunma-commerce">
         {header}
         <div className="gunma-commerce-section">
-          <p className="gunma-commerce-muted">No delivery address found.</p>
+          <p className="gunma-commerce-muted">{s.noAddress}</p>
           <a className="gunma-commerce-primary" style={{ backgroundColor: brandColor, textAlign: 'center' }}
              href="/new-address" target="_blank" rel="noreferrer">
-            Add a new address
+            {s.addAddress}
           </a>
         </div>
       </div>
@@ -338,7 +344,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
       {header}
       <div className="gunma-commerce-section">
         {cart.length === 0 ? (
-          <p className="gunma-commerce-muted">Your cart is empty.</p>
+          <p className="gunma-commerce-muted">{s.cartEmpty}</p>
         ) : (
           <>
             {cart.map((item) => (
@@ -356,11 +362,11 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
               </div>
             ))}
             <div className="gunma-commerce-total-row gunma-commerce-grand">
-              <span>Subtotal</span><strong>{money(symbol, subtotal)}</strong>
+              <span>{s.subtotal}</span><strong>{money(symbol, subtotal)}</strong>
             </div>
             {subtotal < commerce.freeShippingThreshold && (
               <p className="gunma-commerce-muted">
-                Add {money(symbol, commerce.freeShippingThreshold - subtotal)} more for free shipping.
+                {s.freeShipHint(money(symbol, commerce.freeShippingThreshold - subtotal))}
               </p>
             )}
             <button
@@ -369,7 +375,7 @@ export function CommercePanel({ commerce, brandColor, onClose }: CommercePanelPr
               disabled={loading}
               onClick={() => startCheckout()}
             >
-              {loading ? 'Please wait…' : 'Checkout'}
+              {loading ? 'Please wait…' : s.checkout}
             </button>
             {errorMessage && <p className="gunma-commerce-error">{errorMessage}</p>}
           </>

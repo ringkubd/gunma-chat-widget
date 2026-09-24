@@ -34,6 +34,8 @@ export function useChat(config) {
     const [toolStatus, setToolStatus] = useState(null);
     const [isAiEnabled, setIsAiEnabled] = useState(true);
     const [isAgentTyping, setIsAgentTyping] = useState(false);
+    const [isConnected, setIsConnected] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
     // --- Resolved configurable values ---
     const sessionIdKey = config.storage?.sessionIdKey ?? 'gunma_session_id';
     const visitorIdKey = config.storage?.visitorIdKey ?? 'gunma_visitor_id';
@@ -99,6 +101,14 @@ export function useChat(config) {
                     },
                 },
             });
+            // Track real connection status for the header indicator.
+            const connection = echoRef.current?.connector?.pusher?.connection;
+            if (connection) {
+                connection.bind('connected', () => setIsConnected(true));
+                connection.bind('disconnected', () => setIsConnected(false));
+                connection.bind('unavailable', () => setIsConnected(false));
+                setIsConnected(connection.state === 'connected');
+            }
         }
         catch (err) {
             console.warn('[useChat] Echo init failed:', err);
@@ -137,6 +147,9 @@ export function useChat(config) {
                 setIsLoading(false);
                 setToolStatus(null);
                 setIsAgentTyping(false);
+                // Count as unread when the panel is closed.
+                if (!isOpenRef.current)
+                    setUnreadCount((c) => c + 1);
             }
         });
         channel.listen('.ai.status_changed', (data) => {
@@ -353,6 +366,8 @@ export function useChat(config) {
         if (willOpen && !sessionRef.current) {
             initSession();
         }
+        if (willOpen)
+            setUnreadCount(0);
         setIsOpen(willOpen);
         isOpenRef.current = willOpen;
     }, [initSession]);
@@ -455,6 +470,8 @@ export function useChat(config) {
         toolStatus,
         isAiEnabled,
         isAgentTyping,
+        isConnected,
+        unreadCount,
         toggle,
         sendMessage,
         sendTyping,

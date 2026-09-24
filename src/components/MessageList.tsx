@@ -9,9 +9,11 @@ interface MessageListProps {
   welcomeMessage: string;
   brandColor: string;
   websiteUrl: string;
+  /** Currency symbol shown on product cards. Default: '¥'. */
+  currencySymbol?: string;
 }
 
-export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl }: MessageListProps) {
+export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol = '¥' }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages
@@ -35,7 +37,7 @@ export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl }
 
       {/* Messages */}
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} brandColor={brandColor} websiteUrl={websiteUrl} />
+        <MessageBubble key={msg.id} message={msg} brandColor={brandColor} websiteUrl={websiteUrl} currencySymbol={currencySymbol} />
       ))}
 
       <div ref={bottomRef} />

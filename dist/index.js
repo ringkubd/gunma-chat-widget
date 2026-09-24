@@ -15,3 +15,5 @@ export { useCommerce } from './hooks/useCommerce';
 export { CommercePanel } from './components/commerce/CommercePanel';
 // API Client
 export { ChatApi } from './lib/api';
+export { sanitizeHtml, escapeHtml, escapeAttr } from './lib/sanitize';
+export { getStrings } from './lib/i18n';

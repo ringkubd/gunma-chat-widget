@@ -44,6 +44,8 @@ export interface ChatWidgetConfig {
   apiUrl: string;
   position?: 'bottom-right' | 'bottom-left';
   theme?: 'light' | 'dark' | 'auto';
+  /** UI locale. Agent replies follow the customer's own language. Default: 'en' */
+  locale?: 'en' | 'bn' | 'ja';
   brandName?: string;
   brandColor?: string;
   welcomeMessage?: string;

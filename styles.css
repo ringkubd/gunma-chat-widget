@@ -27,8 +27,9 @@
 }
 
 /* ── Dark Mode ──────────────────────────────────────────────────── */
+/* Applied automatically (auto) or forced via .gunma-theme-dark/.light */
 @media (prefers-color-scheme: dark) {
-  :root {
+  .gunma-theme-auto {
     --gunma-bg: #0f172a;
     --gunma-bg-secondary: #1e293b;
     --gunma-bg-tertiary: #334155;
@@ -38,6 +39,28 @@
     --gunma-border: #334155;
     --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
+}
+
+.gunma-theme-dark {
+  --gunma-bg: #0f172a;
+  --gunma-bg-secondary: #1e293b;
+  --gunma-bg-tertiary: #334155;
+  --gunma-text: #f1f5f9;
+  --gunma-text-secondary: #94a3b8;
+  --gunma-text-muted: #64748b;
+  --gunma-border: #334155;
+  --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.gunma-theme-light {
+  --gunma-bg: #ffffff;
+  --gunma-bg-secondary: #f8fafc;
+  --gunma-bg-tertiary: #f1f5f9;
+  --gunma-text: #0f172a;
+  --gunma-text-secondary: #64748b;
+  --gunma-text-muted: #94a3b8;
+  --gunma-border: #e2e8f0;
+  --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
 }
 
 /* ── Root Container ─────────────────────────────────────────────── */

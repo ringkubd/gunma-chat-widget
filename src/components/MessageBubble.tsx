@@ -2,14 +2,17 @@
 
 import React from 'react';
 import type { ChatMessage } from '../types';
+import { escapeAttr, escapeHtml, sanitizeHtml } from '../lib/sanitize';
 
 interface MessageBubbleProps {
   message: ChatMessage;
   brandColor: string;
   websiteUrl: string;
+  /** Currency symbol for product cards. Default: '¥'. */
+  currencySymbol?: string;
 }
 
-export function MessageBubble({ message, brandColor, websiteUrl }: MessageBubbleProps) {
+export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥' }: MessageBubbleProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -28,7 +31,7 @@ export function MessageBubble({ message, brandColor, websiteUrl }: MessageBubble
         <div
           className="gunma-msg-content"
           suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content, websiteUrl) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content, websiteUrl, currencySymbol) }}
         />
         <span className="gunma-msg-time">
           {formatTime(message.created_at)}
@@ -38,7 +41,7 @@ export function MessageBubble({ message, brandColor, websiteUrl }: MessageBubble
   );
 }
 
-function renderMarkdown(text: string, websiteUrl: string): string {
+function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string): string {
   if (!text) return '';
 
   // ── Step 1: Extract and replace product blocks (Improved Regex for newlines) ──
@@ -55,17 +58,17 @@ function renderMarkdown(text: string, websiteUrl: string): string {
       const cleanSlug = slug.trim();
       
       productIds.push(cleanId);
-      
+
       const card = `
-        <div class="gunma-product-mini-card" data-id="${cleanId}">
-          <a href="${websiteUrl}/${cleanSlug}" target="_blank" rel="noopener" class="gunma-product-mini-img-link">
-            <img src="${cleanImage}" alt="${cleanTitle}" loading="lazy"/>
+        <div class="gunma-product-mini-card" data-id="${escapeAttr(cleanId)}">
+          <a href="${escapeAttr(`${websiteUrl}/${cleanSlug}`)}" target="_blank" rel="noopener" class="gunma-product-mini-img-link">
+            <img src="${escapeAttr(cleanImage)}" alt="${escapeAttr(cleanTitle)}" loading="lazy"/>
           </a>
           <div class="gunma-product-mini-body">
-            <span class="gunma-product-mini-title">${cleanTitle}</span>
+            <span class="gunma-product-mini-title">${escapeHtml(cleanTitle)}</span>
             <div class="gunma-product-mini-footer">
-              <span class="gunma-product-mini-price">৳${cleanPrice}</span>
-              <button data-product-id="${cleanId}" data-product-price="${cleanPrice}" class="gunma-add-to-cart-btn gunma-product-mini-add" title="Add to Cart">
+              <span class="gunma-product-mini-price">${escapeHtml(currencySymbol)}${escapeHtml(cleanPrice)}</span>
+              <button data-product-id="${escapeAttr(cleanId)}" data-product-price="${escapeAttr(cleanPrice)}" class="gunma-add-to-cart-btn gunma-product-mini-add" title="Add to Cart">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
             </div>
@@ -156,12 +159,12 @@ function renderMarkdown(text: string, websiteUrl: string): string {
 
   // ── Step 13: Restore bulk button ──
   if (bulkProducts.length > 0) {
-    const cardsHtml = bulkProducts.map(p => productMiniCard(p.id, p.title, p.price, '', p.slug, websiteUrl)).join('');
+    const cardsHtml = bulkProducts.map(p => productMiniCard(p.id, p.title, p.price, '', p.slug, websiteUrl, currencySymbol)).join('');
     const bulkHtml = `
       <div class="gunma-bulk-section">
         <div class="gunma-product-grid">${cardsHtml}</div>
         <div class="gunma-bulk-actions">
-          <button class="gunma-bulk-cart-btn" data-product-ids="${bulkProducts.map(p => p.id).join(',')}">
+          <button class="gunma-bulk-cart-btn" data-product-ids="${escapeAttr(bulkProducts.map(p => p.id).join(','))}">
             🛒 Add ALL to Cart
           </button>
         </div>
@@ -170,30 +173,31 @@ function renderMarkdown(text: string, websiteUrl: string): string {
   } else if (hasBulk && productIds.length > 0) {
     const bulkHtml = `
       <div class="gunma-bulk-container">
-        <button class="gunma-bulk-cart-btn" data-product-ids="${productIds.join(',')}">
+        <button class="gunma-bulk-cart-btn" data-product-ids="${escapeAttr(productIds.join(','))}">
           🛒 Add ALL Ingredients to Cart
         </button>
       </div>`;
     text = text.replace('{{BULK_BUTTON}}', bulkHtml);
   }
 
-  return text;
+  // ── Step 14: Final sanitize (defence-in-depth against attribute/URL XSS) ──
+  return sanitizeHtml(text);
 }
 
-function productMiniCard(id: string, title: string, price: string, image: string, slug: string, websiteUrl: string): string {
+function productMiniCard(id: string, title: string, price: string, image: string, slug: string, websiteUrl: string, currencySymbol: string): string {
   const cleanPrice = Number(price).toLocaleString();
   const imgHtml = image
-    ? `<a href="${websiteUrl}/${slug}" target="_blank" rel="noopener" class="gunma-product-mini-img-link"><img src="${image}" alt="${title}" loading="lazy"/></a>`
-    : `<a href="${websiteUrl}/${slug}" target="_blank" rel="noopener" class="gunma-product-mini-img-link gunma-product-mini-img-link--placeholder"><span>${title[0] || 'P'}</span></a>`;
+    ? `<a href="${escapeAttr(`${websiteUrl}/${slug}`)}" target="_blank" rel="noopener" class="gunma-product-mini-img-link"><img src="${escapeAttr(image)}" alt="${escapeAttr(title)}" loading="lazy"/></a>`
+    : `<a href="${escapeAttr(`${websiteUrl}/${slug}`)}" target="_blank" rel="noopener" class="gunma-product-mini-img-link gunma-product-mini-img-link--placeholder"><span>${escapeHtml(title[0] || 'P')}</span></a>`;
 
   return `
-    <div class="gunma-product-mini-card" data-id="${id}">
+    <div class="gunma-product-mini-card" data-id="${escapeAttr(id)}">
       ${imgHtml}
       <div class="gunma-product-mini-body">
-        <span class="gunma-product-mini-title">${title}</span>
+        <span class="gunma-product-mini-title">${escapeHtml(title)}</span>
         <div class="gunma-product-mini-footer">
-          <span class="gunma-product-mini-price">¥${cleanPrice}</span>
-          <button data-product-id="${id}" data-product-price="${price}" class="gunma-add-to-cart-btn gunma-product-mini-add" title="Add to Cart">
+          <span class="gunma-product-mini-price">${escapeHtml(currencySymbol)}${escapeHtml(cleanPrice)}</span>
+          <button data-product-id="${escapeAttr(id)}" data-product-price="${escapeAttr(price)}" class="gunma-add-to-cart-btn gunma-product-mini-add" title="Add to Cart">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
         </div>
