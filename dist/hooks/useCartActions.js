@@ -43,10 +43,14 @@ export function useCartActions(config) {
         btn.style.opacity = '0.7';
         try {
             const token = resolveToken();
-            const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+            // Prefer the host's real (encrypted) guest cookie. If a cookieKey value
+            // exists in localStorage use it; otherwise omit `cookie` and rely on the
+            // `guest_id` cookie sent via credentials:'include'.
+            const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
             const res = await fetch(config.cartUrl, {
                 method: 'POST',
                 headers: buildHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     product_id: productId,
                     product_option_id: '',
@@ -55,7 +59,7 @@ export function useCartActions(config) {
                     discount_amount: 0,
                     tax_percent: 0,
                     // Send cookie for guest carts; server ignores it when token is present
-                    cookie: token ? undefined : cookie,
+                    cookie: token ? undefined : (storedCookie || undefined),
                 }),
             });
             if (res.ok) {
@@ -87,14 +91,15 @@ export function useCartActions(config) {
         target.style.opacity = '0.7';
         try {
             const token = resolveToken();
-            const cookie = localStorage.getItem(cookieKey) || Date.now().toString();
+            const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
             const res = await fetch(`${config.apiUrl}/${routePrefix}/cart/bulk`, {
                 method: 'POST',
                 headers: buildHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     product_ids: productIds,
                     // Send cookie for guest carts; server ignores it when token is present
-                    cookie: token ? undefined : cookie,
+                    cookie: token ? undefined : (storedCookie || undefined),
                 }),
             });
             if (res.ok) {
