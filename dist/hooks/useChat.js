@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { ChatApi } from '../lib/api';
+import { getStrings } from '../lib/i18n';
 /**
  * Generate a stable visitor ID from the browser.
  * @param storageKey - localStorage key to use (default: 'gunma_visitor_id')
@@ -36,6 +37,7 @@ export function useChat(config) {
     const [isAgentTyping, setIsAgentTyping] = useState(false);
     const [isConnected, setIsConnected] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [isEnded, setIsEnded] = useState(false);
     // --- Resolved configurable values ---
     const sessionIdKey = config.storage?.sessionIdKey ?? 'gunma_session_id';
     const visitorIdKey = config.storage?.visitorIdKey ?? 'gunma_visitor_id';
@@ -64,12 +66,17 @@ export function useChat(config) {
     const initRef = useRef(false);
     const sessionRef = useRef(null);
     const isOpenRef = useRef(false);
+    const isEndedRef = useRef(false);
     const typingTimeoutRef = useRef(null);
     const channelListenersRef = useRef(new Set());
     const linkSessionRef = useRef();
+    // i18n strings for the active locale (kept in a ref for stable listeners).
+    const stringsRef = useRef(getStrings(config.locale));
+    useEffect(() => { stringsRef.current = getStrings(config.locale); }, [config.locale]);
     // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
     useEffect(() => { sessionRef.current = session; }, [session]);
     useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+    useEffect(() => { isEndedRef.current = isEnded; }, [isEnded]);
     // Sync apiToken when config changes
     useEffect(() => {
         const token = resolveToken();
@@ -160,6 +167,32 @@ export function useChat(config) {
                 setIsAgentTyping(data.is_typing);
             }
         });
+        // Session ended by an agent/admin (or system). Show a farewell and lock input.
+        channel.listen('.session.ended', (data) => {
+            setIsEnded(true);
+            setIsAiEnabled(false);
+            setIsLoading(false);
+            setToolStatus(null);
+            setIsAgentTyping(false);
+            const farewell = (data && typeof data.message === 'string' && data.message.trim())
+                ? data.message
+                : stringsRef.current.sessionEndedFarewell;
+            setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'assistant' && last.content === farewell)
+                    return prev;
+                return [...prev, {
+                        id: `ended_${Date.now()}`,
+                        role: 'assistant',
+                        content: farewell,
+                        created_at: new Date().toISOString(),
+                    }];
+            });
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(sessionIdKey);
+            }
+            sessionRef.current = null;
+        });
         return () => {
             echoRef.current?.leave(channelKey);
             channelListenersRef.current.delete(channelKey);
@@ -236,6 +269,8 @@ export function useChat(config) {
                 setSession(restored);
                 sessionRef.current = restored;
                 setMessages(msgs);
+                setIsEnded(false);
+                isEndedRef.current = false;
                 return restored;
             }
             catch {
@@ -247,6 +282,8 @@ export function useChat(config) {
             const newSession = await apiRef.current.createSession(visitorId, config.customerName, config.channel || 'web');
             setSession(newSession);
             sessionRef.current = newSession;
+            setIsEnded(false);
+            isEndedRef.current = false;
             localStorage.setItem(sessionIdKey, newSession.id);
             return newSession;
         }
@@ -262,7 +299,7 @@ export function useChat(config) {
      * Send a message and handle SSE response.
      */
     const sendMessage = useCallback(async (text) => {
-        if (!text.trim() || loadingRef.current)
+        if (!text.trim() || loadingRef.current || isEndedRef.current)
             return;
         loadingRef.current = true;
         setError(null);
@@ -475,6 +512,7 @@ export function useChat(config) {
         isAgentTyping,
         isConnected,
         unreadCount,
+        isEnded,
         toggle,
         sendMessage,
         sendTyping,

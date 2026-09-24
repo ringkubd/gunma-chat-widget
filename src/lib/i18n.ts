@@ -74,6 +74,8 @@ export interface WidgetStrings {
   addrStreet: string;
   addrCity: string;
   addrState: string;
+  sessionEndedFarewell: string;
+  sessionEndedLocked: string;
 }
 
 const en: WidgetStrings = {
@@ -153,6 +155,8 @@ const en: WidgetStrings = {
   addrStreet: 'Street / Area',
   addrCity: 'City',
   addrState: 'Prefecture',
+  sessionEndedFarewell: 'The chat has been closed by our team. Thank you for chatting with Gunma Halal Food — have a wonderful day! 🌸',
+  sessionEndedLocked: 'This conversation has ended.',
 };
 
 const bn: WidgetStrings = {
@@ -233,6 +237,8 @@ const bn: WidgetStrings = {
   addrStreet: 'রাস্তা / এলাকা',
   addrCity: 'শহর',
   addrState: 'প্রিফেকচার',
+  sessionEndedFarewell: 'আমাদের টিম এই চ্যাটটি বন্ধ করে দিয়েছে। Gunma Halal Food-এর সাথে কথা বলার জন্য ধন্যবাদ — ভালো থাকুন! 🌸',
+  sessionEndedLocked: 'এই কথোপকথন শেষ হয়েছে।',
 };
 
 const ja: WidgetStrings = {
@@ -313,6 +319,8 @@ const ja: WidgetStrings = {
   addrStreet: '町名・地域',
   addrCity: '市区町村',
   addrState: '都道府県',
+  sessionEndedFarewell: 'このチャットは担当者により終了されました。Gunma Halal Food をご利用いただきありがとうございました。良い一日を！🌸',
+  sessionEndedLocked: 'この会話は終了しました。',
 };
 
 const DICTS: Record<WidgetLocale, WidgetStrings> = { en, bn, ja };

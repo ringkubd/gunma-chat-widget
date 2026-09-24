@@ -13,6 +13,7 @@ export declare function useChat(config: ChatWidgetConfig): {
     isAgentTyping: boolean;
     isConnected: boolean;
     unreadCount: number;
+    isEnded: boolean;
     toggle: () => void;
     sendMessage: (text: string) => Promise<void>;
     sendTyping: (isTyping: boolean) => void;

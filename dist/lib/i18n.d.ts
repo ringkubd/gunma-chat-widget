@@ -72,5 +72,7 @@ export interface WidgetStrings {
     addrStreet: string;
     addrCity: string;
     addrState: string;
+    sessionEndedFarewell: string;
+    sessionEndedLocked: string;
 }
 export declare function getStrings(locale?: WidgetLocale): WidgetStrings;

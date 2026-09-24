@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { ChatApi } from '../lib/api';
+import { getStrings } from '../lib/i18n';
 import type { ChatMessage, ChatSession, ChatWidgetConfig } from '../types';
 
 /**
@@ -37,6 +38,7 @@ export function useChat(config: ChatWidgetConfig) {
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isEnded, setIsEnded] = useState(false);
 
   // --- Resolved configurable values ---
   const sessionIdKey  = config.storage?.sessionIdKey  ?? 'gunma_session_id';
@@ -64,13 +66,19 @@ export function useChat(config: ChatWidgetConfig) {
   const initRef = useRef(false);
   const sessionRef = useRef<ChatSession | null>(null);
   const isOpenRef = useRef(false);
+  const isEndedRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const channelListenersRef = useRef<Set<string>>(new Set());
   const linkSessionRef = useRef<(customerId: number) => Promise<void>>();
 
+  // i18n strings for the active locale (kept in a ref for stable listeners).
+  const stringsRef = useRef(getStrings(config.locale));
+  useEffect(() => { stringsRef.current = getStrings(config.locale); }, [config.locale]);
+
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+  useEffect(() => { isEndedRef.current = isEnded; }, [isEnded]);
 
   // Sync apiToken when config changes
   useEffect(() => {
@@ -172,6 +180,35 @@ export function useChat(config: ChatWidgetConfig) {
         }
     });
 
+    // Session ended by an agent/admin (or system). Show a farewell and lock input.
+    channel.listen('.session.ended', (data: any) => {
+      setIsEnded(true);
+      setIsAiEnabled(false);
+      setIsLoading(false);
+      setToolStatus(null);
+      setIsAgentTyping(false);
+
+      const farewell = (data && typeof data.message === 'string' && data.message.trim())
+        ? data.message
+        : stringsRef.current.sessionEndedFarewell;
+
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'assistant' && last.content === farewell) return prev;
+        return [...prev, {
+          id: `ended_${Date.now()}`,
+          role: 'assistant',
+          content: farewell,
+          created_at: new Date().toISOString(),
+        }];
+      });
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(sessionIdKey);
+      }
+      sessionRef.current = null;
+    });
+
     return () => {
       echoRef.current?.leave(channelKey);
       channelListenersRef.current.delete(channelKey);
@@ -255,6 +292,8 @@ export function useChat(config: ChatWidgetConfig) {
         setSession(restored);
         sessionRef.current = restored;
         setMessages(msgs);
+        setIsEnded(false);
+        isEndedRef.current = false;
         return restored;
       } catch {
         localStorage.removeItem(sessionIdKey);
@@ -271,6 +310,8 @@ export function useChat(config: ChatWidgetConfig) {
 
       setSession(newSession);
       sessionRef.current = newSession;
+      setIsEnded(false);
+      isEndedRef.current = false;
       localStorage.setItem(sessionIdKey, newSession.id);
 
       return newSession;
@@ -287,7 +328,7 @@ export function useChat(config: ChatWidgetConfig) {
    * Send a message and handle SSE response.
    */
   const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || loadingRef.current) return;
+    if (!text.trim() || loadingRef.current || isEndedRef.current) return;
     loadingRef.current = true;
     setError(null);
     setIsLoading(true);
@@ -508,6 +549,7 @@ export function useChat(config: ChatWidgetConfig) {
     isAgentTyping,
     isConnected,
     unreadCount,
+    isEnded,
     toggle,
     sendMessage,
     sendTyping,

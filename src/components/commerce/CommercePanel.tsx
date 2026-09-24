@@ -591,8 +591,17 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
                 </div>
               );
             })}
+            <div className="gunma-commerce-total-row">
+              <span>{s.subtotal}</span><span>{money(symbol, subtotal)}</span>
+            </div>
+            <div className="gunma-commerce-total-row">
+              <span>{s.tax}</span><span>{money(symbol, totalTax)}</span>
+            </div>
+            <div className="gunma-commerce-total-row">
+              <span>{s.shipping}</span><span>{shippingCharge === 0 ? s.free : money(symbol, shippingCharge)}</span>
+            </div>
             <div className="gunma-commerce-total-row gunma-commerce-grand">
-              <span>{s.subtotal}</span><strong>{money(symbol, subtotal)}</strong>
+              <span>{s.total}</span><strong>{money(symbol, subtotal + totalTax + shippingCharge)}</strong>
             </div>
             {subtotal < commerce.freeShippingThreshold && (
               <p className="gunma-commerce-muted">

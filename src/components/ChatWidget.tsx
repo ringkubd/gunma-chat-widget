@@ -24,6 +24,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     isAgentTyping,
     isConnected,
     unreadCount,
+    isEnded,
     toggle,
     sendMessage,
     sendTyping,
@@ -181,13 +182,19 @@ export function ChatWidget(config: ChatWidgetConfig) {
                 </div>
               )}
 
-              <MessageInput
-                onSend={handleSend}
-                onUpload={uploadFile}
-                onTyping={sendTyping}
-                isLoading={isLoading}
-                placeholder={config.placeholder || strings.placeholder}
-              />
+              {isEnded ? (
+                <div className="gunma-commerce-muted" style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  {strings.sessionEndedLocked}
+                </div>
+              ) : (
+                <MessageInput
+                  onSend={handleSend}
+                  onUpload={uploadFile}
+                  onTyping={sendTyping}
+                  isLoading={isLoading}
+                  placeholder={config.placeholder || strings.placeholder}
+                />
+              )}
             </>
           )}
         </div>
