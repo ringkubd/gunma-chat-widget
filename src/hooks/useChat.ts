@@ -338,11 +338,12 @@ export function useChat(config: ChatWidgetConfig) {
             const resultData = data.result as { action?: string; url?: string } | undefined;
             // The commerce panel (when enabled) reacts to these events; when it is
             // not enabled, fall back to navigating the host site.
-            if (resultData && (resultData.action === 'open_checkout' || resultData.action === 'redirect')) {
-              if (typeof window !== 'undefined') {
+            if (resultData && typeof window !== 'undefined') {
+              if (resultData.action === 'open_checkout') {
                 window.dispatchEvent(new CustomEvent('gunma:open_checkout', { detail: resultData }));
-              }
-              if (resultData.action === 'redirect' && resultData.url) {
+              } else if (resultData.action === 'open_login') {
+                window.dispatchEvent(new CustomEvent('gunma:open_login', { detail: resultData }));
+              } else if (resultData.action === 'redirect' && resultData.url) {
                 window.location.href = resultData.url;
               }
             }

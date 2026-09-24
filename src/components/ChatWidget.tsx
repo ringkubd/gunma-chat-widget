@@ -62,16 +62,28 @@ export function ChatWidget(config: ChatWidgetConfig) {
     refreshCommerceCartRef.current = commerce.refreshCart;
   }, [commerce.refreshCart]);
 
-  // When the agent adds to cart / prepares checkout, open the in-chat panel.
+  // When the agent adds to cart / prepares checkout / asks for login, open
+  // the in-chat commerce panel at the right step (no page navigation).
   React.useEffect(() => {
     if (!commerce.enabled) return;
-    const handler = () => {
+
+    const openCheckout = () => {
       setShowCommerce(true);
+      commerce.setStep('cart');
       void refreshCommerceCartRef.current?.();
     };
-    window.addEventListener('gunma:open_checkout', handler);
-    return () => window.removeEventListener('gunma:open_checkout', handler);
-  }, [commerce.enabled]);
+    const openLogin = () => {
+      setShowCommerce(true);
+      commerce.setStep('auth');
+    };
+
+    window.addEventListener('gunma:open_checkout', openCheckout);
+    window.addEventListener('gunma:open_login', openLogin);
+    return () => {
+      window.removeEventListener('gunma:open_checkout', openCheckout);
+      window.removeEventListener('gunma:open_login', openLogin);
+    };
+  }, [commerce.enabled, commerce.setStep]);
 
   const position = config.position || 'bottom-right';
   const brandColor = config.brandColor || '#10b981';
