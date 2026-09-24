@@ -294,8 +294,15 @@ export function useChat(config) {
                 case 'tool_result':
                     setToolStatus(`✅ ${String(data.name || '')} complete`);
                     const resultData = data.result;
-                    if (resultData && resultData.action === 'redirect' && resultData.url) {
-                        window.location.href = resultData.url;
+                    // The commerce panel (when enabled) reacts to these events; when it is
+                    // not enabled, fall back to navigating the host site.
+                    if (resultData && (resultData.action === 'open_checkout' || resultData.action === 'redirect')) {
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('gunma:open_checkout', { detail: resultData }));
+                        }
+                        if (resultData.action === 'redirect' && resultData.url) {
+                            window.location.href = resultData.url;
+                        }
                     }
                     break;
                 case 'message': {

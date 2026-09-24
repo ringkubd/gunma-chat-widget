@@ -443,8 +443,15 @@ export function useCommerce(
       setLoading(true);
       setErrorMessage(null);
       try {
-        await api.login(loginEmail, password);
+        const res = await api.login(loginEmail, password);
         setEmail(loginEmail);
+        // Notify the chat (and host) that a customer just logged in so the
+        // guest chat session is linked to the account.
+        const cid = res?.user?.id ?? (res?.user as any)?.customer_id ?? null;
+        if (typeof window !== 'undefined') {
+          if (cid) localStorage.setItem('gunma_chat_customer_id', String(cid));
+          window.dispatchEvent(new CustomEvent('gunma:login', { detail: { customer_id: cid, user: res?.user } }));
+        }
         await startCheckout();
       } catch (e: any) {
         setErrorMessage(e?.message ?? 'Login failed.');

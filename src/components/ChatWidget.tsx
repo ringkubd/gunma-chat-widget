@@ -59,6 +59,17 @@ export function ChatWidget(config: ChatWidgetConfig) {
     refreshCommerceCartRef.current = commerce.refreshCart;
   }, [commerce.refreshCart]);
 
+  // When the agent adds to cart / prepares checkout, open the in-chat panel.
+  React.useEffect(() => {
+    if (!commerce.enabled) return;
+    const handler = () => {
+      setShowCommerce(true);
+      void refreshCommerceCartRef.current?.();
+    };
+    window.addEventListener('gunma:open_checkout', handler);
+    return () => window.removeEventListener('gunma:open_checkout', handler);
+  }, [commerce.enabled]);
+
   const position = config.position || 'bottom-right';
   const brandColor = config.brandColor || '#10b981';
   const brandName = config.brandName || 'Piku';
