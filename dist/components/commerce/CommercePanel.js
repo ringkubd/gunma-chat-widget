@@ -25,12 +25,35 @@ function StripePaymentForm({ commerce, brandColor, symbol, strings, }) {
 export function CommercePanel({ commerce, brandColor, onClose, strings }) {
     const s = strings ?? getStrings('en');
     const symbol = commerce.currencySymbol;
-    const { step, cart, subtotal, shippingCharge, totalTax, total, grandTotal, addresses, selectedAddress, selectAddress, deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime, coins, appliedCoins, setAppliedCoins, email, setEmail, customerName, successOrderId, errorMessage, loading, refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register, stockIssues, hasStockIssues, fixStockIssue, removeStockIssue, fixAllStockIssues, } = commerce;
+    const { step, cart, subtotal, shippingCharge, totalTax, total, grandTotal, addresses, selectedAddress, selectAddress, deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime, coins, appliedCoins, setAppliedCoins, email, setEmail, customerName, successOrderId, errorMessage, loading, refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register, stockIssues, hasStockIssues, fixStockIssue, removeStockIssue, fixAllStockIssues, saveAddress, } = commerce;
     const [loginEmail, setLoginEmail] = useState(email || '');
     const [loginPassword, setLoginPassword] = useState('');
     const [authMode, setAuthMode] = useState('login');
     const [regName, setRegName] = useState(customerName || '');
     const [regPhone, setRegPhone] = useState('');
+    // Address edit form
+    const [editingAddress, setEditingAddress] = useState(false);
+    const [addrName, setAddrName] = useState('');
+    const [addrPhone, setAddrPhone] = useState('');
+    const [addrPostal, setAddrPostal] = useState('');
+    const [addrChome, setAddrChome] = useState('');
+    const [addrApartment, setAddrApartment] = useState('');
+    const [addrStreet, setAddrStreet] = useState('');
+    const [addrCity, setAddrCity] = useState('');
+    const [addrState, setAddrState] = useState('');
+    const [addrPostCodeId, setAddrPostCodeId] = useState(null);
+    const beginEditAddress = () => {
+        setAddrName(selectedAddress?.name ?? '');
+        setAddrPhone(selectedAddress?.phone ?? '');
+        setAddrPostal(selectedAddress?.postal_code ?? '');
+        setAddrChome(selectedAddress?.chome ?? '');
+        setAddrApartment(selectedAddress?.apartment ?? '');
+        setAddrStreet(selectedAddress?.street ?? '');
+        setAddrCity(selectedAddress?.city ?? '');
+        setAddrState(selectedAddress?.state ?? '');
+        setAddrPostCodeId(selectedAddress?.post_code_id ?? null);
+        setEditingAddress(true);
+    };
     const [payMode, setPayMode] = useState('Cash');
     React.useEffect(() => {
         refreshCart();
@@ -39,7 +62,20 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }) {
     const header = (_jsxs("div", { className: "gunma-commerce-head", children: [_jsx("span", { children: s.checkout }), _jsx("button", { className: "gunma-commerce-close", onClick: onClose, "aria-label": "Close", children: "\u2715" })] }));
     /* ── Success ─────────────────────────────────────────────── */
     if (step === 'success') {
-        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-success", children: [_jsx("div", { className: "gunma-commerce-check", children: "\u2713" }), _jsx("p", { children: s.orderPlaced }), successOrderId != null && _jsxs("p", { className: "gunma-commerce-order", children: [s.orderNo, " #", successOrderId] }), _jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, onClick: onClose, children: s.done })] })] }));
+        const fmtDate = (d) => {
+            if (!d)
+                return null;
+            try {
+                return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
+                    weekday: 'long', day: 'numeric', month: 'long',
+                });
+            }
+            catch {
+                return d;
+            }
+        };
+        const etaDate = fmtDate(commerce.successDelivery?.date);
+        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-success", children: [_jsx("div", { className: "gunma-commerce-check", children: "\u2713" }), _jsx("p", { className: "gunma-commerce-success-title", children: s.orderPlaced }), successOrderId != null && _jsxs("p", { className: "gunma-commerce-order", children: [s.orderNo, " #", successOrderId] }), etaDate && (_jsxs("p", { className: "gunma-commerce-eta", children: ["\uD83D\uDE9A ", s.deliveryOn(etaDate), commerce.successDelivery?.time ? ` • ${commerce.successDelivery.time}` : ''] })), !etaDate && _jsx("p", { className: "gunma-commerce-muted", children: s.deliverySoon }), _jsx("p", { className: "gunma-commerce-thanks", children: s.orderThanks }), _jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, onClick: onClose, children: s.done })] })] }));
     }
     /* ── Login / Register ────────────────────────────────────── */
     if (step === 'auth') {
@@ -63,9 +99,48 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }) {
     /* ── Delivery + payment ──────────────────────────────────── */
     if (step === 'delivery') {
         const cardEnabled = !!commerce.stripePublishableKey;
-        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-section", children: [_jsx("h4", { className: "gunma-commerce-h", children: s.delivery }), selectedAddress ? (_jsxs("div", { className: "gunma-commerce-address", children: [_jsx("strong", { children: selectedAddress.name }), _jsx("span", { children: selectedAddress.phone }), _jsx("span", { children: [selectedAddress.apartment, selectedAddress.street, selectedAddress.city, selectedAddress.state]
+        return (_jsxs("div", { className: "gunma-commerce", children: [header, _jsxs("div", { className: "gunma-commerce-section", children: [_jsx("h4", { className: "gunma-commerce-h", children: s.delivery }), editingAddress ? (_jsxs("div", { className: "gunma-commerce-address-form", children: [_jsx("input", { className: "gunma-commerce-input", placeholder: s.addrName, value: addrName, onChange: (e) => setAddrName(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", type: "tel", placeholder: s.addrPhone, value: addrPhone, onChange: (e) => setAddrPhone(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrPostal, value: addrPostal, onChange: (e) => setAddrPostal(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrChome, value: addrChome, onChange: (e) => setAddrChome(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrApartment, value: addrApartment, onChange: (e) => setAddrApartment(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrStreet, value: addrStreet, onChange: (e) => setAddrStreet(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrCity, value: addrCity, onChange: (e) => setAddrCity(e.target.value) }), _jsx("input", { className: "gunma-commerce-input", placeholder: s.addrState, value: addrState, onChange: (e) => setAddrState(e.target.value) }), _jsxs("div", { className: "gunma-commerce-address-form-actions", children: [_jsx("button", { className: "gunma-commerce-primary", style: { backgroundColor: brandColor }, disabled: loading || !addrName.trim() || !addrPhone.trim() || !addrPostal.trim(), onClick: async () => {
+                                                try {
+                                                    // Resolve post_code_id from the postal code (host requires it).
+                                                    let postCodeId = addrPostCodeId;
+                                                    if (addrPostal.trim().length >= 7) {
+                                                        try {
+                                                            const codes = await commerce.api.getPostCodes(addrPostal.trim());
+                                                            if (codes && codes.length) {
+                                                                postCodeId = codes[0].id;
+                                                                if (codes[0].state)
+                                                                    setAddrState(codes[0].state);
+                                                                if (codes[0].city)
+                                                                    setAddrCity(codes[0].city);
+                                                                if (codes[0].street)
+                                                                    setAddrStreet(codes[0].street);
+                                                            }
+                                                        }
+                                                        catch {
+                                                            /* keep existing id */
+                                                        }
+                                                    }
+                                                    await saveAddress({
+                                                        name: addrName.trim(),
+                                                        phone: addrPhone.trim(),
+                                                        postal_code: addrPostal.trim(),
+                                                        chome: addrChome.trim(),
+                                                        apartment: addrApartment.trim(),
+                                                        street: addrStreet.trim(),
+                                                        city: addrCity.trim(),
+                                                        state: addrState.trim(),
+                                                        post_code_id: postCodeId,
+                                                        type: null,
+                                                        default: 'Yes',
+                                                    }, selectedAddress?.id);
+                                                    setEditingAddress(false);
+                                                }
+                                                catch {
+                                                    /* error surfaced by hook */
+                                                }
+                                            }, children: s.addrSave }), _jsx("button", { className: "gunma-commerce-secondary", disabled: loading, onClick: () => setEditingAddress(false), children: s.addrCancel })] })] })) : selectedAddress ? (_jsxs("div", { className: "gunma-commerce-address", children: [_jsx("strong", { children: selectedAddress.name }), _jsx("span", { children: selectedAddress.phone }), _jsx("span", { children: [selectedAddress.apartment, selectedAddress.street, selectedAddress.city, selectedAddress.state]
                                         .filter(Boolean)
-                                        .join(', ') }), _jsxs("span", { children: ["\u3012", selectedAddress.postal_code] })] })) : (_jsx("p", { className: "gunma-commerce-muted", children: "No address selected." })), addresses.length > 1 && (_jsx("select", { className: "gunma-commerce-input", value: selectedAddress?.id ?? '', onChange: (e) => {
+                                        .join(', ') }), _jsxs("span", { children: ["\u3012", selectedAddress.postal_code] }), _jsx("button", { className: "gunma-commerce-address-edit", onClick: beginEditAddress, children: s.addrEdit })] })) : (_jsx("p", { className: "gunma-commerce-muted", children: "No address selected." })), !editingAddress && addresses.length > 1 && (_jsx("select", { className: "gunma-commerce-input", value: selectedAddress?.id ?? '', onChange: (e) => {
                                 const a = addresses.find((x) => String(x.id) === e.target.value);
                                 if (a)
                                     selectAddress(a);

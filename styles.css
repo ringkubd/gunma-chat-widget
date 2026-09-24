@@ -1314,3 +1314,61 @@
 }
 .gunma-commerce-item--invalid { background: #fff7f7; border-radius: 8px; padding-left: 6px; }
 .gunma-commerce-item-bad { color: #dc2626; font-size: 11px; font-weight: 600; }
+
+/* ── Address edit form + order success extras ── */
+.gunma-commerce-address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm, 10px);
+  padding: 10px 12px;
+  background: var(--gunma-bg-secondary);
+}
+.gunma-commerce-address-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gunma-commerce-address-form-actions .gunma-commerce-primary {
+  margin-top: 0;
+  flex: 1;
+}
+.gunma-commerce-secondary {
+  padding: 11px 14px;
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm, 10px);
+  background: var(--gunma-bg);
+  color: var(--gunma-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gunma-commerce-address-edit {
+  align-self: flex-start;
+  margin-top: 6px;
+  border: 1px solid var(--gunma-border);
+  background: var(--gunma-bg);
+  color: var(--gunma-text-secondary);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gunma-commerce-success-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+.gunma-commerce-eta {
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #047857;
+}
+.gunma-commerce-thanks {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  color: var(--gunma-text-secondary);
+}

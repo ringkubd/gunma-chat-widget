@@ -76,6 +76,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     successOrderId, errorMessage, loading,
     refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register,
     stockIssues, hasStockIssues, fixStockIssue, removeStockIssue, fixAllStockIssues,
+    saveAddress,
   } = commerce as UseCommerceResult & { email: string; setEmail: (v: string) => void };
 
   const [loginEmail, setLoginEmail] = useState(email || '');
@@ -83,6 +84,31 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [regName, setRegName] = useState(customerName || '');
   const [regPhone, setRegPhone] = useState('');
+
+  // Address edit form
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addrName, setAddrName] = useState('');
+  const [addrPhone, setAddrPhone] = useState('');
+  const [addrPostal, setAddrPostal] = useState('');
+  const [addrChome, setAddrChome] = useState('');
+  const [addrApartment, setAddrApartment] = useState('');
+  const [addrStreet, setAddrStreet] = useState('');
+  const [addrCity, setAddrCity] = useState('');
+  const [addrState, setAddrState] = useState('');
+  const [addrPostCodeId, setAddrPostCodeId] = useState<number | string | null>(null);
+
+  const beginEditAddress = () => {
+    setAddrName(selectedAddress?.name ?? '');
+    setAddrPhone(selectedAddress?.phone ?? '');
+    setAddrPostal(selectedAddress?.postal_code ?? '');
+    setAddrChome((selectedAddress as any)?.chome ?? '');
+    setAddrApartment(selectedAddress?.apartment ?? '');
+    setAddrStreet(selectedAddress?.street ?? '');
+    setAddrCity(selectedAddress?.city ?? '');
+    setAddrState(selectedAddress?.state ?? '');
+    setAddrPostCodeId(selectedAddress?.post_code_id ?? null);
+    setEditingAddress(true);
+  };
   const [payMode, setPayMode] = useState<'Cash' | 'Card'>('Cash');
 
   React.useEffect(() => {
@@ -99,13 +125,32 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
 
   /* ── Success ─────────────────────────────────────────────── */
   if (step === 'success') {
+    const fmtDate = (d?: string | null) => {
+      if (!d) return null;
+      try {
+        return new Date(d + 'T00:00:00').toLocaleDateString(undefined, {
+          weekday: 'long', day: 'numeric', month: 'long',
+        });
+      } catch {
+        return d;
+      }
+    };
+    const etaDate = fmtDate(commerce.successDelivery?.date);
     return (
       <div className="gunma-commerce">
         {header}
         <div className="gunma-commerce-success">
           <div className="gunma-commerce-check">✓</div>
-          <p>{s.orderPlaced}</p>
+          <p className="gunma-commerce-success-title">{s.orderPlaced}</p>
           {successOrderId != null && <p className="gunma-commerce-order">{s.orderNo} #{successOrderId}</p>}
+          {etaDate && (
+            <p className="gunma-commerce-eta">
+              🚚 {s.deliveryOn(etaDate)}
+              {commerce.successDelivery?.time ? ` • ${commerce.successDelivery.time}` : ''}
+            </p>
+          )}
+          {!etaDate && <p className="gunma-commerce-muted">{s.deliverySoon}</p>}
+          <p className="gunma-commerce-thanks">{s.orderThanks}</p>
           <button className="gunma-commerce-primary" style={{ backgroundColor: brandColor }} onClick={onClose}>
             {s.done}
           </button>
@@ -256,7 +301,68 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
         {header}
         <div className="gunma-commerce-section">
           <h4 className="gunma-commerce-h">{s.delivery}</h4>
-          {selectedAddress ? (
+          {editingAddress ? (
+            <div className="gunma-commerce-address-form">
+              <input className="gunma-commerce-input" placeholder={s.addrName} value={addrName} onChange={(e) => setAddrName(e.target.value)} />
+              <input className="gunma-commerce-input" type="tel" placeholder={s.addrPhone} value={addrPhone} onChange={(e) => setAddrPhone(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrPostal} value={addrPostal} onChange={(e) => setAddrPostal(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrChome} value={addrChome} onChange={(e) => setAddrChome(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrApartment} value={addrApartment} onChange={(e) => setAddrApartment(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrStreet} value={addrStreet} onChange={(e) => setAddrStreet(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrCity} value={addrCity} onChange={(e) => setAddrCity(e.target.value)} />
+              <input className="gunma-commerce-input" placeholder={s.addrState} value={addrState} onChange={(e) => setAddrState(e.target.value)} />
+              <div className="gunma-commerce-address-form-actions">
+                <button
+                  className="gunma-commerce-primary"
+                  style={{ backgroundColor: brandColor }}
+                  disabled={loading || !addrName.trim() || !addrPhone.trim() || !addrPostal.trim()}
+                  onClick={async () => {
+                    try {
+                      // Resolve post_code_id from the postal code (host requires it).
+                      let postCodeId = addrPostCodeId;
+                      if (addrPostal.trim().length >= 7) {
+                        try {
+                          const codes = await commerce.api.getPostCodes(addrPostal.trim());
+                          if (codes && codes.length) {
+                            postCodeId = codes[0].id;
+                            if (codes[0].state) setAddrState(codes[0].state);
+                            if (codes[0].city) setAddrCity(codes[0].city);
+                            if (codes[0].street) setAddrStreet(codes[0].street);
+                          }
+                        } catch {
+                          /* keep existing id */
+                        }
+                      }
+                      await saveAddress(
+                        {
+                          name: addrName.trim(),
+                          phone: addrPhone.trim(),
+                          postal_code: addrPostal.trim(),
+                          chome: addrChome.trim(),
+                          apartment: addrApartment.trim(),
+                          street: addrStreet.trim(),
+                          city: addrCity.trim(),
+                          state: addrState.trim(),
+                          post_code_id: postCodeId,
+                          type: null,
+                          default: 'Yes',
+                        },
+                        selectedAddress?.id,
+                      );
+                      setEditingAddress(false);
+                    } catch {
+                      /* error surfaced by hook */
+                    }
+                  }}
+                >
+                  {s.addrSave}
+                </button>
+                <button className="gunma-commerce-secondary" disabled={loading} onClick={() => setEditingAddress(false)}>
+                  {s.addrCancel}
+                </button>
+              </div>
+            </div>
+          ) : selectedAddress ? (
             <div className="gunma-commerce-address">
               <strong>{selectedAddress.name}</strong>
               <span>{selectedAddress.phone}</span>
@@ -266,11 +372,14 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
                   .join(', ')}
               </span>
               <span>〒{selectedAddress.postal_code}</span>
+              <button className="gunma-commerce-address-edit" onClick={beginEditAddress}>
+                {s.addrEdit}
+              </button>
             </div>
           ) : (
             <p className="gunma-commerce-muted">No address selected.</p>
           )}
-          {addresses.length > 1 && (
+          {!editingAddress && addresses.length > 1 && (
             <select
               className="gunma-commerce-input"
               value={selectedAddress?.id ?? ''}

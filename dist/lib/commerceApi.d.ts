@@ -46,6 +46,7 @@ export declare class CommerceApi {
     getDefaultAddresses(): Promise<CommerceAddress[]>;
     getAllAddresses(): Promise<CommerceAddress[]>;
     createAddress(payload: Record<string, any>): Promise<CommerceAddress>;
+    updateAddress(id: number | string, payload: Record<string, any>): Promise<CommerceAddress>;
     getPostCodes(value: string): Promise<any[]>;
     getDeliveryInfo(postalCode: string): Promise<CommerceDeliveryInfo>;
     getCurrentDateTime(): Promise<{

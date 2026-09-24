@@ -189,5 +189,10 @@ export interface CommerceOrderResult {
     id: number | string;
     status?: string;
     total_amount?: number;
+    delivery_date?: string | null;
+    delivery_time?: string | null;
+    sent_date?: string | null;
+    payment_status?: string | null;
+    total?: number | null;
 }
 export type CommerceStep = 'cart' | 'auth' | 'address' | 'delivery' | 'payment' | 'processing' | 'success' | 'failed';

@@ -58,5 +58,19 @@ export interface WidgetStrings {
     stockReduceTo: (n: number) => string;
     stockRemove: string;
     stockFixAll: string;
+    deliveryOn: (date: string) => string;
+    deliverySoon: string;
+    orderThanks: string;
+    addrEdit: string;
+    addrSave: string;
+    addrCancel: string;
+    addrName: string;
+    addrPhone: string;
+    addrPostal: string;
+    addrChome: string;
+    addrApartment: string;
+    addrStreet: string;
+    addrCity: string;
+    addrState: string;
 }
 export declare function getStrings(locale?: WidgetLocale): WidgetStrings;

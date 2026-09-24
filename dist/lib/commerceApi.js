@@ -156,6 +156,12 @@ export class CommerceApi {
             body: JSON.stringify(payload),
         });
     }
+    async updateAddress(id, payload) {
+        return this.request(`/Addresses/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        });
+    }
     async getPostCodes(value) {
         const data = await this.request(`/post-codes/${encodeURIComponent(value)}`);
         return Array.isArray(data) ? data : (data?.data ?? []);
@@ -237,6 +243,13 @@ export class CommerceApi {
             method: 'POST',
             body: JSON.stringify(payload),
         });
+        // Host returns "delivary_date"/"delivary_time"; normalise to our field names.
+        if (data && typeof data === 'object') {
+            if (data.delivery_date == null && data.delivary_date != null)
+                data.delivery_date = data.delivary_date;
+            if (data.delivery_time == null && data.delivary_time != null)
+                data.delivery_time = data.delivary_time;
+        }
         return data;
     }
     async getStripeSecret(amount, email, orderId) {

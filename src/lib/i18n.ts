@@ -60,6 +60,20 @@ export interface WidgetStrings {
   stockReduceTo: (n: number) => string;
   stockRemove: string;
   stockFixAll: string;
+  deliveryOn: (date: string) => string;
+  deliverySoon: string;
+  orderThanks: string;
+  addrEdit: string;
+  addrSave: string;
+  addrCancel: string;
+  addrName: string;
+  addrPhone: string;
+  addrPostal: string;
+  addrChome: string;
+  addrApartment: string;
+  addrStreet: string;
+  addrCity: string;
+  addrState: string;
 }
 
 const en: WidgetStrings = {
@@ -125,6 +139,20 @@ const en: WidgetStrings = {
   stockReduceTo: (n) => `Reduce to ${n}`,
   stockRemove: 'Remove',
   stockFixAll: 'Fix all automatically',
+  deliveryOn: (date) => `Estimated delivery: ${date}`,
+  deliverySoon: 'We will deliver as soon as possible.',
+  orderThanks: 'Thank you for shopping with Gunma Halal Food! 🎉',
+  addrEdit: 'Edit',
+  addrSave: 'Save address',
+  addrCancel: 'Cancel',
+  addrName: 'Receiver name',
+  addrPhone: 'Phone number',
+  addrPostal: 'Postal code',
+  addrChome: 'Chome / Block',
+  addrApartment: 'Apartment / Building',
+  addrStreet: 'Street / Area',
+  addrCity: 'City',
+  addrState: 'Prefecture',
 };
 
 const bn: WidgetStrings = {
@@ -191,6 +219,20 @@ const bn: WidgetStrings = {
   stockReduceTo: (n) => `${n}টি করুন`,
   stockRemove: 'সরিয়ে দিন',
   stockFixAll: 'সব ঠিক করে দিন',
+  deliveryOn: (date) => `আনুমানিক ডেলিভারি: ${date}`,
+  deliverySoon: 'যত দ্রুত সম্ভব ডেলিভারি করা হবে।',
+  orderThanks: 'Gunma Halal Food থেকে কেনাকাটার জন্য ধন্যবাদ! 🎉',
+  addrEdit: 'সম্পাদনা',
+  addrSave: 'ঠিকানা সেভ করুন',
+  addrCancel: 'বাতিল',
+  addrName: 'প্রাপকের নাম',
+  addrPhone: 'ফোন নম্বর',
+  addrPostal: 'পোস্ট কোড',
+  addrChome: 'চোমে / ব্লক',
+  addrApartment: 'অ্যাপার্টমেন্ট / বিল্ডিং',
+  addrStreet: 'রাস্তা / এলাকা',
+  addrCity: 'শহর',
+  addrState: 'প্রিফেকচার',
 };
 
 const ja: WidgetStrings = {
@@ -257,6 +299,20 @@ const ja: WidgetStrings = {
   stockReduceTo: (n) => `${n}点に変更`,
   stockRemove: '削除',
   stockFixAll: '自動で修正',
+  deliveryOn: (date) => `お届け予定: ${date}`,
+  deliverySoon: 'できるだけ早くお届けします。',
+  orderThanks: 'Gunma Halal Food をご利用いただきありがとうございます！🎉',
+  addrEdit: '編集',
+  addrSave: '住所を保存',
+  addrCancel: 'キャンセル',
+  addrName: 'お受取人様のお名前',
+  addrPhone: '電話番号',
+  addrPostal: '郵便番号',
+  addrChome: '丁目・番地',
+  addrApartment: 'マンション・建物名',
+  addrStreet: '町名・地域',
+  addrCity: '市区町村',
+  addrState: '都道府県',
 };
 
 const DICTS: Record<WidgetLocale, WidgetStrings> = { en, bn, ja };

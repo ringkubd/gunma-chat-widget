@@ -99,6 +99,7 @@ export function useCommerce(config, opts = {}) {
     const [customerName, setCustomerName] = useState('');
     const [orderId, setOrderId] = useState(null);
     const [successOrderId, setSuccessOrderId] = useState(null);
+    const [successDelivery, setSuccessDelivery] = useState({});
     const [errorMessage, setErrorMessage] = useState(null);
     const [loading, setLoading] = useState(false);
     const [stripeSecret, setStripeSecret] = useState(null);
@@ -294,6 +295,10 @@ export function useCommerce(config, opts = {}) {
             const order = await api.createOrder(payload);
             const id = order?.id ?? order?.data?.id;
             setSuccessOrderId(id);
+            setSuccessDelivery({
+                date: order?.delivery_date ?? deliveryDate ?? null,
+                time: order?.delivery_time ?? deliveryTime ?? null,
+            });
             setStep('success');
             opts.onCartChanged?.();
             await refreshCart();
@@ -387,6 +392,7 @@ export function useCommerce(config, opts = {}) {
                     catch { /* ignore — order still created */ }
                 }
                 setSuccessOrderId(orderId);
+                setSuccessDelivery({ date: deliveryDate ?? null, time: deliveryTime ?? null });
                 setStep('success');
                 opts.onCartChanged?.();
                 await refreshCart();
@@ -507,6 +513,39 @@ export function useCommerce(config, opts = {}) {
             setLoading(false);
         }
     }, [api, cart, stockIssues, refreshCart, opts]);
+    /**
+     * Create or update a delivery address, then refresh the address list and
+     * re-select the saved address so delivery/dates recompute.
+     */
+    const saveAddress = useCallback(async (payload, id) => {
+        setLoading(true);
+        setErrorMessage(null);
+        try {
+            const saved = id
+                ? await api.updateAddress(id, payload)
+                : await api.createAddress(payload);
+            const addrs = await api.getDefaultAddresses();
+            setAddresses(addrs);
+            const match = saved?.id
+                ? addrs.find((a) => String(a.id) === String(saved.id))
+                : null;
+            const pick = match ?? addrs[0] ?? null;
+            if (pick) {
+                setSelectedAddress(pick);
+                setEmail((prev) => prev || pick.email || '');
+                setCustomerName((prev) => prev || pick.customer_name || pick.name || '');
+                await computeEarliestDate(pick);
+            }
+            return saved;
+        }
+        catch (e) {
+            setErrorMessage(e?.message ?? 'Could not save the address.');
+            throw e;
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [api, computeEarliestDate]);
     const register = useCallback(async (payload) => {
         setLoading(true);
         setErrorMessage(null);
@@ -555,6 +594,7 @@ export function useCommerce(config, opts = {}) {
         customerName,
         orderId,
         successOrderId,
+        successDelivery,
         errorMessage,
         stripeSecret,
         loading,
@@ -564,6 +604,7 @@ export function useCommerce(config, opts = {}) {
         fixStockIssue,
         removeStockIssue,
         fixAllStockIssues,
+        saveAddress,
         removeItem,
         startCheckout,
         confirmCash,

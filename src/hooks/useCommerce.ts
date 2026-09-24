@@ -79,6 +79,7 @@ export interface UseCommerceResult {
 
   orderId: number | string | null;
   successOrderId: number | string | null;
+  successDelivery: { date?: string | null; time?: string | null };
   errorMessage: string | null;
   stripeSecret: string | null;
 
@@ -89,6 +90,7 @@ export interface UseCommerceResult {
   fixStockIssue: (issueId: number | string) => Promise<void>;
   removeStockIssue: (issueId: number | string) => Promise<void>;
   fixAllStockIssues: () => Promise<void>;
+  saveAddress: (payload: Record<string, any>, id?: number | string) => Promise<CommerceAddress>;
   removeItem: (id: number | string) => Promise<void>;
   startCheckout: () => Promise<void>;
   confirmCash: () => Promise<void>;
@@ -204,6 +206,7 @@ export function useCommerce(
   const [customerName, setCustomerName] = useState('');
   const [orderId, setOrderId] = useState<number | string | null>(null);
   const [successOrderId, setSuccessOrderId] = useState<number | string | null>(null);
+  const [successDelivery, setSuccessDelivery] = useState<{ date?: string | null; time?: string | null }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [stripeSecret, setStripeSecret] = useState<string | null>(null);
@@ -428,6 +431,10 @@ export function useCommerce(
       const order = await api.createOrder(payload);
       const id = order?.id ?? (order as any)?.data?.id;
       setSuccessOrderId(id);
+      setSuccessDelivery({
+        date: order?.delivery_date ?? deliveryDate ?? null,
+        time: order?.delivery_time ?? deliveryTime ?? null,
+      });
       setStep('success');
       opts.onCartChanged?.();
       await refreshCart();
@@ -517,6 +524,7 @@ export function useCommerce(
             } catch { /* ignore — order still created */ }
           }
           setSuccessOrderId(orderId);
+          setSuccessDelivery({ date: deliveryDate ?? null, time: deliveryTime ?? null });
           setStep('success');
           opts.onCartChanged?.();
           await refreshCart();
@@ -634,6 +642,39 @@ export function useCommerce(
     }
   }, [api, cart, stockIssues, refreshCart, opts]);
 
+  /**
+   * Create or update a delivery address, then refresh the address list and
+   * re-select the saved address so delivery/dates recompute.
+   */
+  const saveAddress = useCallback(async (payload: Record<string, any>, id?: number | string) => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const saved = id
+        ? await api.updateAddress(id, payload)
+        : await api.createAddress(payload);
+
+      const addrs = await api.getDefaultAddresses();
+      setAddresses(addrs);
+      const match = (saved as any)?.id
+        ? addrs.find((a) => String(a.id) === String((saved as any).id))
+        : null;
+      const pick = match ?? addrs[0] ?? null;
+      if (pick) {
+        setSelectedAddress(pick);
+        setEmail((prev) => prev || pick.email || '');
+        setCustomerName((prev) => prev || pick.customer_name || pick.name || '');
+        await computeEarliestDate(pick);
+      }
+      return saved;
+    } catch (e: any) {
+      setErrorMessage(e?.message ?? 'Could not save the address.');
+      throw e;
+    } finally {
+      setLoading(false);
+    }
+  }, [api, computeEarliestDate]);
+
   const register = useCallback(
     async (payload: { name: string; contact_no: string; email: string; password: string }) => {
       setLoading(true);
@@ -683,6 +724,7 @@ export function useCommerce(
     customerName,
     orderId,
     successOrderId,
+    successDelivery,
     errorMessage,
     stripeSecret,
     loading,
@@ -692,6 +734,7 @@ export function useCommerce(
     fixStockIssue,
     removeStockIssue,
     fixAllStockIssues,
+    saveAddress,
     removeItem,
     startCheckout,
     confirmCash,

@@ -26,6 +26,10 @@ export interface UseCommerceResult {
     customerName: string;
     orderId: number | string | null;
     successOrderId: number | string | null;
+    successDelivery: {
+        date?: string | null;
+        time?: string | null;
+    };
     errorMessage: string | null;
     stripeSecret: string | null;
     loading: boolean;
@@ -35,6 +39,7 @@ export interface UseCommerceResult {
     fixStockIssue: (issueId: number | string) => Promise<void>;
     removeStockIssue: (issueId: number | string) => Promise<void>;
     fixAllStockIssues: () => Promise<void>;
+    saveAddress: (payload: Record<string, any>, id?: number | string) => Promise<CommerceAddress>;
     removeItem: (id: number | string) => Promise<void>;
     startCheckout: () => Promise<void>;
     confirmCash: () => Promise<void>;
