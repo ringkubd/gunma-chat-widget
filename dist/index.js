@@ -10,5 +10,8 @@ export { TypingIndicator } from './components/TypingIndicator';
 // Hooks
 export { useChat } from './hooks/useChat';
 export { useCartActions } from './hooks/useCartActions';
+export { useCommerce } from './hooks/useCommerce';
+// Commerce UI (in-chat checkout)
+export { CommercePanel } from './components/commerce/CommercePanel';
 // API Client
 export { ChatApi } from './lib/api';

@@ -66,7 +66,12 @@ export function useCartActions(config) {
                 btn.innerHTML = '✓';
                 btn.style.backgroundColor = '#059669';
                 btn.style.color = '#fff';
-                setTimeout(() => window.location.reload(), 800);
+                if (config.onAdded) {
+                    config.onAdded(1);
+                }
+                else {
+                    setTimeout(() => window.location.reload(), 800);
+                }
             }
             else {
                 btn.innerHTML = '!';
@@ -80,7 +85,7 @@ export function useCartActions(config) {
             btn.style.opacity = '1';
             btn.style.backgroundColor = '';
         }, 2000);
-    }, [config.cartUrl, config.apiToken, config.getToken, cookieKey]);
+    }, [config.cartUrl, config.apiToken, config.getToken, cookieKey, config.onAdded]);
     const bulkAddToCart = useCallback(async (target) => {
         const productIdsStr = target.getAttribute('data-product-ids');
         if (!productIdsStr)
@@ -106,7 +111,12 @@ export function useCartActions(config) {
                 target.textContent = 'All Added ✓';
                 target.style.backgroundColor = '#059669';
                 target.style.color = '#fff';
-                setTimeout(() => window.location.reload(), 1000);
+                if (config.onAdded) {
+                    config.onAdded(productIds.length);
+                }
+                else {
+                    setTimeout(() => window.location.reload(), 1000);
+                }
             }
             else {
                 target.textContent = 'Failed';
@@ -122,7 +132,7 @@ export function useCartActions(config) {
                 target.style.backgroundColor = '';
             }
         }, 2000);
-    }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey]);
+    }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey, config.onAdded]);
     const handleMessageClick = useCallback(async (e) => {
         const target = e.target;
         // Single product add-to-cart

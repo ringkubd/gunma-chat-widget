@@ -1,0 +1,48 @@
+import type { ChatWidgetConfig, CommerceAddress, CommerceCartItem, CommerceDeliveryInfo, CommerceStep } from '../types';
+import { CommerceApi } from '../lib/commerceApi';
+export interface UseCommerceResult {
+    enabled: boolean;
+    step: CommerceStep;
+    setStep: (s: CommerceStep) => void;
+    cart: CommerceCartItem[];
+    subtotal: number;
+    totalTax: number;
+    shippingCharge: number;
+    total: number;
+    addresses: CommerceAddress[];
+    selectedAddress: CommerceAddress | null;
+    selectAddress: (a: CommerceAddress) => void;
+    deliveryInfo: CommerceDeliveryInfo | null;
+    earliestDate: string | null;
+    deliveryDate: string;
+    setDeliveryDate: (d: string) => void;
+    deliveryTime: string;
+    setDeliveryTime: (t: string) => void;
+    coins: number;
+    appliedCoins: number;
+    setAppliedCoins: (n: number) => void;
+    grandTotal: number;
+    email: string;
+    customerName: string;
+    orderId: number | string | null;
+    successOrderId: number | string | null;
+    errorMessage: string | null;
+    stripeSecret: string | null;
+    loading: boolean;
+    refreshCart: () => Promise<void>;
+    removeItem: (id: number | string) => Promise<void>;
+    startCheckout: () => Promise<void>;
+    confirmCash: () => Promise<void>;
+    prepareCard: () => Promise<void>;
+    confirmCard: (stripe: any, elements: any) => Promise<void>;
+    login: (email: string, password: string) => Promise<void>;
+    api: CommerceApi;
+    stripePublishableKey?: string;
+    currencySymbol: string;
+    freeShippingThreshold: number;
+    freeShippingExcludedState: string;
+    orderCutoffTime: string;
+}
+export declare function useCommerce(config: ChatWidgetConfig, opts?: {
+    onCartChanged?: () => void;
+}): UseCommerceResult;

@@ -7,5 +7,7 @@ export { MessageInput } from './components/MessageInput';
 export { TypingIndicator } from './components/TypingIndicator';
 export { useChat } from './hooks/useChat';
 export { useCartActions } from './hooks/useCartActions';
+export { useCommerce } from './hooks/useCommerce';
+export { CommercePanel } from './components/commerce/CommercePanel';
 export { ChatApi } from './lib/api';
-export type { ChatWidgetConfig, ChatPusherConfig, ChatRouteConfig, ChatStorageConfig, ChatMessage, ChatSession, ChatState, SSEEvent, SSEEventType, } from './types';
+export type { ChatWidgetConfig, ChatPusherConfig, ChatRouteConfig, ChatStorageConfig, ChatCommerceConfig, ChatMessage, ChatSession, ChatState, SSEEvent, SSEEventType, CommerceAddress, CommerceCartItem, CommerceDeliveryInfo, CommerceOrderResult, CommerceStep, } from './types';

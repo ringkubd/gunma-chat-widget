@@ -4,11 +4,13 @@ import React, { useState, useCallback } from 'react';
 import type { ChatWidgetConfig } from '../types';
 import { useChat } from '../hooks/useChat';
 import { useCartActions } from '../hooks/useCartActions';
+import { useCommerce } from '../hooks/useCommerce';
 import { ChatBubble } from './ChatBubble';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
+import { CommercePanel } from './commerce/CommercePanel';
 
 export function ChatWidget(config: ChatWidgetConfig) {
   const {
@@ -27,6 +29,9 @@ export function ChatWidget(config: ChatWidgetConfig) {
     cancelRequest,
   } = useChat(config);
 
+  // Keep a stable ref for the cart refresher used by the click handler.
+  const refreshCommerceCartRef = React.useRef<(() => Promise<void>) | null>(null);
+
   const { handleMessageClick } = useCartActions({
     apiUrl: config.apiUrl,
     routePrefix: config.routes?.prefix,
@@ -34,8 +39,25 @@ export function ChatWidget(config: ChatWidgetConfig) {
     cookieKey: config.storage?.cookieKey,
     apiToken: config.apiToken,
     getToken: config.getToken,
+    onAdded: () => {
+      setShowCommerce(true);
+      void refreshCommerceCartRef.current?.();
+    },
   });
   const [lastMessage, setLastMessage] = useState('');
+  const [showCommerce, setShowCommerce] = useState(false);
+
+  const commerce = useCommerce(config, {
+    onCartChanged: () => {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cart_updated', String(Date.now()));
+      }
+    },
+  });
+
+  React.useEffect(() => {
+    refreshCommerceCartRef.current = commerce.refreshCart;
+  }, [commerce.refreshCart]);
 
   const position = config.position || 'bottom-right';
   const brandColor = config.brandColor || '#10b981';
@@ -75,54 +97,67 @@ export function ChatWidget(config: ChatWidgetConfig) {
             onClose={toggle}
             onEndChat={endChat}
             isConnected={true}
+            onCartClick={commerce.enabled ? () => setShowCommerce((v) => !v) : undefined}
+            cartCount={commerce.enabled ? commerce.cart.length : 0}
           />
 
-          <div onClick={handleMessageClick}>
-            <MessageList
-              messages={messages}
-              welcomeMessage={welcomeMessage}
+          {commerce.enabled && showCommerce ? (
+            <CommercePanel
+              commerce={commerce}
               brandColor={brandColor}
-              websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
+              onClose={() => setShowCommerce(false)}
+              freeShippingThreshold={commerce.freeShippingThreshold}
             />
-          </div>
+          ) : (
+            <>
+              <div onClick={handleMessageClick}>
+                <MessageList
+                  messages={messages}
+                  welcomeMessage={welcomeMessage}
+                  brandColor={brandColor}
+                  websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
+                />
+              </div>
 
-          {/* Tool Status / Typing Indicator */}
-          {(isLoading || toolStatus || isAgentTyping) && (
-            <div className="gunma-status-bar">
-              {(isLoading || isAgentTyping) && <TypingIndicator />}
-              {toolStatus && (
-                <span className="gunma-tool-status">{toolStatus}</span>
+              {/* Tool Status / Typing Indicator */}
+              {(isLoading || toolStatus || isAgentTyping) && (
+                <div className="gunma-status-bar">
+                  {(isLoading || isAgentTyping) && <TypingIndicator />}
+                  {toolStatus && (
+                    <span className="gunma-tool-status">{toolStatus}</span>
+                  )}
+                  {isLoading && (
+                    <button
+                      className="gunma-cancel-btn"
+                      onClick={cancelRequest}
+                      aria-label="Cancel request"
+                      title="Cancel"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               )}
-              {isLoading && (
-                <button
-                  className="gunma-cancel-btn"
-                  onClick={cancelRequest}
-                  aria-label="Cancel request"
-                  title="Cancel"
-                >
-                  ✕
-                </button>
+
+              {/* Error Bar with Retry */}
+              {error && (
+                <div className="gunma-error-bar">
+                  <span>{error}</span>
+                  <button className="gunma-retry-btn" onClick={handleRetry}>
+                    Retry
+                  </button>
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Error Bar with Retry */}
-          {error && (
-            <div className="gunma-error-bar">
-              <span>{error}</span>
-              <button className="gunma-retry-btn" onClick={handleRetry}>
-                Retry
-              </button>
-            </div>
+              <MessageInput
+                onSend={handleSend}
+                onUpload={uploadFile}
+                onTyping={sendTyping}
+                isLoading={isLoading}
+                placeholder={config.placeholder || 'Type a message...'}
+              />
+            </>
           )}
-
-          <MessageInput
-            onSend={handleSend}
-            onUpload={uploadFile}
-            onTyping={sendTyping}
-            isLoading={isLoading}
-            placeholder={config.placeholder || 'Type a message...'}
-          />
         </div>
       )}
 

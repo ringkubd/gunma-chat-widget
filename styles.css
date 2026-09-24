@@ -979,3 +979,262 @@
     border-color: #7f1d1d;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   In-chat Commerce (cart, checkout, payment)
+   ═══════════════════════════════════════════════════════════════ */
+
+.gunma-header-cart {
+  position: relative;
+}
+
+.gunma-header-cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.gunma-commerce {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--gunma-bg);
+  color: var(--gunma-text);
+  font-family: var(--gunma-font);
+  font-size: 13px;
+}
+
+.gunma-commerce-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--gunma-border);
+  background: var(--gunma-bg-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.gunma-commerce-close {
+  border: none;
+  background: transparent;
+  color: var(--gunma-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.gunma-commerce-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gunma-border);
+}
+
+.gunma-commerce-h {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.gunma-commerce-muted {
+  color: var(--gunma-text-muted);
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.gunma-commerce-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  margin: 6px 0;
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm);
+  background: var(--gunma-bg);
+  color: var(--gunma-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.gunma-commerce-label {
+  display: block;
+  margin: 8px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gunma-text-secondary);
+}
+
+.gunma-commerce-address {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--gunma-radius-sm);
+  background: var(--gunma-bg-secondary);
+  font-size: 12px;
+  color: var(--gunma-text-secondary);
+}
+
+.gunma-commerce-address strong {
+  color: var(--gunma-text);
+  font-size: 13px;
+}
+
+.gunma-commerce-coins {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.gunma-commerce-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--gunma-border);
+}
+
+.gunma-commerce-item-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--gunma-radius-xs);
+  flex-shrink: 0;
+}
+
+.gunma-commerce-item-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.gunma-commerce-item-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gunma-commerce-item-sub {
+  color: var(--gunma-text-muted);
+  font-size: 12px;
+}
+
+.gunma-commerce-remove {
+  border: none;
+  background: transparent;
+  color: var(--gunma-text-muted);
+  cursor: pointer;
+}
+
+.gunma-commerce-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 12px;
+  color: var(--gunma-text-secondary);
+}
+
+.gunma-commerce-grand {
+  font-size: 14px;
+  color: var(--gunma-text);
+  padding-top: 8px;
+}
+
+.gunma-commerce-modes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.gunma-commerce-mode {
+  flex: 1;
+  padding: 9px;
+  border: 2px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-sm);
+  background: var(--gunma-bg);
+  color: var(--gunma-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gunma-commerce-mode.is-active {
+  border-color: var(--gunma-brand);
+  color: var(--gunma-text);
+  background: var(--gunma-bg-secondary);
+}
+
+.gunma-commerce-primary {
+  display: block;
+  width: 100%;
+  padding: 11px;
+  margin-top: 12px;
+  border: none;
+  border-radius: var(--gunma-radius-sm);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.gunma-commerce-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gunma-commerce-error {
+  margin-top: 10px;
+  color: #dc2626;
+  font-size: 12px;
+}
+
+.gunma-commerce-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.gunma-commerce-check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  font-size: 28px;
+  line-height: 56px;
+}
+
+.gunma-commerce-order {
+  font-weight: 700;
+  color: var(--gunma-text);
+}
+
+.gunma-commerce-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gunma-border);
+  border-top-color: var(--gunma-brand);
+  border-radius: 50%;
+  animation: gunma-spin 0.8s linear infinite;
+}
+
+@keyframes gunma-spin {
+  to { transform: rotate(360deg); }
+}

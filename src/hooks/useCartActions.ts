@@ -37,6 +37,12 @@ interface UseCartActionsConfig {
    * Optional function to resolve Bearer token dynamically.
    */
   getToken?: () => string | null;
+
+  /**
+   * Called after a successful add. When provided, the widget opens the
+   * in-chat commerce panel instead of reloading the page.
+   */
+  onAdded?: (count: number) => void;
 }
 
 /**
@@ -110,7 +116,11 @@ export function useCartActions(config: UseCartActionsConfig) {
         btn.innerHTML = '✓';
         btn.style.backgroundColor = '#059669';
         btn.style.color = '#fff';
-        setTimeout(() => window.location.reload(), 800);
+        if (config.onAdded) {
+          config.onAdded(1);
+        } else {
+          setTimeout(() => window.location.reload(), 800);
+        }
       } else {
         btn.innerHTML = '!';
       }
@@ -123,7 +133,7 @@ export function useCartActions(config: UseCartActionsConfig) {
       btn.style.opacity = '1';
       btn.style.backgroundColor = '';
     }, 2000);
-  }, [config.cartUrl, config.apiToken, config.getToken, cookieKey]);
+  }, [config.cartUrl, config.apiToken, config.getToken, cookieKey, config.onAdded]);
 
   const bulkAddToCart = useCallback(async (target: HTMLElement) => {
     const productIdsStr = target.getAttribute('data-product-ids');
@@ -153,7 +163,11 @@ export function useCartActions(config: UseCartActionsConfig) {
         target.textContent = 'All Added ✓';
         target.style.backgroundColor = '#059669';
         target.style.color = '#fff';
-        setTimeout(() => window.location.reload(), 1000);
+        if (config.onAdded) {
+          config.onAdded(productIds.length);
+        } else {
+          setTimeout(() => window.location.reload(), 1000);
+        }
       } else {
         target.textContent = 'Failed';
       }
@@ -168,7 +182,7 @@ export function useCartActions(config: UseCartActionsConfig) {
         target.style.backgroundColor = '';
       }
     }, 2000);
-  }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey]);
+  }, [config.apiUrl, routePrefix, config.apiToken, config.getToken, cookieKey, config.onAdded]);
 
   const handleMessageClick = useCallback(
     async (e: React.MouseEvent) => {

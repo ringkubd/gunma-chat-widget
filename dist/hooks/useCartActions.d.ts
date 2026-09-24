@@ -28,6 +28,11 @@ interface UseCartActionsConfig {
      * Optional function to resolve Bearer token dynamically.
      */
     getToken?: () => string | null;
+    /**
+     * Called after a successful add. When provided, the widget opens the
+     * in-chat commerce panel instead of reloading the page.
+     */
+    onAdded?: (count: number) => void;
 }
 /**
  * Extracted cart action logic — keeps ChatWidget.tsx clean.

@@ -12,6 +12,10 @@ export { TypingIndicator } from './components/TypingIndicator';
 // Hooks
 export { useChat } from './hooks/useChat';
 export { useCartActions } from './hooks/useCartActions';
+export { useCommerce } from './hooks/useCommerce';
+
+// Commerce UI (in-chat checkout)
+export { CommercePanel } from './components/commerce/CommercePanel';
 
 // API Client
 export { ChatApi } from './lib/api';
@@ -22,9 +26,15 @@ export type {
   ChatPusherConfig,
   ChatRouteConfig,
   ChatStorageConfig,
+  ChatCommerceConfig,
   ChatMessage,
   ChatSession,
   ChatState,
   SSEEvent,
   SSEEventType,
+  CommerceAddress,
+  CommerceCartItem,
+  CommerceDeliveryInfo,
+  CommerceOrderResult,
+  CommerceStep,
 } from './types';
