@@ -13,11 +13,13 @@ export class ChatApi {
   private baseUrl: string;
   private cookieId?: string;
   private apiToken?: string;
+  private visitorId?: string;
 
-  constructor(apiUrl: string, cookieId?: string, apiToken?: string) {
+  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
     this.cookieId = cookieId;
     this.apiToken = apiToken;
+    this.visitorId = visitorId;
   }
 
   private getHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
@@ -28,6 +30,10 @@ export class ChatApi {
 
     if (this.apiToken) {
       headers['Authorization'] = `Bearer ${this.apiToken}`;
+    }
+
+    if (this.visitorId) {
+      headers['X-Visitor-Id'] = this.visitorId;
     }
 
     // Remove headers with empty values (useful for FormData)

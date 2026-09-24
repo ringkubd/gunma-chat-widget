@@ -1,4 +1,3 @@
-import React from 'react';
 interface ChatHeaderProps {
     brandName: string;
     brandColor: string;
@@ -6,5 +5,5 @@ interface ChatHeaderProps {
     onEndChat: () => void;
     isConnected?: boolean;
 }
-export declare function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnected }: ChatHeaderProps): React.JSX.Element;
+export declare function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnected }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
 export {};

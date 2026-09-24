@@ -6,7 +6,8 @@ export declare class ChatApi {
     private baseUrl;
     private cookieId?;
     private apiToken?;
-    constructor(apiUrl: string, cookieId?: string, apiToken?: string);
+    private visitorId?;
+    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string);
     private getHeaders;
     /**
      * Fetch with timeout and retry for transient failures.

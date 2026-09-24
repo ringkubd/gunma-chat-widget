@@ -56,7 +56,7 @@ export function useChat(config: ChatWidgetConfig) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.apiToken, config.getToken, tokenKeys.join(',')]);
 
-  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken()));
+  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey)));
   const echoRef = useRef<Echo<any> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -73,8 +73,8 @@ export function useChat(config: ChatWidgetConfig) {
   // Sync apiToken when config changes
   useEffect(() => {
     const token = resolveToken();
-    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token);
-  }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, routePrefix, resolveToken]);
+    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey));
+  }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey]);
 
   // Initialize Echo
   useEffect(() => {
@@ -263,6 +263,9 @@ export function useChat(config: ChatWidgetConfig) {
       return newSession;
     } catch (err) {
       setError('Failed to connect. Please try again.');
+      // Never leave the widget in a permanently-locked state after a failed
+      // session init — otherwise every subsequent send is silently dropped.
+      loadingRef.current = false;
       return null;
     }
   }, [config.visitorId, config.customerName, config.channel, sessionIdKey]);
@@ -288,14 +291,21 @@ export function useChat(config: ChatWidgetConfig) {
       }
     }
 
-    // Optimistically add user message
+    // Optimistically add user message, but avoid duplicating the previous user
+    // message verbatim (e.g. when the Retry button re-sends the same text).
     const userMsg: ChatMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
       content: text,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && last.role === 'user' && last.content === text) {
+        return prev;
+      }
+      return [...prev, userMsg];
+    });
 
     // SSE streaming
     abortRef.current = apiRef.current.sendMessageStream(
@@ -400,6 +410,25 @@ export function useChat(config: ChatWidgetConfig) {
     setIsLoading(false);
     setToolStatus(null);
     setIsAgentTyping(false);
+  }, []);
+
+  // Unmount cleanup — abort in-flight streams, clear timers and disconnect Echo
+  // so route changes / HMR do not leak connections or fire setState after unmount.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      try {
+        echoRef.current?.disconnect();
+      } catch {
+        // ignore
+      }
+      echoRef.current = null;
+      channelListenersRef.current.clear();
+    };
   }, []);
 
   /**

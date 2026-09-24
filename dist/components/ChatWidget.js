@@ -10,7 +10,14 @@ import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 export function ChatWidget(config) {
     const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, } = useChat(config);
-    const { handleMessageClick } = useCartActions({ apiUrl: config.apiUrl });
+    const { handleMessageClick } = useCartActions({
+        apiUrl: config.apiUrl,
+        routePrefix: config.routes?.prefix,
+        cartUrl: config.cartUrl,
+        cookieKey: config.storage?.cookieKey,
+        apiToken: config.apiToken,
+        getToken: config.getToken,
+    });
     const [lastMessage, setLastMessage] = useState('');
     const position = config.position || 'bottom-right';
     const brandColor = config.brandColor || '#10b981';

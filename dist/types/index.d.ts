@@ -31,6 +31,8 @@ export interface ChatStorageConfig {
     sessionIdKey?: string;
     /** Keys tried in order to find a Bearer token. Default: ['tk', 'token'] */
     tokenKeys?: string[];
+    /** Key used to find the host's guest cart cookie id. Default: 'gunma_cookie' */
+    cookieKey?: string;
 }
 export interface ChatWidgetConfig {
     /** Base URL of the Laravel backend (e.g. 'https://api.example.com') */

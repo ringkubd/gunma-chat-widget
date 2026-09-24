@@ -6,10 +6,11 @@ const MAX_RETRIES = 2;
  * API client for the Gunma AI Agent Laravel backend.
  */
 export class ChatApi {
-    constructor(apiUrl, cookieId, apiToken) {
+    constructor(apiUrl, cookieId, apiToken, visitorId) {
         this.baseUrl = apiUrl.replace(/\/$/, '');
         this.cookieId = cookieId;
         this.apiToken = apiToken;
+        this.visitorId = visitorId;
     }
     getHeaders(additionalHeaders = {}) {
         const headers = {
@@ -18,6 +19,9 @@ export class ChatApi {
         };
         if (this.apiToken) {
             headers['Authorization'] = `Bearer ${this.apiToken}`;
+        }
+        if (this.visitorId) {
+            headers['X-Visitor-Id'] = this.visitorId;
         }
         // Remove headers with empty values (useful for FormData)
         Object.keys(headers).forEach(key => {
