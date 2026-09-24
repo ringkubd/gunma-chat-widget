@@ -84,7 +84,43 @@ export class CommerceApi {
         if (res.status === 204)
             return undefined;
         const body = await res.json().catch(() => null);
+        // The backend often returns HTTP 200 even when the operation failed, putting
+        // the real status in the body (success:false / status >= 400). Treat those
+        // as errors so a failed order never renders a success screen.
+        if (body && typeof body === 'object') {
+            const bodyStatus = typeof body.status === 'number' ? body.status : null;
+            if (body.success === false || (bodyStatus !== null && bodyStatus >= 400)) {
+                throw new Error(this.errorMessage(body, `${method} ${path} failed (${bodyStatus ?? 'error'})`));
+            }
+        }
         return this.normalize(body);
+    }
+    /**
+     * Does a response body represent a failure even though HTTP was 200?
+     * The Gunma backend wraps failures as {success:false} or {status:4xx}.
+     */
+    static bodyIndicatesError(body) {
+        if (!body || typeof body !== 'object')
+            return false;
+        if (body.success === false)
+            return true;
+        const status = typeof body.status === 'number' ? body.status : null;
+        return status !== null && status >= 400;
+    }
+    /** Extract a human-readable error message from a response body. */
+    errorMessage(body, fallback) {
+        const msg = body?.message;
+        if (typeof msg === 'string' && msg.trim())
+            return msg;
+        if (msg && typeof msg === 'object') {
+            const flat = Object.values(msg).flat().filter(Boolean).join(' ');
+            if (flat)
+                return flat;
+        }
+        if (Array.isArray(body?.errors) && body.errors.length) {
+            return body.errors.filter(Boolean).join(' ');
+        }
+        return fallback;
     }
     /* ── Cart ───────────────────────────────────────────────────── */
     async getCart() {

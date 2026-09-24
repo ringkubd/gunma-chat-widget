@@ -32,6 +32,13 @@ export declare class CommerceApi {
     private headers;
     private normalize;
     private request;
+    /**
+     * Does a response body represent a failure even though HTTP was 200?
+     * The Gunma backend wraps failures as {success:false} or {status:4xx}.
+     */
+    static bodyIndicatesError(body: any): boolean;
+    /** Extract a human-readable error message from a response body. */
+    private errorMessage;
     getCart(): Promise<CommerceCartItem[]>;
     removeCartItem(id: number | string): Promise<void>;
     getDefaultAddresses(): Promise<CommerceAddress[]>;
