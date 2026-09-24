@@ -137,6 +137,10 @@ export class CommerceApi {
     async removeCartItem(id) {
         await this.request(`/Carts/${id}`, { method: 'DELETE' });
     }
+    /** Update a cart line's quantity (host PATCH /Carts/{id}). */
+    async updateCartItem(id, body) {
+        await this.request(`/Carts/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+    }
     /* ── Addresses ──────────────────────────────────────────────── */
     async getDefaultAddresses() {
         const data = await this.request('/Default-Addresses');

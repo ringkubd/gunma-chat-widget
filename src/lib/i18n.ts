@@ -52,6 +52,14 @@ export interface WidgetStrings {
   noAddress: string;
   addAddress: string;
   freeShipHint: (amount: string) => string;
+  stockIssueTitle: string;
+  stockIssueHint: string;
+  stockReason: (reason: string) => string;
+  stockOnly: (n: number) => string;
+  stockRequested: (n: number) => string;
+  stockReduceTo: (n: number) => string;
+  stockRemove: string;
+  stockFixAll: string;
 }
 
 const en: WidgetStrings = {
@@ -101,6 +109,22 @@ const en: WidgetStrings = {
   noAddress: 'No delivery address found.',
   addAddress: 'Add a new address',
   freeShipHint: (amount) => `Add ${amount} more for free shipping.`,
+  stockIssueTitle: 'Some items are not available',
+  stockIssueHint: 'Please remove the highlighted item(s) above before checking out.',
+  stockReason: (reason) => {
+    switch (reason) {
+      case 'out_of_stock': return 'Out of stock';
+      case 'insufficient': return 'Not enough stock';
+      case 'unavailable': return 'No longer available';
+      case 'offline': return 'Not available for online order';
+      default: return 'Unavailable';
+    }
+  },
+  stockOnly: (n) => `only ${n} left`,
+  stockRequested: (n) => `you asked for ${n}`,
+  stockReduceTo: (n) => `Reduce to ${n}`,
+  stockRemove: 'Remove',
+  stockFixAll: 'Fix all automatically',
 };
 
 const bn: WidgetStrings = {
@@ -151,6 +175,22 @@ const bn: WidgetStrings = {
   noAddress: 'কোনো ডেলিভারি ঠিকানা পাওয়া যায়নি।',
   addAddress: 'নতুন ঠিকানা যোগ করুন',
   freeShipHint: (amount) => `ফ্রি শিপিংয়ের জন্য আরও ${amount} যোগ করুন।`,
+  stockIssueTitle: 'কিছু পণ্য এখন পাওয়া যাচ্ছে না',
+  stockIssueHint: 'চেকআউট করার আগে উপরের চিহ্নিত পণ্যটি কার্ট থেকে সরিয়ে দিন।',
+  stockReason: (reason) => {
+    switch (reason) {
+      case 'out_of_stock': return 'স্টক শেষ';
+      case 'insufficient': return 'পর্যাপ্ত স্টক নেই';
+      case 'unavailable': return 'আর পাওয়া যাচ্ছে না';
+      case 'offline': return 'অনলাইন অর্ডারের জন্য নেই';
+      default: return 'পাওয়া যাচ্ছে না';
+    }
+  },
+  stockOnly: (n) => `মাত্র ${n}টি আছে`,
+  stockRequested: (n) => `আপনি ${n}টি চেয়েছেন`,
+  stockReduceTo: (n) => `${n}টি করুন`,
+  stockRemove: 'সরিয়ে দিন',
+  stockFixAll: 'সব ঠিক করে দিন',
 };
 
 const ja: WidgetStrings = {
@@ -201,6 +241,22 @@ const ja: WidgetStrings = {
   noAddress: '配送先住所が見つかりません。',
   addAddress: '新しい住所を追加',
   freeShipHint: (amount) => `あと ${amount} で送料無料。`,
+  stockIssueTitle: '一部の商品はご購入いただけません',
+  stockIssueHint: '会計の前に、上記の対象商品をカートから削除してください。',
+  stockReason: (reason) => {
+    switch (reason) {
+      case 'out_of_stock': return '在庫切れ';
+      case 'insufficient': return '在庫不足';
+      case 'unavailable': return '販売終了';
+      case 'offline': return 'オンライン注文対象外';
+      default: return 'ご購入いただけません';
+    }
+  },
+  stockOnly: (n) => `残り${n}点`,
+  stockRequested: (n) => `${n}点をご希望`,
+  stockReduceTo: (n) => `${n}点に変更`,
+  stockRemove: '削除',
+  stockFixAll: '自動で修正',
 };
 
 const DICTS: Record<WidgetLocale, WidgetStrings> = { en, bn, ja };

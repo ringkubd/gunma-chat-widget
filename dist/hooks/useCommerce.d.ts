@@ -29,7 +29,12 @@ export interface UseCommerceResult {
     errorMessage: string | null;
     stripeSecret: string | null;
     loading: boolean;
-    refreshCart: () => Promise<void>;
+    refreshCart: () => Promise<CommerceCartItem[]>;
+    stockIssues: StockIssue[];
+    hasStockIssues: boolean;
+    fixStockIssue: (issueId: number | string) => Promise<void>;
+    removeStockIssue: (issueId: number | string) => Promise<void>;
+    fixAllStockIssues: () => Promise<void>;
     removeItem: (id: number | string) => Promise<void>;
     startCheckout: () => Promise<void>;
     confirmCash: () => Promise<void>;
@@ -49,6 +54,23 @@ export interface UseCommerceResult {
     freeShippingExcludedState: string;
     orderCutoffTime: string;
 }
+export interface StockIssue {
+    id: number | string;
+    title: string;
+    reason: 'out_of_stock' | 'insufficient' | 'unavailable' | 'offline';
+    /** Requested quantity in the cart. */
+    requested: number;
+    /** Available stock (null when unknown). */
+    available: number | null;
+    /** Whether this issue can be auto-fixed by adjusting quantity (insufficient). */
+    fixable: boolean;
+}
+/**
+ * Pure stock pre-validation. Given cart items (with embedded product data),
+ * return the items that cannot be ordered so the customer is warned BEFORE
+ * checkout/payment. Kept outside the hook so it can be tested directly.
+ */
+export declare function computeStockIssues(cart: CommerceCartItem[]): StockIssue[];
 export declare function useCommerce(config: ChatWidgetConfig, opts?: {
     onCartChanged?: () => void;
 }): UseCommerceResult;

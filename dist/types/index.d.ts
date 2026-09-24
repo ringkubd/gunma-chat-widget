@@ -166,6 +166,17 @@ export interface CommerceCartItem {
     image?: string | null;
     slug?: string | null;
     unit?: string | null;
+    /** Nested product from the cart API (used for stock pre-validation). */
+    product?: {
+        id?: number | string;
+        title?: string;
+        status?: string;
+        is_online_available?: boolean | string;
+        total_available_quantity?: number;
+        stocks?: Array<{
+            available_quantity?: number | string;
+        }>;
+    } | null;
 }
 export interface CommerceDeliveryInfo {
     after_delay: number | null;

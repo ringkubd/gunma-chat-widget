@@ -33,7 +33,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   } = useChat(config);
 
   // Keep a stable ref for the cart refresher used by the click handler.
-  const refreshCommerceCartRef = React.useRef<(() => Promise<void>) | null>(null);
+  const refreshCommerceCartRef = React.useRef<(() => Promise<unknown>) | null>(null);
 
   const { handleMessageClick } = useCartActions({
     apiUrl: config.apiUrl,

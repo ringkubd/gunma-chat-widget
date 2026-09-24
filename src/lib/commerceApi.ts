@@ -166,6 +166,11 @@ export class CommerceApi {
     await this.request(`/Carts/${id}`, { method: 'DELETE' });
   }
 
+  /** Update a cart line's quantity (host PATCH /Carts/{id}). */
+  async updateCartItem(id: number | string, body: Record<string, any>): Promise<void> {
+    await this.request(`/Carts/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+  }
+
   /* ── Addresses ──────────────────────────────────────────────── */
 
   async getDefaultAddresses(): Promise<CommerceAddress[]> {

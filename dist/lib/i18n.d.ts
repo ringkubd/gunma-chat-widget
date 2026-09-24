@@ -50,5 +50,13 @@ export interface WidgetStrings {
     noAddress: string;
     addAddress: string;
     freeShipHint: (amount: string) => string;
+    stockIssueTitle: string;
+    stockIssueHint: string;
+    stockReason: (reason: string) => string;
+    stockOnly: (n: number) => string;
+    stockRequested: (n: number) => string;
+    stockReduceTo: (n: number) => string;
+    stockRemove: string;
+    stockFixAll: string;
 }
 export declare function getStrings(locale?: WidgetLocale): WidgetStrings;

@@ -41,6 +41,8 @@ export declare class CommerceApi {
     private errorMessage;
     getCart(): Promise<CommerceCartItem[]>;
     removeCartItem(id: number | string): Promise<void>;
+    /** Update a cart line's quantity (host PATCH /Carts/{id}). */
+    updateCartItem(id: number | string, body: Record<string, any>): Promise<void>;
     getDefaultAddresses(): Promise<CommerceAddress[]>;
     getAllAddresses(): Promise<CommerceAddress[]>;
     createAddress(payload: Record<string, any>): Promise<CommerceAddress>;

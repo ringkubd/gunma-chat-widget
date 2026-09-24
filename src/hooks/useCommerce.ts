@@ -83,7 +83,12 @@ export interface UseCommerceResult {
   stripeSecret: string | null;
 
   loading: boolean;
-  refreshCart: () => Promise<void>;
+  refreshCart: () => Promise<CommerceCartItem[]>;
+  stockIssues: StockIssue[];
+  hasStockIssues: boolean;
+  fixStockIssue: (issueId: number | string) => Promise<void>;
+  removeStockIssue: (issueId: number | string) => Promise<void>;
+  fixAllStockIssues: () => Promise<void>;
   removeItem: (id: number | string) => Promise<void>;
   startCheckout: () => Promise<void>;
   confirmCash: () => Promise<void>;
@@ -103,6 +108,66 @@ export interface UseCommerceResult {
   freeShippingThreshold: number;
   freeShippingExcludedState: string;
   orderCutoffTime: string;
+}
+
+export interface StockIssue {
+  id: number | string;
+  title: string;
+  reason: 'out_of_stock' | 'insufficient' | 'unavailable' | 'offline';
+  /** Requested quantity in the cart. */
+  requested: number;
+  /** Available stock (null when unknown). */
+  available: number | null;
+  /** Whether this issue can be auto-fixed by adjusting quantity (insufficient). */
+  fixable: boolean;
+}
+
+/**
+ * Pure stock pre-validation. Given cart items (with embedded product data),
+ * return the items that cannot be ordered so the customer is warned BEFORE
+ * checkout/payment. Kept outside the hook so it can be tested directly.
+ */
+export function computeStockIssues(cart: CommerceCartItem[]): StockIssue[] {
+  const issues: StockIssue[] = [];
+  for (const item of cart) {
+    const p = item.product;
+    if (!p) continue;
+    const title = item.title ?? item.product_title ?? p.title ?? `#${item.product_id}`;
+    const requested = Number(item.quantity) || 0;
+
+    const status = String(p.status ?? '');
+    if (status && status.toLowerCase() !== 'active') {
+      issues.push({ id: item.id, title, reason: 'unavailable', requested, available: 0, fixable: false });
+      continue;
+    }
+
+    if (p.is_online_available !== undefined) {
+      const online = p.is_online_available === true || String(p.is_online_available) === 'Yes';
+      if (!online) {
+        issues.push({ id: item.id, title, reason: 'offline', requested, available: 0, fixable: false });
+        continue;
+      }
+    }
+
+    let available: number | null = null;
+    if (typeof p.total_available_quantity === 'number') {
+      available = p.total_available_quantity;
+    } else if (Array.isArray(p.stocks)) {
+      available = p.stocks.reduce((s, st) => s + Number(st.available_quantity ?? 0), 0);
+    }
+
+    if (available !== null && requested > available) {
+      issues.push({
+        id: item.id,
+        title,
+        reason: available <= 0 ? 'out_of_stock' : 'insufficient',
+        requested,
+        available,
+        fixable: available > 0,
+      });
+    }
+  }
+  return issues;
 }
 
 export function useCommerce(
@@ -170,13 +235,15 @@ export function useCommerce(
 
   /* ── Cart ─────────────────────────────────────────────────── */
 
-  const refreshCart = useCallback(async () => {
-    if (!enabled) return;
+  const refreshCart = useCallback(async (): Promise<CommerceCartItem[]> => {
+    if (!enabled) return [];
     try {
       const items = await api.getCart();
       setCart(items);
+      return items;
     } catch (e) {
       // ignore — cart may be empty
+      return [];
     }
   }, [enabled, api]);
 
@@ -192,6 +259,12 @@ export function useCommerce(
       setLoading(false);
     }
   }, [api, refreshCart, opts]);
+
+  /* ── Stock pre-validation (block checkout BEFORE placing the order) ───── */
+
+  const stockIssues = useMemo(() => computeStockIssues(cart), [cart]);
+
+  const hasStockIssues = stockIssues.length > 0;
 
   /* ── Start checkout ───────────────────────────────────────── */
 
@@ -249,7 +322,13 @@ export function useCommerce(
         return;
       }
 
-      await refreshCart();
+      // Refresh cart and validate stock BEFORE proceeding to delivery/payment.
+      const freshCart = await refreshCart();
+      const freshIssues = computeStockIssues(freshCart);
+      if (freshIssues.length > 0) {
+        setStep('cart');
+        return;
+      }
 
       const addrs = await api.getDefaultAddresses();
       setAddresses(addrs);
@@ -330,6 +409,12 @@ export function useCommerce(
 
   const confirmCash = useCallback(async () => {
     if (busyRef.current) return;
+    if (hasStockIssues) {
+      setErrorMessage('Please remove the unavailable item(s) from your cart before ordering.');
+      setStep('cart');
+      void refreshCart();
+      return;
+    }
     busyRef.current = true;
     setLoading(true);
     setErrorMessage(null);
@@ -353,12 +438,18 @@ export function useCommerce(
       setLoading(false);
       busyRef.current = false;
     }
-  }, [buildOrderPayload, total, appliedCoins, api, opts, refreshCart]);
+  }, [buildOrderPayload, total, appliedCoins, api, opts, refreshCart, hasStockIssues]);
 
   /* ── Card order (create order, then get clientSecret) ─────── */
 
   const prepareCard = useCallback(async () => {
     if (busyRef.current) return;
+    if (hasStockIssues) {
+      setErrorMessage('Please remove the unavailable item(s) from your cart before paying.');
+      setStep('cart');
+      void refreshCart();
+      return;
+    }
     busyRef.current = true;
     setLoading(true);
     setErrorMessage(null);
@@ -380,7 +471,7 @@ export function useCommerce(
       setLoading(false);
       busyRef.current = false;
     }
-  }, [buildOrderPayload, orderId, api, grandTotal, email, selectedAddress]);
+  }, [buildOrderPayload, orderId, api, grandTotal, email, selectedAddress, hasStockIssues, refreshCart]);
 
   const confirmCard = useCallback(
     async (stripe: any, elements: any) => {
@@ -468,6 +559,81 @@ export function useCommerce(
     [api, startCheckout],
   );
 
+  /**
+   * Smart fix: reduce an over-quantity item to the max available amount.
+   */
+  const fixStockIssue = useCallback(async (issueId: number | string) => {
+    const issue = stockIssues.find((x) => String(x.id) === String(issueId));
+    if (!issue || !issue.fixable || issue.available === null) return;
+    const item = cart.find((x) => String(x.id) === String(issueId));
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      const qty = Math.max(1, issue.available);
+      await api.updateCartItem(issueId, {
+        product_id: item?.product_id,
+        product_option_id: '',
+        quantity: qty,
+        item_price: Number(item?.item_price ?? 0),
+        discount_amount: 0,
+      });
+      await refreshCart();
+      opts.onCartChanged?.();
+    } catch (e: any) {
+      setErrorMessage(e?.message ?? 'Could not update the quantity.');
+    } finally {
+      setLoading(false);
+    }
+  }, [api, cart, stockIssues, refreshCart, opts]);
+
+  /**
+   * Smart fix: remove an item that cannot be ordered at all.
+   */
+  const removeStockIssue = useCallback(async (issueId: number | string) => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      await api.removeCartItem(issueId);
+      await refreshCart();
+      opts.onCartChanged?.();
+    } catch (e: any) {
+      setErrorMessage(e?.message ?? 'Could not remove the item.');
+    } finally {
+      setLoading(false);
+    }
+  }, [api, refreshCart, opts]);
+
+  /**
+   * Smart fix: apply all resolvable issues at once (reduce quantities to max,
+   * remove unavailable items).
+   */
+  const fixAllStockIssues = useCallback(async () => {
+    setLoading(true);
+    setErrorMessage(null);
+    try {
+      for (const issue of stockIssues) {
+        if (issue.fixable && issue.available !== null) {
+          const item = cart.find((x) => String(x.id) === String(issue.id));
+          await api.updateCartItem(issue.id, {
+            product_id: item?.product_id,
+            product_option_id: '',
+            quantity: Math.max(1, issue.available),
+            item_price: Number(item?.item_price ?? 0),
+            discount_amount: 0,
+          });
+        } else {
+          await api.removeCartItem(issue.id);
+        }
+      }
+      await refreshCart();
+      opts.onCartChanged?.();
+    } catch (e: any) {
+      setErrorMessage(e?.message ?? 'Could not fix the cart automatically.');
+    } finally {
+      setLoading(false);
+    }
+  }, [api, cart, stockIssues, refreshCart, opts]);
+
   const register = useCallback(
     async (payload: { name: string; contact_no: string; email: string; password: string }) => {
       setLoading(true);
@@ -521,6 +687,11 @@ export function useCommerce(
     stripeSecret,
     loading,
     refreshCart,
+    stockIssues,
+    hasStockIssues,
+    fixStockIssue,
+    removeStockIssue,
+    fixAllStockIssues,
     removeItem,
     startCheckout,
     confirmCash,

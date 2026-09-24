@@ -1276,3 +1276,41 @@
 .gunma-msg-img--uploaded {
   border: 1px solid var(--gunma-border, #e2e8f0);
 }
+
+/* ── Stock pre-validation warning + smart fixes ── */
+.gunma-commerce-stock-warning {
+  border: 1px solid #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: var(--gunma-radius-sm, 10px);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.gunma-commerce-stock-warning strong { display: block; margin-bottom: 6px; font-size: 13px; }
+.gunma-commerce-stock-warning ul { margin: 0; padding-left: 16px; }
+.gunma-commerce-stock-warning li { margin-bottom: 6px; list-style: disc; }
+.gunma-commerce-stock-line { display: flex; flex-direction: column; gap: 4px; }
+.gunma-commerce-stock-actions { display: flex; gap: 6px; }
+.gunma-commerce-stock-fix,
+.gunma-commerce-stock-remove,
+.gunma-commerce-stock-fix-all {
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #991b1b;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gunma-commerce-stock-fix { border-color: #10b981; color: #047857; }
+.gunma-commerce-stock-fix-all {
+  margin-top: 8px;
+  border-color: #991b1b;
+  background: #991b1b;
+  color: #fff;
+  padding: 6px 10px;
+}
+.gunma-commerce-item--invalid { background: #fff7f7; border-radius: 8px; padding-left: 6px; }
+.gunma-commerce-item-bad { color: #dc2626; font-size: 11px; font-weight: 600; }

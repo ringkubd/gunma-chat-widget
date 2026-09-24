@@ -75,6 +75,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     email, setEmail, customerName,
     successOrderId, errorMessage, loading,
     refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register,
+    stockIssues, hasStockIssues, fixStockIssue, removeStockIssue, fixAllStockIssues,
   } = commerce as UseCommerceResult & { email: string; setEmail: (v: string) => void };
 
   const [loginEmail, setLoginEmail] = useState(email || '');
@@ -417,20 +418,70 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
           <p className="gunma-commerce-muted">{s.cartEmpty}</p>
         ) : (
           <>
-            {cart.map((item) => (
-              <div key={item.id} className="gunma-commerce-item">
-                {item.image && <img className="gunma-commerce-item-img" src={item.image} alt="" />}
-                <div className="gunma-commerce-item-body">
-                  <span className="gunma-commerce-item-title">
-                    {item.title ?? item.product_title ?? `#${item.product_id}`}
-                  </span>
-                  <span className="gunma-commerce-item-sub">
-                    {item.quantity} × {money(symbol, Number(item.item_price || 0))}
-                  </span>
-                </div>
-                <button className="gunma-commerce-remove" onClick={() => removeItem(item.id)} aria-label="Remove">✕</button>
+            {hasStockIssues && (
+              <div className="gunma-commerce-stock-warning">
+                <strong>⚠️ {s.stockIssueTitle}</strong>
+                <ul>
+                  {stockIssues.map((iss) => (
+                    <li key={iss.id}>
+                      <span className="gunma-commerce-stock-line">
+                        <span>{iss.title} — {s.stockReason(iss.reason)}
+                          {iss.reason === 'insufficient' && iss.available !== null
+                            ? ` (${s.stockOnly(iss.available)}; ${s.stockRequested(iss.requested)})`
+                            : ''}
+                        </span>
+                        <span className="gunma-commerce-stock-actions">
+                          {iss.fixable && iss.available !== null && (
+                            <button
+                              className="gunma-commerce-stock-fix"
+                              disabled={loading}
+                              onClick={() => fixStockIssue(iss.id)}
+                            >
+                              {s.stockReduceTo(Math.max(1, iss.available))}
+                            </button>
+                          )}
+                          <button
+                            className="gunma-commerce-stock-remove"
+                            disabled={loading}
+                            onClick={() => removeStockIssue(iss.id)}
+                          >
+                            {s.stockRemove}
+                          </button>
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {stockIssues.length > 1 && (
+                  <button
+                    className="gunma-commerce-stock-fix-all"
+                    disabled={loading}
+                    onClick={() => fixAllStockIssues()}
+                  >
+                    {s.stockFixAll}
+                  </button>
+                )}
+                {stockIssues.length === 1 && <span>{s.stockIssueHint}</span>}
               </div>
-            ))}
+            )}
+            {cart.map((item) => {
+              const issue = stockIssues.find((x) => String(x.id) === String(item.id));
+              return (
+                <div key={item.id} className={`gunma-commerce-item ${issue ? 'gunma-commerce-item--invalid' : ''}`}>
+                  {item.image && <img className="gunma-commerce-item-img" src={item.image} alt="" />}
+                  <div className="gunma-commerce-item-body">
+                    <span className="gunma-commerce-item-title">
+                      {item.title ?? item.product_title ?? `#${item.product_id}`}
+                    </span>
+                    <span className="gunma-commerce-item-sub">
+                      {item.quantity} × {money(symbol, Number(item.item_price || 0))}
+                    </span>
+                    {issue && <span className="gunma-commerce-item-bad">{s.stockReason(issue.reason)}</span>}
+                  </div>
+                  <button className="gunma-commerce-remove" onClick={() => removeItem(item.id)} aria-label="Remove">✕</button>
+                </div>
+              );
+            })}
             <div className="gunma-commerce-total-row gunma-commerce-grand">
               <span>{s.subtotal}</span><strong>{money(symbol, subtotal)}</strong>
             </div>
@@ -442,7 +493,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
             <button
               className="gunma-commerce-primary"
               style={{ backgroundColor: brandColor }}
-              disabled={loading}
+              disabled={loading || hasStockIssues}
               onClick={() => startCheckout()}
             >
               {loading ? 'Please wait…' : s.checkout}
