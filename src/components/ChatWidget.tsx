@@ -108,6 +108,14 @@ export function ChatWidget(config: ChatWidgetConfig) {
       : { bottom: '24px', left: '24px' }),
   };
 
+  // Doodle click with context → open chat and let Piku answer right away.
+  const openWithPrefill = useCallback((prefill?: string) => {
+    toggle();
+    if (prefill) {
+      window.setTimeout(() => sendMessage(prefill), 600);
+    }
+  }, [toggle, sendMessage]);
+
   const handleSend = useCallback((text: string) => {
     setLastMessage(text);
     sendMessage(text);
@@ -210,7 +218,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
       <PikuDoodle
         doodle={config.doodle || { enabled: false }}
         brandColor={brandColor}
-        onOpenChat={toggle}
+        chatOpen={isOpen}
+        onOpenChat={openWithPrefill}
       />
 
       {/* Floating Bubble Button */}

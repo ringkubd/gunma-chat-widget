@@ -16,7 +16,10 @@ export interface DoodleConfig {
 interface Props {
     doodle: DoodleConfig;
     brandColor: string;
-    onOpenChat: () => void;
+    /** Chat panel open state — doodle hides itself while chatting. */
+    chatOpen?: boolean;
+    /** Open chat; carries an optional prefill context message. */
+    onOpenChat: (prefill?: string) => void;
 }
-export declare function PikuDoodle({ doodle, brandColor, onOpenChat }: Props): import("react/jsx-runtime").JSX.Element | null;
+export declare function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props): import("react/jsx-runtime").JSX.Element | null;
 export {};

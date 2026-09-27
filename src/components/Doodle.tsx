@@ -26,7 +26,10 @@ export interface DoodleConfig {
 interface Props {
   doodle: DoodleConfig;
   brandColor: string;
-  onOpenChat: () => void;
+  /** Chat panel open state — doodle hides itself while chatting. */
+  chatOpen?: boolean;
+  /** Open chat; carries an optional prefill context message. */
+  onOpenChat: (prefill?: string) => void;
 }
 
 const PRODUCT_LINES = [
@@ -49,7 +52,7 @@ function pickOf<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
+export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) {
   const [pos, setPos] = useState<{ x: number; y: number }>({ x: 82, y: 80 });
   const [facing, setFacing] = useState<'left' | 'right'>('left');
   const [walking, setWalking] = useState(false);
@@ -60,6 +63,7 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
   const msgRef = useRef<string | null>(null);
   msgRef.current = message;
   const lastProduct = useRef('');
+  const prefillRef = useRef<string | undefined>(undefined);
 
   const visible = () => typeof document === 'undefined' || !document.hidden;
 
@@ -74,8 +78,8 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
 
   useEffect(() => {
     if (!doodle.enabled || typeof window === 'undefined') return;
-    const tick = doodle.tickMs ?? 5000;
-    const talkChance = doodle.talkChance ?? 0.35;
+    const tick = doodle.tickMs ?? 8000;
+    const talkChance = doodle.talkChance ?? 0.22;
     const bandMin = doodle.band?.[0] ?? 64;
     const bandMax = doodle.band?.[1] ?? 84;
 
@@ -94,15 +98,18 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
         lastProduct.current = p.key;
         if (Math.random() < 0.6) {
           const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
-          setMessage(Math.random() < 0.5 ? pickOf(pool).replace('%s', p.title) : pickOf(GENERAL_LINES));
-          window.setTimeout(() => setMessage(null), 7000);
+          const line = Math.random() < 0.5 ? pickOf(pool).replace('%s', p.title) : pickOf(GENERAL_LINES);
+          prefillRef.current = line.startsWith('"') ? `Ei product ta niye aro jante chai: ${p.title}` : undefined;
+          setMessage(line);
+          window.setTimeout(() => setMessage(null), 8000);
           return;
         }
       }
 
       if (!msgRef.current && Math.random() < talkChance) {
+        prefillRef.current = undefined;
         setMessage(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
-        window.setTimeout(() => setMessage(null), 7000);
+        window.setTimeout(() => setMessage(null), 8000);
       }
 
       // Patrol step: small comfortable distance, mostly along the band
@@ -123,7 +130,7 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
     return () => window.clearInterval(iv);
   }, [doodle.enabled, doodle.tickMs, doodle.talkChance, doodle.band, doodle.texts?.product, doodle.texts?.general, readProduct]);
 
-  if (!doodle.enabled) return null;
+  if (!doodle.enabled || chatOpen) return null;
 
   const style = {
     '--dx': `${pos.x}vw`,
@@ -133,7 +140,15 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
   return (
     <div className={`gunma-doodle-root ${facing === 'left' ? 'flip' : ''}`} style={style}>
       {message && (
-        <div className="gunma-doodle-bubble" onClick={(e) => { e.stopPropagation(); setMessage(null); }}>
+        <div
+          className="gunma-doodle-bubble"
+          onClick={(e) => {
+            e.stopPropagation();
+            const ctx = prefillRef.current;
+            setMessage(null);
+            onOpenChat(ctx);
+          }}
+        >
           {message}
         </div>
       )}
