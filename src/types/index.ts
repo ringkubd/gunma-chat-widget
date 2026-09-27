@@ -232,6 +232,8 @@ export interface ChatDoodleConfig {
   talkChance?: number;
   /** Follow the customer's pointer (desktop, fine pointer only). Default true. */
   followCursor?: boolean;
+  /** Allow random idle chit-chat. Default false (product-focused). */
+  speakIdle?: boolean;
   /** Vertical patrol band in vh (touch fallback mode). Default [64, 84]. */
   band?: [number, number];
   texts?: {

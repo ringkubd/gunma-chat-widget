@@ -13,6 +13,8 @@ export interface DoodleConfig {
   enabled?: boolean;
   /** Follow the customer's pointer (desktop only). Default true. */
   followCursor?: boolean;
+  /** Allow random chit-chat while idle. Default FALSE (product-focus only). */
+  speakIdle?: boolean;
   /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
   talkChance?: number;
   texts?: {
@@ -97,25 +99,28 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
     let lastHoverKey = '';
 
     const resolve = (el: HTMLElement): { kind: 'p' | 'c'; key: string; title: string } | null => {
-      // product cards first (data provided by the store markup)
-      const prodEl = el.closest('[data-product-id]') as HTMLElement | null
-        ?? el.closest('a[href*="/products/"]') as HTMLElement | null;
+      // 1) product cards — data attributes the storefront renders
+      const prodEl = el.closest('[data-product-id],[data-product-title]') as HTMLElement | null;
       if (prodEl) {
-        const title = (
-          prodEl.getAttribute('data-product-title') ||
-          prodEl.textContent?.replace(/\s+/g, ' ').trim() || ''
-        ).slice(0, 80);
+        const pid = prodEl.getAttribute('data-product-id') ?? '';
+        let title = (prodEl.getAttribute('data-product-title') || '').trim();
+        if (!title) {
+          // short anchor text only (never the whole card blob)
+          const a = prodEl.querySelector('a') as HTMLAnchorElement | null;
+          const t = (a?.textContent || '').replace(/\s+/g, ' ').trim();
+          if (t && t.length <= 70) title = t;
+        }
         if (title) {
-          const pid = prodEl.getAttribute('data-product-id') ?? '';
-          return { kind: 'p', key: `p:${pid || title}`, title };
+          return { kind: 'p', key: `p:${pid || title}`, title: title.slice(0, 80) };
         }
       }
-      // category links / menu items
+      // 2) category links / menu items
       const catEl = el.closest('[data-category]') as HTMLElement | null
         ?? el.closest('a[href*="categor"]') as HTMLElement | null;
       if (catEl) {
-        const title = (catEl.getAttribute('data-category') || catEl.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
-        if (title) return { kind: 'c', key: `c:${title}`, title };
+        const title = (catEl.getAttribute('data-category') || catEl.textContent || '')
+          .replace(/\s+/g, ' ').trim().slice(0, 60);
+        if (title && title.length <= 60) return { kind: 'c', key: `c:${title}`, title };
       }
       return null;
     };
@@ -205,11 +210,20 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
   /* ── Behaviour: talks, blinks, product awareness ─────────────── */
   const readProduct = useCallback((): { key: string; title: string } | null => {
     if (typeof window === 'undefined') return null;
+    // 1) product cards rendered by the storefront (data attrs we add)
     const el = document.querySelector('[data-product-id]') as HTMLElement | null;
-    if (!el) return null;
-    const title = (el.getAttribute('data-product-title') || el.textContent || '').trim().slice(0, 70);
-    if (!title) return null;
-    return { key: `${el.getAttribute('data-product-id')}|${title}`, title };
+    if (el) {
+      const title = (el.getAttribute('data-product-title') || '').trim().slice(0, 80);
+      if (title) return { key: `p:${el.getAttribute('data-product-id')}`, title };
+    }
+    // 2) product DETAIL page — use social title / heading
+    const og = document.querySelector('meta[property="og:title"]') as HTMLMetaElement | null;
+    const h1 = document.querySelector('h1') as HTMLElement | null;
+    const detailTitle = (og?.content || h1?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (detailTitle && /add to cart|কার্ট|basket/i.test(document.body.innerText.slice(0, 4000))) {
+      return { key: `p:${location.pathname}`, title: detailTitle };
+    }
+    return null;
   }, []);
 
   useEffect(() => {
@@ -237,7 +251,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
         }
       }
 
-      if (Math.random() < talkChance) {
+      if (doodle.speakIdle && Math.random() < talkChance) {
         prefillRef.current = undefined;
         setMessage(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
         window.setTimeout(() => setMessage(null), 8000);

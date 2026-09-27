@@ -2,6 +2,8 @@ export interface DoodleConfig {
     enabled?: boolean;
     /** Follow the customer's pointer (desktop only). Default true. */
     followCursor?: boolean;
+    /** Allow random chit-chat while idle. Default FALSE (product-focus only). */
+    speakIdle?: boolean;
     /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
     talkChance?: number;
     texts?: {
