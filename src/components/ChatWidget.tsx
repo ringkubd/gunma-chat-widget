@@ -108,6 +108,21 @@ export function ChatWidget(config: ChatWidgetConfig) {
       : { bottom: '24px', left: '24px' }),
   };
 
+  // Agent-settings gate for the doodle: unless the host hard-disables it
+  // (enabled: false), probe the backend feature flag and honour it.
+  const [doodleRuntime, setDoodleRuntime] = React.useState<boolean | null>(null);
+  React.useEffect(() => {
+    if (!config.doodle || (config.doodle as { enabled?: boolean }).enabled === false) return;
+    const prefix = config.routes?.prefix ?? 'api/chat';
+    fetch(`${config.apiUrl}/${prefix}/agent-features`, {
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setDoodleRuntime(!!j?.doodle?.enabled))
+      .catch(() => setDoodleRuntime(true));
+  }, [config.apiUrl, config.doodle]);
+
   // Doodle click with context → open chat and let Piku answer right away.
   const openWithPrefill = useCallback((prefill?: string) => {
     toggle();
@@ -216,7 +231,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
       {/* Piku Doodle (opt-in) */}
       <PikuDoodle
-        doodle={config.doodle || { enabled: false }}
+        doodle={{ ...(config.doodle || { enabled: true }), enabled: (config.doodle?.enabled ?? true) && (doodleRuntime ?? true) }}
         brandColor={brandColor}
         chatOpen={isOpen}
         onOpenChat={openWithPrefill}

@@ -37,6 +37,8 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }) {
     const walkingUntilRef = useRef(0);
     const lastProduct = useRef('');
     const prefillRef = useRef(undefined);
+    // instant-speech cache: key → ready-made line (composed once, reused forever)
+    const speechCache = useRef(new Map());
     const messageRef = useRef(null);
     messageRef.current = message;
     const followRef = useRef(doodle.followCursor ?? true);
@@ -48,6 +50,77 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }) {
             el.style.transform = `translate3d(${Math.round(p.x)}px, ${Math.round(p.y)}px, 0)`;
         }
     };
+    /* ── Instant cached speech ────────────────────────────────────── */
+    const speakCached = useCallback((key, compose) => {
+        let line = speechCache.current.get(key);
+        if (!line) {
+            line = compose();
+            speechCache.current.set(key, line);
+        }
+        prefillRef.current = key.startsWith('p:')
+            ? `Ei product ta niye aro jante chai: ${line.replace(/^"|"$/g, '')}`
+            : undefined;
+        setMessage(line);
+        window.setTimeout(() => setMessage(null), 8000);
+    }, []);
+    /* ── Hover-speak: dwell 900ms on a product/category ⇒ instantly talks ── */
+    useEffect(() => {
+        if (!doodle.enabled || typeof window === 'undefined')
+            return;
+        let dwell;
+        let lastHoverKey = '';
+        const resolve = (el) => {
+            // product cards first (data provided by the store markup)
+            const prodEl = el.closest('[data-product-id]')
+                ?? el.closest('a[href*="/products/"]');
+            if (prodEl) {
+                const title = (prodEl.getAttribute('data-product-title') ||
+                    prodEl.textContent?.replace(/\s+/g, ' ').trim() || '').slice(0, 80);
+                if (title) {
+                    const pid = prodEl.getAttribute('data-product-id') ?? '';
+                    return { kind: 'p', key: `p:${pid || title}`, title };
+                }
+            }
+            // category links / menu items
+            const catEl = el.closest('[data-category]')
+                ?? el.closest('a[href*="categor"]');
+            if (catEl) {
+                const title = (catEl.getAttribute('data-category') || catEl.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
+                if (title)
+                    return { kind: 'c', key: `c:${title}`, title };
+            }
+            return null;
+        };
+        const onOver = (e) => {
+            if (!(e.target instanceof HTMLElement))
+                return;
+            const hit = resolve(e.target);
+            if (!hit || hit.key === lastHoverKey) {
+                if (!hit && dwell) {
+                    window.clearTimeout(dwell);
+                    dwell = undefined;
+                }
+                return;
+            }
+            lastHoverKey = hit.key;
+            window.clearTimeout(dwell);
+            dwell = window.setTimeout(() => {
+                speakCached(hit.key, () => hit.kind === 'p'
+                    ? (doodle.texts?.product?.length
+                        ? pickOf(doodle.texts.product).replace('%s', hit.title)
+                        : pickOf(PRODUCT_LINES).replace('%s', hit.title))
+                    : `"${hit.title}" category te onek darun jinish ache — dekhen! 💬`);
+            }, 900);
+        };
+        const onOut = () => { window.clearTimeout(dwell); dwell = undefined; };
+        document.addEventListener('pointerover', onOver, { passive: true });
+        window.addEventListener('pointerleave', onOut);
+        return () => {
+            document.removeEventListener('pointerover', onOver);
+            window.removeEventListener('pointerleave', onOut);
+            window.clearTimeout(dwell);
+        };
+    }, [doodle.enabled, doodle.texts?.product, speakCached]);
     /* ── Pointer-follow loop: one rAF, direct DOM writes ─────────── */
     useEffect(() => {
         if (!doodle.enabled || typeof window === 'undefined')
