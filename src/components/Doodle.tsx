@@ -78,7 +78,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
 
   useEffect(() => {
     if (!doodle.enabled || typeof window === 'undefined') return;
-    const tick = doodle.tickMs ?? 8000;
+    const tick = doodle.tickMs ?? 6000;
     const talkChance = doodle.talkChance ?? 0.22;
     const bandMin = doodle.band?.[0] ?? 64;
     const bandMax = doodle.band?.[1] ?? 84;
@@ -123,7 +123,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
       setFacing(dirX < 0 || x < posRef.current.x ? 'right' : 'left');
       setWalking(true);
       setPos({ x, y });
-      window.setTimeout(() => setWalking(false), 1400);
+      window.setTimeout(() => setWalking(false), 950);
     };
 
     const iv = window.setInterval(step, tick);
@@ -154,6 +154,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
       )}
       <button
         className={`gunma-doodle-float ${walking ? 'walking' : ''} ${message ? 'talking' : ''}`}
+        style={{ '--doodle-ring': brandColor } as React.CSSProperties}
         aria-label="Piku — click to chat"
         title="Piku — click to chat"
         onClick={() => { setMessage(null); onOpenChat(); }}
