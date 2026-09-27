@@ -205,9 +205,11 @@ export interface ChatDoodleConfig {
     enabled?: boolean;
     /** Milliseconds between doodle behaviour ticks. Default 5000. */
     tickMs?: number;
-    /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.35. */
+    /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.3. */
     talkChance?: number;
-    /** Vertical patrol band in vh. Default [64, 84]. */
+    /** Follow the customer's pointer (desktop, fine pointer only). Default true. */
+    followCursor?: boolean;
+    /** Vertical patrol band in vh (touch fallback mode). Default [64, 84]. */
     band?: [number, number];
     texts?: {
         product?: string[];

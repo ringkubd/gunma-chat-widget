@@ -1,15 +1,11 @@
 export interface DoodleConfig {
     enabled?: boolean;
-    /** ms between behaviour ticks. Default 5000. */
-    tickMs?: number;
-    /** 0..1 chance per tick to talk. Default 0.35. */
+    /** Follow the customer's pointer (desktop only). Default true. */
+    followCursor?: boolean;
+    /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
     talkChance?: number;
-    /** Vertical band (vh) where the buddy patrols. Default [64, 84]. */
-    band?: [number, number];
     texts?: {
-        /** Lines with %s = product title shown on product pages. */
         product?: string[];
-        /** Everyday lines: recipes, perks, greetings. */
         general?: string[];
     };
 }

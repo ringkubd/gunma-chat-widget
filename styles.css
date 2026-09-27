@@ -1380,8 +1380,8 @@
   left: 0; top: 0;
   z-index: 9985;
   will-change: transform;
-  transform: translate3d(var(--dx, 82vw), var(--dy, 78vh), 0);
-  transition: transform 0.85s cubic-bezier(.33,.72,.35,1);
+  transform: translate3d(0,0,0);
+  contain: layout style;
   pointer-events: none;
 }
 .gunma-doodle-root.flip .gunma-doodle-svg { transform: scaleX(-1); }
@@ -1400,13 +1400,13 @@
 
 /* idle breathing */
 .gunma-doodle-float .gunma-doodle-svg { animation: doodleBreath 3s ease-in-out infinite; transform-origin: 50% 85%; }
-.gunma-doodle-float.walking .gunma-doodle-svg { animation: doodleHop .42s ease-in-out infinite alternate; }
+.gunma-doodle-float[data-walking="true"] .gunma-doodle-svg { animation: doodleHop .42s ease-in-out infinite alternate; }
 @keyframes doodleBreath { 0%,100% { transform: scaleY(1);} 50% { transform: scaleY(1.035);} }
 @keyframes doodleHop { from { transform: translateY(0) rotate(2deg);} to { transform: translateY(-4px) rotate(-2deg);} }
 
 /* feet */
-.gunma-doodle-float.walking .foot-l { animation: footA .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-.gunma-doodle-float.walking .foot-r { animation: footB .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.gunma-doodle-float[data-walking="true"] .foot-l { animation: footA .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
+.gunma-doodle-float[data-walking="true"] .foot-r { animation: footB .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
 @keyframes footA { from { transform: translateY(-2px) rotate(8deg);} to { transform: translateY(1px) rotate(0);} }
 @keyframes footB { from { transform: translateY(1px) rotate(-8deg);} to { transform: translateY(-2px) rotate(0);} }
 
