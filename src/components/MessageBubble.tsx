@@ -83,15 +83,27 @@ function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string
   const bulkProducts: Array<{ id: string; title: string; price: string; slug: string }> = [];
   const hasBulk = text.includes('{{BULK_BUTTON}}');
   if (hasBulk) {
-    text = text.replace(/\{\{BULK_BUTTON\}\}\n?([\s\S]*?)(?=\n\n|\nReply|$)/, (match, listBlock) => {
+    // Tolerant: marker may be bolded (**{{BULK_BUTTON}}**) or have stray text on its line.
+    text = text.replace(/\*{0,2}\{\{BULK_BUTTON\}\}\*{0,2}[ \t]*\n?([\s\S]*?)(?=\n\s*\n|\n[#*-]{2,}[^)\d]|\nReply|\nJust reply|$)/, (match, listBlock) => {
       const lines = listBlock.split('\n').filter(Boolean);
       lines.forEach((line: string) => {
-        // Match: 1. [Title](slug) - ¥price - product_id:123
-        const m = line.match(/^\d+\.\s*\[([^\]]+)\]\(([^)]+)\)\s*-\s*¥?([\d,]+)\s*-\s*product_id:(\d+)(?:\s*\(not in stock right now\))?/);
+        // Tolerant match: "1. [Title](slug) - ¥price - product_id:123"
+        // Also accepts: bold markers, product_id with space, price after id,
+        // price missing, "(not in stock right now)" suffix anywhere.
+        const m = line.match(
+          /[*_]*\s*(\d+)\s*[.)]\s*\[([^\]]+)\]\(([^)\s]+)\)[*_\s]*[-–—:]?\s*(?:¥?\s*([\d,]+)\s*)?[-–—:]?\s*(?:product_id\s*:\s*(\d+))?[^(\n]*?(?:\(not in stock[^\)]*\))?\s*$/
+        );
         if (m) {
-          const [, title, slug, price, id] = m;
-          bulkProducts.push({ id, title, price: price.replace(/,/g, ''), slug });
-          productIds.push(id);
+          const [, , title, slug, price, id] = m;
+          if (id) {
+            bulkProducts.push({
+              id,
+              title,
+              price: (price || '0').replace(/,/g, ''),
+              slug,
+            });
+            productIds.push(id);
+          }
         }
       });
       return '{{BULK_BUTTON}}';
@@ -178,6 +190,11 @@ function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string
         </button>
       </div>`;
     text = text.replace('{{BULK_BUTTON}}', bulkHtml);
+  }
+
+  // Defence-in-depth: the raw marker must NEVER be visible to the customer.
+  if (text.includes('{{BULK_BUTTON}}')) {
+    text = text.replace(/\*{0,2}\{\{BULK_BUTTON\}\}\*{0,2}/g, '');
   }
 
   // ── Step 14: Final sanitize (defence-in-depth against attribute/URL XSS) ──
