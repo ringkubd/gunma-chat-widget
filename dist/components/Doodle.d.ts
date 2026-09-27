@@ -1,13 +1,15 @@
 export interface DoodleConfig {
     enabled?: boolean;
-    /** Seconds between doodle "think ticks". Default 4. */
+    /** ms between behaviour ticks. Default 5000. */
     tickMs?: number;
-    /** How often the doodle is allowed to speak, as fraction (0..1). Default 0.55 */
+    /** 0..1 chance per tick to talk. Default 0.35. */
     talkChance?: number;
+    /** Vertical band (vh) where the buddy patrols. Default [64, 84]. */
+    band?: [number, number];
     texts?: {
-        /** Lines shown when a product is on screen ("%s" = product title). */
+        /** Lines with %s = product title shown on product pages. */
         product?: string[];
-        /** General chat-worthy lines (recipes, offers, greetings). */
+        /** Everyday lines: recipes, perks, greetings. */
         general?: string[];
     };
 }

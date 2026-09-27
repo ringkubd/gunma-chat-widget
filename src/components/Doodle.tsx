@@ -1,22 +1,24 @@
 /**
- * Piku Doodle — animated floating companion for the storefront.
+ * Piku Doodle v2 — cute chef buddy that patrols the page.
  *
- * v1: A cute walking rice-bowl buddy. Wander around the page, blink,
- * stop sometimes and SAY things (product-aware suggestions, recipe hooks,
- * shop perks), click → open Piku chat. Opt-in via config.doodle.
+ * Design goals: smooth predictable steps (no teleports or zig-zags),
+ * work only when the tab is visible, GPU-friendly transforms,
+ * friendly product/recipe messages, click opens chat.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface DoodleConfig {
   enabled?: boolean;
-  /** Seconds between doodle "think ticks". Default 4. */
+  /** ms between behaviour ticks. Default 5000. */
   tickMs?: number;
-  /** How often the doodle is allowed to speak, as fraction (0..1). Default 0.55 */
+  /** 0..1 chance per tick to talk. Default 0.35. */
   talkChance?: number;
+  /** Vertical band (vh) where the buddy patrols. Default [64, 84]. */
+  band?: [number, number];
   texts?: {
-    /** Lines shown when a product is on screen ("%s" = product title). */
+    /** Lines with %s = product title shown on product pages. */
     product?: string[];
-    /** General chat-worthy lines (recipes, offers, greetings). */
+    /** Everyday lines: recipes, perks, greetings. */
     general?: string[];
   };
 }
@@ -28,40 +30,38 @@ interface Props {
 }
 
 const PRODUCT_LINES = [
-  '"%s" dekhchen! Eita nite paren — recipe lagle bolen.',
-  'Ei "%s" khub popular bhai — cart e add korbo naki?',
-  '"%s" diye ekdom solid ranna hoy! Ingredient lagbe bolen.',
-  'Dekhun "%s" — ajke fresh stock e ache!',
+  '"%s" dekhchen! Eta darun choice — recipe/ingredient lagle bolen 💬',
+  '"%s" khub popular — ekhane fresh ache, add kore dibo naki?',
+  'Ranna korle "%s" diye darun hoy — banto bolen!',
 ];
 
 const GENERAL_LINES = [
-  'Amar kache fresh beef, chicken, mach, masala sob ache 😊',
-  'Aaj ki ranna korben? Biryani, tehari, karahi — recipe dao bolen!',
-  '¥10,000+ order korle delivery FREE (Okinawa chhore)!',
-  'Chaile ingredients ek shathe "add all" — eksecant kaj 💬',
-  'Points jome ache? Use korar way jane debo!',
-  'Hunger lagchen? Haleem ar paya te hon vore jay.',
-  'Ektu moja kore bolun — ki khawa jai bhabchen? 🍚',
+  'Aaj ki ranna korben? Recipe lagbe bolen 🍳',
+  '¥10,000 order korle delivery FREE!',
+  'Fresh mangsho-mach sob dhukche — bolo ki lagbe 😊',
+  'Chaile ek sathe "add all" — sabda kaj 💬',
+  'Haleem ar paya darun chole ashe 😋',
+  'Points ache apnar? Kamlagbe boloji!',
+  'Cha ek cup? Na garam garam biryani? 🍚',
 ];
 
-function pick<T>(arr: T[]): T {
+function pickOf<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function productText(title: string, custom?: string[]): string {
-  const pool = (custom && custom.length > 0 ? custom : PRODUCT_LINES);
-  return pick(pool).replace('%s', title);
-}
-
 export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
-  const [pos, setPos] = useState({ x: 82, y: 70 });         // viewport %
+  const [pos, setPos] = useState<{ x: number; y: number }>({ x: 82, y: 80 });
   const [facing, setFacing] = useState<'left' | 'right'>('left');
   const [walking, setWalking] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [blink, setBlink] = useState(false);
-  const lastProduct = useRef<string>('');
   const posRef = useRef(pos);
   posRef.current = pos;
+  const msgRef = useRef<string | null>(null);
+  msgRef.current = message;
+  const lastProduct = useRef('');
+
+  const visible = () => typeof document === 'undefined' || !document.hidden;
 
   const readProduct = useCallback((): { key: string; title: string } | null => {
     if (typeof window === 'undefined') return null;
@@ -72,59 +72,66 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
     return { key: `${el.getAttribute('data-product-id')}|${title}`, title };
   }, []);
 
-  const say = useCallback((text: string) => {
-    setMessage(text);
-    window.setTimeout(() => setMessage(null), 7000);
-  }, []);
-
   useEffect(() => {
     if (!doodle.enabled || typeof window === 'undefined') return;
-    const tickMs = doodle.tickMs ?? 3500;
-    const talkChance = doodle.talkChance ?? 0.45;
+    const tick = doodle.tickMs ?? 5000;
+    const talkChance = doodle.talkChance ?? 0.35;
+    const bandMin = doodle.band?.[0] ?? 64;
+    const bandMax = doodle.band?.[1] ?? 84;
 
-    let moveTimer = 0;
     const step = () => {
-      // Blink
-      if (Math.random() < 0.35) {
+      if (!visible()) return; // respect hidden tab — no CPU burn
+
+      // blink sometimes
+      if (Math.random() < 0.3) {
         setBlink(true);
-        window.setTimeout(() => setBlink(false), 150);
+        window.setTimeout(() => setBlink(false), 140);
       }
 
-      // Product lingered? speak product-aware line once per product
+      // product present? speak once per product, then idle silently
       const p = readProduct();
       if (p && p.key !== lastProduct.current) {
         lastProduct.current = p.key;
-        if (Math.random() < 0.75) {
-          say(productText(p.title, doodle.texts?.product));
+        if (Math.random() < 0.6) {
+          const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+          setMessage(Math.random() < 0.5 ? pickOf(pool).replace('%s', p.title) : pickOf(GENERAL_LINES));
+          window.setTimeout(() => setMessage(null), 7000);
+          return;
         }
-        return;
       }
 
-      if (Math.random() < talkChance && !message) {
-        say(pick(GENERAL_LINES));
+      if (!msgRef.current && Math.random() < talkChance) {
+        setMessage(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
+        window.setTimeout(() => setMessage(null), 7000);
       }
 
-      // Walk to a random nearby-safe spot (keep inside viewport margins)
-      const x = Math.min(88, Math.max(6, posRef.current.x + (Math.random() * 44 - 22)));
-      const y = Math.min(86, Math.max(52, posRef.current.y + (Math.random() * 24 - 12)));
-      setFacing(posRef.current.x > x ? 'right' : 'left');
+      // Patrol step: small comfortable distance, mostly along the band
+      const dirX = Math.random() < 0.5 ? -1 : 1;
+      const dx = dirX * (8 + Math.random() * 10); // 8%–18% of viewport
+      let x = posRef.current.x + dx;
+      if (x < 6 || x > 88) x = posRef.current.x - dx * 1.2; // bounce back smoothly
+      x = Math.min(88, Math.max(6, x));
+      const y = Math.min(bandMax, Math.max(bandMin, posRef.current.y + (Math.random() * 10 - 5)));
+
+      setFacing(dirX < 0 || x < posRef.current.x ? 'right' : 'left');
       setWalking(true);
       setPos({ x, y });
-      window.setTimeout(() => setWalking(false), 1800);
+      window.setTimeout(() => setWalking(false), 1400);
     };
 
-    const interval = window.setInterval(step, doodle.tickMs ?? 3500);
-    return () => window.clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doodle.enabled, doodle.tickMs, doodle.talkChance, message, readProduct, say]);
+    const iv = window.setInterval(step, tick);
+    return () => window.clearInterval(iv);
+  }, [doodle.enabled, doodle.tickMs, doodle.talkChance, doodle.band, doodle.texts?.product, doodle.texts?.general, readProduct]);
 
   if (!doodle.enabled) return null;
 
+  const style = {
+    '--dx': `${pos.x}vw`,
+    '--dy': `${pos.y}vh`,
+  } as React.CSSProperties;
+
   return (
-    <div
-      className={`gunma-doodle-root ${facing === 'left' ? 'gunma-doodle-flip' : ''}`}
-      style={{ '--doodle-x': pos.x, '--doodle-y': pos.y } as React.CSSProperties}
-    >
+    <div className={`gunma-doodle-root ${facing === 'left' ? 'flip' : ''}`} style={style}>
       {message && (
         <div className="gunma-doodle-bubble" onClick={(e) => { e.stopPropagation(); setMessage(null); }}>
           {message}
@@ -132,39 +139,51 @@ export function PikuDoodle({ doodle, brandColor, onOpenChat }: Props) {
       )}
       <button
         className={`gunma-doodle-float ${walking ? 'walking' : ''} ${message ? 'talking' : ''}`}
-        style={{ boxShadow: `0 6px 18px ${brandColor}55` }}
+        aria-label="Piku — click to chat"
         title="Piku — click to chat"
-        aria-label="Open Piku chat"
         onClick={() => { setMessage(null); onOpenChat(); }}
       >
-        {/* Cute rice-bowl buddy */}
-        <svg viewBox="0 0 64 64" className="gunma-doodle-svg" aria-hidden="true">
-          {/* legs */}
-          <g className="gunma-doodle-legs">
-            <rect className="leg left"  x="24" y="48" width="6" height="12" rx="3" fill="#5b4a3a" />
-            <rect className="leg right" x="34" y="48" width="6" height="12" rx="3" fill="#5b4a3a" />
-          </g>
+        <svg viewBox="0 0 120 120" className="gunma-doodle-svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="pdBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={brandColor} />
+              <stop offset="1" stopColor="#0d9488" />
+            </linearGradient>
+          </defs>
+
+          {/* hat */}
+          <ellipse cx="60" cy="26" rx="26" ry="9" fill="#ffffff" stroke="#e5e7eb" />
+          <rect x="42" y="8" width="36" height="20" rx="10" fill="#ffffff" stroke="#e5e7eb" />
+          <path d="M46 20 h28" stroke="#e5e7eb" strokeWidth="1.4" />
+
           {/* bowl body */}
-          <path d="M8 34 a24 18 0 0 0 48 0 z" fill={brandColor} />
-          {/* rice on top */}
-          <ellipse cx="24" cy="30" rx="8" ry="5" fill="#fff" />
-          <ellipse cx="36" cy="28" rx="10" ry="6" fill="#fff" />
-          <ellipse cx="30" cy="24" rx="8" ry="5" fill="#fff" />
-          {/* eyes (blink via CSS) */}
-          <g className="gunma-doodle-eyes">
-            <circle className={blink ? 'blink' : ''} cx="26" cy="38" r="2.6" fill="#222" />
-            <circle className={blink ? 'blink' : ''} cx="38" cy="38" r="2.6" fill="#fff" stroke="#2b2b2b" strokeWidth="1" />
+          <path d="M22 66 a38 34 0 0 0 76 0 z" fill="url(#pdBody)" />
+          {/* rice mound */}
+          <ellipse cx="60" cy="62" rx="30" ry="12" fill="#ffffff" />
+          <ellipse cx="46" cy="56" rx="12" ry="7" fill="#ffffff" />
+          <ellipse cx="72" cy="55" rx="12" ry="7" fill="#ffffff" />
+
+          {/* face */}
+          <g>
+            <circle className="gunma-doodle-eye" cx="48" cy="76" r="4.6" fill="#26211d" />
+            <circle className="gunma-doodle-eye" cx="72" cy="76" r="4.6" fill="#26211d" />
+            <circle cx="49.6" cy="74.4" r="1.4" fill="#fff" />
+            <circle cx="73.6" cy="74.4" r="1.4" fill="#fff" />
+            <circle cx="40" cy="83" r="3.4" fill="#ffb7b0" opacity=".8" />
+            <circle cx="80" cy="83" r="3.4" fill="#ffb7b0" opacity=".8" />
+            <path d="M54 86 q6 5 12 0" stroke="#26211d" strokeWidth="2.2" fill="none" strokeLinecap="round" />
           </g>
-          {/* smile */}
-          <path d="M28 44 q4 4 8 0" stroke="#2b2b2b" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-          {/* tiny steam when idle */}
-          {!walking && (
-            <g className="steam">
-              <circle cx="24" cy="16" r="2.2" fill="#ffffff88" />
-              <circle cx="31" cy="12" r="1.8" fill="#ffffff66" />
-              <circle cx="38" cy="16" r="2" fill="#ffffff55" />
-            </g>
-          )}
+
+          {/* waving hand */}
+          <g className="hand-wave">
+            <ellipse cx="98" cy="58" rx="6" ry="9" fill="url(#pdBody)" stroke="#0d9488" />
+          </g>
+          {/* other hand */}
+          <ellipse cx="22" cy="58" rx="6" ry="9" fill="url(#pdBody)" stroke="#0d9488" />
+
+          {/* feet */}
+          <ellipse className="foot-l" cx="48" cy="106" rx="9" ry="5" fill="#26211d" />
+          <ellipse className="foot-r" cx="72" cy="106" rx="9" ry="5" fill="#26211d" />
         </svg>
       </button>
     </div>

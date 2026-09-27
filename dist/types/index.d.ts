@@ -203,10 +203,12 @@ export type CommerceStep = 'cart' | 'auth' | 'address' | 'delivery' | 'payment' 
  */
 export interface ChatDoodleConfig {
     enabled?: boolean;
-    /** Milliseconds between doodle "think ticks". Default 3500. */
+    /** Milliseconds between doodle behaviour ticks. Default 5000. */
     tickMs?: number;
-    /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.45. */
+    /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.35. */
     talkChance?: number;
+    /** Vertical patrol band in vh. Default [64, 84]. */
+    band?: [number, number];
     texts?: {
         product?: string[];
         general?: string[];
