@@ -226,7 +226,12 @@ export type CommerceStep =
  */
 export interface ChatDoodleConfig {
   enabled?: boolean;
+  /** Milliseconds between doodle "think ticks". Default 3500. */
+  tickMs?: number;
+  /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.45. */
+  talkChance?: number;
   texts?: {
-    productPage?: string;
+    product?: string[];  // Lines with %s placeholder for product title
+    general?: string[];  // General tips/recipe hooks/greetings
   };
 }

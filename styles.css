@@ -1372,3 +1372,90 @@
   font-size: 12px;
   color: var(--gunma-text-secondary);
 }
+
+/* ═══════════════ Piku Doodle (animated companion) ═══════════════ */
+.gunma-doodle-root {
+  position: fixed;
+  left: calc(var(--doodle-x, 82) * 1vw);
+  top: calc(var(--doodle-y, 70) * 1vh);
+  z-index: 9990; /* below chat panel (9999) */
+  pointer-events: none;
+  transition: left 1.8s ease-in-out, top 1.8s ease-in-out;
+}
+.gunma-doodle-root.gunma-doodle-flip .gunma-doodle-svg {
+  transform: scaleX(-1);
+}
+.gunma-doodle-float {
+  position: relative;
+  pointer-events: auto;
+  width: 58px; height: 58px;
+  border: none; background: transparent; padding: 0;
+  cursor: pointer;
+  display: inline-flex; align-items: flex-end; justify-content: center;
+  transition: transform 1.8s ease-in-out;
+}
+.gunma-doodle-svg { width: 100%; height: 100%; }
+
+/* idle gentle bob */
+.gunma-doodle-float:not(.walking) { animation: gunmaDoodleIdle 3.2s ease-in-out infinite; }
+/* walking waddle */
+.gunma-doodle-float.walking { animation: gunmaDoodleWaddle 0.55s ease-in-out infinite alternate; }
+@keyframes gunmaDoodleWaddle {
+  from { transform: translateY(0) rotate(3.5deg); }
+  to   { transform: translateY(-5px) rotate(-3.5deg); }
+}
+@keyframes gunmaDoodleIdle {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  50%     { transform: translateY(-3px) rotate(1.2deg); }
+}
+@keyframes gunmaDoodleIdleAnim { 0%,100% { transform: translateY(0) rotate(0deg);} 50% { transform: translateY(-3px) rotate(1.2deg);} }
+.gunma-doodle-float:not(.walking) { animation: gunmaDoodleIdleAnim 3.4s ease-in-out infinite; }
+
+/* legs while walking */
+.gunma-doodle-legs rect { transition: transform 0.2s ease; }
+.gunma-doodle-float.walking .gunma-doodle-legs rect.left  { animation: legA 0.42s ease-in-out infinite alternate; }
+.gunma-doodle-float.walking .gunma-doodle-legs rect.right { animation: legB 0.42s ease-in-out infinite alternate; }
+@keyframes legA { from { transform: translateY(-3px) } to { transform: translateY(1px) } }
+@keyframes legB { from { transform: translateY(1px) } to { transform: translateY(-3px) } }
+
+/* blink */
+.gunma-doodle-eyes circle.blink { transform: scaleY(0.15); transform-origin: center 38px; }
+
+/* steam */
+.gunma-doodle-float .steam circle { opacity: .9; }
+.gunma-doodle-float:not(.walking) .steam circle { animation: steamUp 2.6s ease-out infinite; }
+@keyframes steamUp {
+  0% { transform: translateY(0); opacity: .85; }
+  80% { transform: translateY(-5px); opacity: 0; }
+  100% { transform: translateY(-6px); opacity: 0; }
+}
+
+/* speech bubble */
+.gunma-doodle-bubble {
+  position: absolute;
+  left: 50%; bottom: 74px;
+  transform: translateX(-24%);
+  background: #fff; color: #222;
+  font-size: 13px; line-height: 1.45;
+  padding: 10px 12px; border-radius: 12px 12px 3px 12px;
+  max-width: 220px; min-width: 150px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.16);
+  border: 1px solid #ececec;
+  cursor: default; pointer-events: auto;
+  animation: popIn .25s ease-out;
+  white-space: pre-line;
+}
+.gunma-doodle-bubble::after {
+  content: '';
+  position: absolute; left: 30px; bottom: -7px;
+  width: 0; height: 0;
+  border-left: 14px solid transparent; border-top: 12px solid #fff;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: translateX(-24%) translateY(8px) scale(.92); }
+  to   { opacity: 1; transform: translateX(-24%) translateY(0) scale(1); }
+}
+@media (max-width: 640px) {
+  .gunma-doodle-float { width: 46px; height: 46px; }
+  .gunma-doodle-bubble { font-size: 12px; max-width: 190px; }
+}
