@@ -81,6 +81,8 @@ export interface ChatWidgetConfig {
    * All calls hit the same host endpoints with the same payloads.
    */
   commerce?: ChatCommerceConfig;
+  /** Optional float-follow companion on pages (product suggestions etc.). */
+  doodle?: ChatDoodleConfig;
 }
 
 /**
@@ -218,3 +220,13 @@ export type CommerceStep =
   | 'processing'
   | 'success'
   | 'failed';
+
+/**
+ * Piku Doodle — optional floating companion for the storefront pages.
+ */
+export interface ChatDoodleConfig {
+  enabled?: boolean;
+  texts?: {
+    productPage?: string;
+  };
+}

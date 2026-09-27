@@ -556,6 +556,7 @@ export function useChat(config: ChatWidgetConfig) {
     uploadFile,
     endChat,
     cancelRequest,
+    getSessionId: () => sessionRef.current?.id ?? null,
     linkSession,
     submitFeedback,
   };

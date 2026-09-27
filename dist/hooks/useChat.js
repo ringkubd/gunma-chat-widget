@@ -519,6 +519,7 @@ export function useChat(config) {
         uploadFile,
         endChat,
         cancelRequest,
+        getSessionId: () => sessionRef.current?.id ?? null,
         linkSession,
         submitFeedback,
     };

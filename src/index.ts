@@ -8,6 +8,7 @@ export { MessageList } from './components/MessageList';
 export { MessageBubble } from './components/MessageBubble';
 export { MessageInput } from './components/MessageInput';
 export { TypingIndicator } from './components/TypingIndicator';
+export { PikuDoodle } from './components/Doodle';
 
 // Hooks
 export { useChat } from './hooks/useChat';

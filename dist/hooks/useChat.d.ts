@@ -20,6 +20,7 @@ export declare function useChat(config: ChatWidgetConfig): {
     uploadFile: (file: File) => Promise<void>;
     endChat: () => Promise<void>;
     cancelRequest: () => void;
+    getSessionId: () => string | null;
     linkSession: (customerId: number) => Promise<void>;
     submitFeedback: (rating: number, comment?: string) => Promise<void>;
 };

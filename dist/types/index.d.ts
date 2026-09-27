@@ -75,6 +75,8 @@ export interface ChatWidgetConfig {
      * All calls hit the same host endpoints with the same payloads.
      */
     commerce?: ChatCommerceConfig;
+    /** Optional float-follow companion on pages (product suggestions etc.). */
+    doodle?: ChatDoodleConfig;
 }
 /**
  * In-chat commerce settings. `frontendBase`/`apiBase` derive host endpoints:
@@ -196,3 +198,12 @@ export interface CommerceOrderResult {
     total?: number | null;
 }
 export type CommerceStep = 'cart' | 'auth' | 'address' | 'delivery' | 'payment' | 'processing' | 'success' | 'failed';
+/**
+ * Piku Doodle — optional floating companion for the storefront pages.
+ */
+export interface ChatDoodleConfig {
+    enabled?: boolean;
+    texts?: {
+        productPage?: string;
+    };
+}

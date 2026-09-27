@@ -12,6 +12,8 @@ import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
+import { PikuDoodle } from './Doodle';
+import { usePageTracking } from '../hooks/usePageTracking';
 
 export function ChatWidget(config: ChatWidgetConfig) {
   const {
@@ -31,6 +33,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     uploadFile,
     endChat,
     cancelRequest,
+    getSessionId,
   } = useChat(config);
 
   // Keep a stable ref for the cart refresher used by the click handler.
@@ -50,6 +53,9 @@ export function ChatWidget(config: ChatWidgetConfig) {
   });
   const [lastMessage, setLastMessage] = useState('');
   const [showCommerce, setShowCommerce] = useState(false);
+
+  // Live page heartbeat so Piku knows what the customer is viewing.
+  usePageTracking(config, getSessionId);
 
   const commerce = useCommerce(config, {
     onCartChanged: () => {
@@ -199,6 +205,13 @@ export function ChatWidget(config: ChatWidgetConfig) {
           )}
         </div>
       )}
+
+      {/* Piku Doodle (opt-in) */}
+      <PikuDoodle
+        doodle={config.doodle || { enabled: false }}
+        brandColor={brandColor}
+        onOpenChat={toggle}
+      />
 
       {/* Floating Bubble Button */}
       <ChatBubble
