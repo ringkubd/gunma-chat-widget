@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { PikuRobotArt } from './PikuRobotArt';
-import './pikuSpeechCss' ;
 import { PikuChip } from '../hooks/usePikuSpeech';
 
 interface ChatBubbleProps {

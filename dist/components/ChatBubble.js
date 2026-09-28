@@ -2,7 +2,6 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from 'react';
 import { PikuRobotArt } from './PikuRobotArt';
-import './pikuSpeechCss';
 export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, chips, onChipClick, variant }) {
     // blink internal — drives the robot eyes/pupil
     const [blink, setBlink] = useState(false);

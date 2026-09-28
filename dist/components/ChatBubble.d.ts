@@ -1,4 +1,3 @@
-import './pikuSpeechCss';
 import { PikuChip } from '../hooks/usePikuSpeech';
 interface ChatBubbleProps {
     isOpen: boolean;
