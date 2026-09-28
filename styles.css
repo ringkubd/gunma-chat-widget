@@ -1531,3 +1531,30 @@
 .gunma-speech .gunma-chef-chip:hover { background: #10b981; color: #fff; }
 /* robot art fills the round button nicely */
 .gunma-bubble .gunma-chef-svg.pk-robot { width: 130% !important; height: 130% !important; margin: -15%; }
+
+/* ── Piku funny mini-story: eat → chubby → walk-off ── */
+.gunma-chef-chubby .pk-robot .chef-body {
+  animation: rbBelly 2.6s ease-in-out both;
+  transform-box: fill-box; transform-origin: 50% 80%;
+}
+@keyframes rbBelly {
+  0%   { transform: scale(1) }
+  45%  { transform: scale(1.22, 1.16) rotate(-2deg) }
+  75%  { transform: scale(1.24, 1.2) rotate(1.5deg) }
+  100% { transform: scale(1.22, 1.15) }
+}
+.gunma-chef-eating .chef-mouth,
+.pk-robot .chef-mouth {
+  transform-box: fill-box; transform-origin: center;
+}
+.gunma-chef-eating .pk-open, .gunma-chef-eating .pk-smile {
+  animation: rbChew .5s ease-in-out 5;
+}
+@keyframes rbChew { 0%,100% { transform: scaleY(1) } 50% { transform: scaleY(.45) } }
+.gunma-chef-walking.pk-robot-wrap .gunma-chef {
+  animation: rbWalkWobble .5s ease-in-out infinite alternate;
+}
+@keyframes rbWalkWobble {
+  0% { transform: translateY(0) rotate(4deg) }
+  100% { transform: translateY(-7px) rotate(-4deg) }
+}

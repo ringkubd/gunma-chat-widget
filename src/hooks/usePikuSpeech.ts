@@ -141,10 +141,7 @@ export function usePikuSpeech(opts: UsePikuSpeechOpts) {
     let alive = true;
     let pool: PoolMessage[] = [];
     let timer: number | undefined;
-    let spokenThisRun = 0;
-    let sessionKey = '';
-    try { sessionKey = getSessionIdRef.current?.() ?? 'anon'; } catch { sessionKey = 'anon'; }
-    const countKey = `pk_count_${sessionKey}`;
+    const sessionKey = (() => { try { return getSessionIdRef.current?.() ?? 'anon'; } catch { return 'anon'; } })();
     const typesKey = `pk_types_${sessionKey}`;
 
     const load = async () => {
@@ -174,18 +171,16 @@ export function usePikuSpeech(opts: UsePikuSpeechOpts) {
     };
 
     // speak exactly one message now, then schedule the next
+    const spokenRef = { current: 0 };
     const speakOnce = () => {
       if (!alive || document.hidden || messageRef.current) { schedule(6000); return; }
-      let shownCount = 0;
-      try { shownCount = Number(sessionStorage.getItem(countKey) || '0'); } catch { shownCount = 0; }
-      if (shownCount >= maxMsgs) return; // session cap — quiet
+      if (spokenRef.current >= maxMsgs) return; // per load cap
 
       if (pool.length === 0) { void load().then(() => schedule(Math.max(12000, minGap / 2))); return; }
 
       const m = pool.shift()!;
       sessionMark(m);
-      spokenThisRun++;
-      try { sessionStorage.setItem(countKey, String(shownCount + 1)); } catch {}
+      spokenRef.current++;
       schedule(minGap);
 
       prefillRef.current = m.chips?.[0]?.prefill ?? undefined;
