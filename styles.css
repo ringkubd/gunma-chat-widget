@@ -1497,3 +1497,37 @@
   transition: transform .12s ease, background .12s ease;
 }
 .gunma-chef-bubble .gunma-chef-chip:hover { background: #10b981; color: #fff; transform: translateY(-1px); }
+
+/* ── Bubble-holder: speech floats above the icon, never confined ── */
+.gunma-bubble-hold {
+  position: fixed;
+  right: 24px; bottom: 24px;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 10px;
+  z-index: 99999; /* same layer as the bubble button */
+}
+.gunma-bubble-hold .gunma-bubble { position: relative; right: auto; bottom: auto; }
+.gunma-speech {
+  background: linear-gradient(180deg,#ffffff,#f7fffb);
+  color: #1f2937; font-size: 13px; line-height: 1.5; font-weight: 500;
+  padding: 12px 14px; border-radius: 16px 16px 5px 16px;
+  max-width: 240px; min-width: 150px;
+  box-shadow: 0 10px 28px rgba(16,185,129,.25), 0 2px 6px rgba(0,0,0,.10);
+  border: 1.5px solid rgba(16,185,129,.4);
+  cursor: default; pointer-events: auto;
+  animation: gunmaSlideUp .22s cubic-bezier(.34,1.56,.64,1);
+}
+.gunma-speech::after {
+  content:''; position:absolute; right: 22px; bottom: -9px;
+  border-right: 14px solid transparent; border-top: 13px solid #f7fffb;
+}
+.gunma-speech-text { margin: 0; white-space: pre-line; }
+.gunma-speech-chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; position: static; }
+.gunma-speech .gunma-chef-chip {
+  display: inline-block; margin: 0; padding: 5px 12px; border-radius: 999px;
+  background: #fff; border: 1.5px solid #10b98155; color: #065f46;
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s ease;
+}
+.gunma-speech .gunma-chef-chip:hover { background: #10b981; color: #fff; }
+/* robot art fills the round button nicely */
+.gunma-bubble .gunma-chef-svg.pk-robot { width: 130% !important; height: 130% !important; margin: -15%; }

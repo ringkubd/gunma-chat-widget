@@ -32,12 +32,8 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
   const talking = !!speech;
 
   return (
-    <button
-      className={`gunma-bubble ${isOpen ? 'gunma-bubble--open pk-robot-wrap' : 'pk-robot-wrap'}`}
-      onClick={onClick}
-      aria-label={isOpen ? 'Close chat' : 'Open chat'}
-      style={{ backgroundColor: brandColor }}
-    >
+    <div className="gunma-bubble-hold">
+      {/* Speech bubble sits ABOVE the button, outside the green circle */}
       {!isOpen && speech && (
         <div className="gunma-speech" onClick={(e) => { e.stopPropagation(); onChipClick(undefined); }}>
           <p className="gunma-speech-text">{speech}</p>
@@ -57,6 +53,12 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
         </div>
       )}
 
+      <button
+        className={`gunma-bubble ${isOpen ? 'gunma-bubble--open' : ''}`}
+        onClick={onClick}
+        aria-label={isOpen ? 'Close chat' : 'Open chat'}
+        style={{ backgroundColor: isOpen ? brandColor : 'transparent' }}
+      >
       {/* Piku robot mascot IS the bubble icon (doodle) */}
       {!isOpen ? (
         variant === 'chef' ? (
@@ -91,5 +93,6 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
         <span className="gunma-badge">{unreadCount}</span>
       )}
     </button>
+    </div>
   );
 }
