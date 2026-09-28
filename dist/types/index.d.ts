@@ -208,6 +208,8 @@ export type CommerceStep = 'cart' | 'auth' | 'address' | 'delivery' | 'payment' 
  */
 export interface ChatDoodleConfig {
     enabled?: boolean;
+    /** Mascot art style. 'robot' (default) = Piku bot with headset; 'chef' = chef. */
+    variant?: 'robot' | 'chef';
     /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.3. */
     talkChance?: number;
     /** Follow the customer's pointer (desktop). Default false (chef stays put). */

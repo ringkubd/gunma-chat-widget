@@ -1,11 +1,134 @@
 /**
- * PikuRobotArt — the official Piku robot mascot (design-provided SVG)
- * wired into our doodle animation system: eye-blink, open mouth while
- * talking, glow pop, wander/float/hop handled on the root element.
+ * PikuRobotArt — official Piku robot mascot (design-provided SVG).
+ * classes/gradient ids namespaced pk-*; blink via pk-eye; talking mouth.
  */
+const PK_CSS = `
+      .pk-st0 {
+        fill: #011f70;
+      }
+
+      .pk-st1 {
+        fill: url(#pk-lg4);
+      }
+
+      .pk-st1, .pk-st2, .pk-st3 {
+        mix-blend-mode: multiply;
+      }
+
+      .pk-st2 {
+        fill: url(#pk-lg1);
+      }
+
+      .pk-st4 {
+        fill: #ebfeff;
+      }
+
+      .pk-st5 {
+        fill: #fff;
+      }
+
+      .pk-st6 {
+        fill: #011f75;
+      }
+
+      .pk-st7 {
+        isolation: isolate;
+      }
+
+      .pk-st3 {
+        fill: url(#pk-lg2);
+      }
+
+      .pk-st8 {
+        fill: #16d5fe;
+      }
+
+      .pk-st9 {
+        fill: #04297a;
+      }
+
+      .pk-st10 {
+        fill: url(#pk-lg5);
+      }
+
+      .pk-st11 {
+        fill: url(#pk-lg3);
+      }
+
+      .pk-st12 {
+        fill: #0242cb;
+      }
+
+      .pk-st13 {
+        fill: #53e0fb;
+      }
+
+      .pk-st14 {
+        fill: url(#pk-lg);
+      }
+
+      .pk-st15 {
+        fill: #b6fcfc;
+      }
+    `;
+
 export function PikuRobotArt({ blink, talking }: { blink: boolean; talking: boolean }) {
+  const cs = (...c: Array<string | false | undefined>) => c.filter(Boolean).join(' ');
   return (
-    <svg viewBox="0 0 277.39 277.39" className="gunma-chef-svg pk-robot" aria-hidden="true">  <g className="pk-st7">
+    <svg viewBox="0 0 277.39 277.39" className="gunma-chef-svg pk-robot" aria-hidden="true">
+      <style dangerouslySetInnerHTML={{ __html: PK_CSS }} />
+      <defs>
+    
+    <linearGradient id="pk-lg" x1="132.21" y1="148.88" x2="149.86" y2="258.41" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#fff"/>
+      <stop offset=".1" stopColor="#f8fdfe"/>
+      <stop offset=".23" stopColor="#e6fafe"/>
+      <stop offset=".39" stopColor="#c8f5fe"/>
+      <stop offset=".56" stopColor="#9fedfe"/>
+      <stop offset=".75" stopColor="#69e4fe"/>
+      <stop offset=".94" stopColor="#29d8fe"/>
+      <stop offset="1" stopColor="#16d5fe"/>
+    </linearGradient>
+    <linearGradient id="pk-lg1" x1="138.62" y1="165.36" x2="138.62" y2="234.91" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#fff" stopOpacity=".4"/>
+      <stop offset="1" stopColor="#14b4ff"/>
+    </linearGradient>
+    <linearGradient id="pk-lg2" x1="137.69" y1="153.91" x2="137.74" y2="174.88" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#fff"/>
+      <stop offset=".11" stopColor="#fafdff"/>
+      <stop offset=".24" stopColor="#ecf9ff"/>
+      <stop offset=".38" stopColor="#d5f1ff"/>
+      <stop offset=".52" stopColor="#b5e7ff"/>
+      <stop offset=".67" stopColor="#8cdaff"/>
+      <stop offset=".82" stopColor="#5acaff"/>
+      <stop offset=".97" stopColor="#20b7ff"/>
+      <stop offset="1" stopColor="#14b4ff"/>
+    </linearGradient>
+    <linearGradient id="pk-lg3" x1="127.31" y1="-78.53" x2="141.69" y2="148.91" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#fff"/>
+      <stop offset=".15" stopColor="#fbfefe"/>
+      <stop offset=".28" stopColor="#f0fcfe"/>
+      <stop offset=".41" stopColor="#def9fe"/>
+      <stop offset=".53" stopColor="#c4f4fe"/>
+      <stop offset=".65" stopColor="#a3eefe"/>
+      <stop offset=".77" stopColor="#7ae7fe"/>
+      <stop offset=".89" stopColor="#4bdefe"/>
+      <stop offset="1" stopColor="#16d5fe"/>
+    </linearGradient>
+    <linearGradient id="pk-lg4" x1="92.39" y1="67.48" x2="230.22" y2="202.8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#fff" stopOpacity=".4"/>
+      <stop offset="1" stopColor="#16d5fe"/>
+    </linearGradient>
+    <linearGradient id="pk-lg5" x1="60.92" y1="121.41" x2="129.09" y2="170.06" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stopColor="#0149ff"/>
+      <stop offset=".13" stopColor="#0147f8"/>
+      <stop offset=".32" stopColor="#0141e6"/>
+      <stop offset=".53" stopColor="#0139c8"/>
+      <stop offset=".77" stopColor="#012c9f"/>
+      <stop offset="1" stopColor="#011f70"/>
+    </linearGradient>
+  </defs>
+        <g className="pk-st7">
     <g id="Layer_1">
       <g>
         <g>
@@ -38,8 +161,8 @@ export function PikuRobotArt({ blink, talking }: { blink: boolean; talking: bool
           <path className="pk-st11" d="M206.26,134.64c-7.47,14.19-21.37,21.04-35.3,24.41-12.07,2.92-24.16,3.22-32.09,3.42-18.19.45-46.67,1.16-62.17-19.83-15.11-20.46-9.51-50.19,3.31-68.86,2.54-3.7,5.34-6.93,8.29-9.73,0,0,.02-.02.03-.02,19.3-18.33,45.25-18.93,50.55-18.94,5.67,0,38.25.62,58.17,27.65,10.79,14.63,20.47,40.55,9.22,61.91Z"/>
           <path className="pk-st1" d="M200.14,136.15c-6.34,12.4-17.46,19.16-29.18,22.89-12.07,2.92-24.16,3.22-32.09,3.42-18.19.45-46.67,1.16-62.17-19.83-15.11-20.46-9.51-50.19,3.31-68.86,2.54-3.7,5.34-6.93,8.29-9.73,0,0,.02-.02.03-.02,18.37-16.39,41.85-16.94,46.78-16.95,5.47,0,36.92.61,56.15,27.5,10.41,14.56,19.76,40.33,8.9,61.58Z"/>
           <path className="pk-st0" d="M193.44,110.78c.1,3.85.31,11.86-2.28,17.66-7.39,16.53-38.43,17.07-50.85,17.28-12.53.22-45.07.78-53.35-16.4-3.23-6.7-3.03-16.64-2.99-18.54.03-1.65.23-11.19,3.5-17.79,8.41-16.97,38.58-17.4,51.05-17.58,12.65-.18,42.39-.6,51.05,15.89,3.55,6.76,3.81,16.87,3.88,19.48Z"/>
-          <rect className={"pk-st5 pk-eye" + (blink ? " blink" : "")} x="112.11" y="98.38" width="9.44" height="22.25" rx="4.72" ry="4.72"/>
-          <rect className={"pk-st5 pk-eye" + (blink ? " blink" : "")} x="155.83" y="98.38" width="9.44" height="22.25" rx="4.72" ry="4.72"/>
+          <rect className={cs("pk-st5","pk-eye", blink && "blink")} x="112.11" y="98.38" width="9.44" height="22.25" rx="4.72" ry="4.72"/>
+          <rect className={cs("pk-st5","pk-eye", blink && "blink")} x="155.83" y="98.38" width="9.44" height="22.25" rx="4.72" ry="4.72"/>
           {!talking ? (
             <path className="pk-smile" d="M149.65,125.24v.03c0,5.82-4.9,10.53-10.95,10.53s-10.96-4.71-10.96-10.53v-.03h21.91Z"/>
           ) : (
