@@ -245,6 +245,12 @@ export interface ChatDoodleConfig {
   size?: number;
   /** Enable the occasional pan-stir animation. Default true. */
   stir?: boolean;
+  /** Max bubbles per session. Default 5. */
+  maxMessages?: number;
+  /** First message delay (ms). Default 2500. */
+  startDelayMs?: number;
+  /** Min gap between bubbles (ms). Default 45000. */
+  minGapMs?: number;
   texts?: {
     product?: string[];  // Lines with %s placeholder for product title
     general?: string[];  // General tips/recipe hooks/greetings

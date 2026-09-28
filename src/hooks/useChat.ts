@@ -3,6 +3,7 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { ChatApi } from '../lib/api';
 import { getStrings } from '../lib/i18n';
+import * as pikuBus from '../lib/pikuBus';
 import type { ChatMessage, ChatSession, ChatWidgetConfig } from '../types';
 
 /**
@@ -402,6 +403,17 @@ export function useChat(config: ChatWidgetConfig) {
                 (window as unknown as { __gunmaOpenLogin?: (d?: unknown) => void }).__gunmaOpenLogin?.(resultData);
               } else if (resultData.action === 'redirect' && resultData.url) {
                 window.location.href = resultData.url;
+              }
+
+              // Doodle direct-relation: chat actions mirror to the chef.
+              const toolName0 = String(data.name || '');
+              const ok = (resultData as { status?: string; message?: string }).status === 'success';
+              if (ok && resultData.action === 'open_checkout') {
+                if (toolName0 === 'add_item_to_cart' || toolName0 === 'bulk_add_to_cart') {
+                  pikuBus.emit('cart-added', { message: (resultData as { message?: string }).message ?? '' });
+                } else if (toolName0 === 'update_pending_order') {
+                  pikuBus.emit('order-updated', { message: (resultData as { message?: string }).message ?? '' });
+                }
               }
             }
             break;

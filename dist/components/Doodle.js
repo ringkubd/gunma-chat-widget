@@ -16,6 +16,7 @@ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { PikuRobotArt } from './PikuRobotArt';
+import * as pikuBus from '../lib/pikuBus';
 const PRODUCT_LINES = [
     '"%s" dekhchen! Recipe ba ingredient lagle bolen 💬',
     '"%s" khub popular bhai — cart e add kori naki?',
@@ -56,6 +57,30 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         setMessage(line);
         window.setTimeout(() => setMessage(null), 8000);
     }, []);
+    /* ── Direct relation: chat widget e je holo, doodle react kore ── */
+    const celebrateRef = useRef(null);
+    useEffect(() => {
+        if (!enabled || typeof window === 'undefined')
+            return;
+        const offAdd = pikuBus.on('cart-added', (p) => {
+            celebrateRef.current = p.message
+                ? `✅ ${p.message} 🎉`
+                : '✅ Cart e add holo bhai! 🎉';
+        });
+        const offOrder = pikuBus.on('order-updated', (p) => {
+            celebrateRef.current = p.message
+                ? `✅ ${p.message} ✓`
+                : null;
+        });
+        const offClosed = pikuBus.on('chat-closed', () => {
+            // Chat bondho hole doodle phire eshe celebrate kore (eksathe দেখা যায়)
+            if (celebrateRef.current && !messageRef.current) {
+                say(celebrateRef.current);
+                celebrateRef.current = null;
+            }
+        });
+        return () => { offAdd(); offOrder(); offClosed(); };
+    }, [enabled, say]);
     /* ── Blink + breathe + occasional stir/hop ───────────────────── */
     useEffect(() => {
         if (!enabled || typeof window === 'undefined')

@@ -12,7 +12,8 @@ import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
-import { PikuDoodle } from './Doodle';
+import * as pikuBus from '../lib/pikuBus';
+import { usePikuSpeech } from '../hooks/usePikuSpeech';
 import { usePageTracking } from '../hooks/usePageTracking';
 
 export function ChatWidget(config: ChatWidgetConfig) {
@@ -125,6 +126,11 @@ export function ChatWidget(config: ChatWidgetConfig) {
       : { bottom: '24px', left: '24px' }),
   };
 
+  // Doodle direct-relation: widget toggle → doodle visibility events.
+  React.useEffect(() => {
+    pikuBus.emit(isOpen ? 'chat-opened' : 'chat-closed');
+  }, [isOpen]);
+
   // Agent-settings gates (widget master switch + doodle). Polled so a dashboard
   // toggle takes effect on live pages without a reload.
   const [features, setFeatures] = React.useState<{ widget: boolean | null; doodle: boolean | null }>(
@@ -167,9 +173,6 @@ export function ChatWidget(config: ChatWidgetConfig) {
     && (features.widget ?? true);
   const doodleEnabled = (config.doodle?.enabled ?? true) && (features.doodle ?? true);
 
-  // Live page heartbeat so Piku knows what the customer is viewing.
-  usePageTracking(config, getSessionId, widgetEnabled);
-
   // Doodle click with context → open chat and let Piku answer right away.
   const openWithPrefill = useCallback((prefill?: string) => {
     toggle();
@@ -177,6 +180,22 @@ export function ChatWidget(config: ChatWidgetConfig) {
       window.setTimeout(() => sendMessage(prefill), 600);
     }
   }, [toggle, sendMessage]);
+
+  // Doodle engine: typed message pool + celebrations on the bubble icon
+  const pikuSpeech = usePikuSpeech({
+    enabled: widgetEnabled && doodleEnabled && !!config.apiUrl,
+    chatOpen: isOpen,
+    maxMessages: config.doodle?.maxMessages,
+    startDelayMs: config.doodle?.startDelayMs,
+    minGapMs: config.doodle?.minGapMs,
+    apiUrl: config.apiUrl,
+    routePrefix: config.routes?.prefix ?? 'api/chat',
+    lang: config.locale,
+    getSessionId,
+  });
+
+  // Live page heartbeat so Piku knows what the customer is viewing.
+  usePageTracking(config, getSessionId, widgetEnabled);
 
   const handleSend = useCallback((text: string) => {
     setLastMessage(text);
@@ -276,18 +295,6 @@ export function ChatWidget(config: ChatWidgetConfig) {
         </div>
       )}
 
-      {/* Piku Doodle (opt-in) */}
-      <PikuDoodle
-        doodle={{ ...(config.doodle || { enabled: true }), enabled: doodleEnabled }}
-        brandColor={brandColor}
-        chatOpen={isOpen}
-        onOpenChat={widgetEnabled ? openWithPrefill : () => {}}
-        apiUrl={config.apiUrl}
-        routePrefix={config.routes?.prefix ?? 'api/chat'}
-        getSessionId={getSessionId}
-        lang={config.locale}
-      />
-
       {/* Floating Bubble Button (master widget gate) */}
       {widgetEnabled && (
         <ChatBubble
@@ -295,6 +302,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
           onClick={toggle}
           brandColor={brandColor}
           unreadCount={unreadCount}
+          speech={pikuSpeech.message}
+          chips={pikuSpeech.chips}
+          onChipClick={openWithPrefill}
+          variant={config.doodle?.variant ?? 'robot'}
         />
       )}
     </div>
