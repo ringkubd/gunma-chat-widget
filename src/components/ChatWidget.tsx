@@ -36,6 +36,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
     getSessionId,
   } = useChat(config);
 
+  // Keep an up-to-date isOpen ref so event handlers can open the panel.
+  const isOpenRef = React.useRef(isOpen);
+  React.useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
   // Keep a stable ref for the cart refresher used by the click handler.
   const refreshCommerceCartRef = React.useRef<(() => Promise<unknown>) | null>(null);
 
@@ -71,23 +75,39 @@ export function ChatWidget(config: ChatWidgetConfig) {
   React.useEffect(() => {
     if (!commerce.enabled) return;
 
+    const openChatIfClosed = () => {
+      if (!isOpenRef.current) toggle();
+    };
     const openCheckout = () => {
+      openChatIfClosed();
       setShowCommerce(true);
       commerce.setStep('cart');
       void refreshCommerceCartRef.current?.();
     };
     const openLogin = () => {
+      openChatIfClosed();
       setShowCommerce(true);
       commerce.setStep('auth');
     };
+
+    // Register a direct bridge too — resilient to event timing/duplicate
+    // widget module instances in the host bundle.
+    const w = window as unknown as {
+      __gunmaOpenCheckout?: () => void;
+      __gunmaOpenLogin?: () => void;
+    };
+    w.__gunmaOpenCheckout = openCheckout;
+    w.__gunmaOpenLogin = openLogin;
 
     window.addEventListener('gunma:open_checkout', openCheckout);
     window.addEventListener('gunma:open_login', openLogin);
     return () => {
       window.removeEventListener('gunma:open_checkout', openCheckout);
       window.removeEventListener('gunma:open_login', openLogin);
+      delete w.__gunmaOpenCheckout;
+      delete w.__gunmaOpenLogin;
     };
-  }, [commerce.enabled, commerce.setStep]);
+  }, [commerce.enabled, commerce.setStep, toggle]);
 
   const position = config.position || 'bottom-right';
   const brandColor = config.brandColor || '#10b981';

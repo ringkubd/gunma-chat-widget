@@ -362,9 +362,12 @@ export function useChat(config) {
                     if (resultData && typeof window !== 'undefined') {
                         if (resultData.action === 'open_checkout') {
                             window.dispatchEvent(new CustomEvent('gunma:open_checkout', { detail: resultData }));
+                            // Direct bridge (survives listener timing / duplicate instances)
+                            window.__gunmaOpenCheckout?.(resultData);
                         }
                         else if (resultData.action === 'open_login') {
                             window.dispatchEvent(new CustomEvent('gunma:open_login', { detail: resultData }));
+                            window.__gunmaOpenLogin?.(resultData);
                         }
                         else if (resultData.action === 'redirect' && resultData.url) {
                             window.location.href = resultData.url;

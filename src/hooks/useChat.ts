@@ -395,8 +395,11 @@ export function useChat(config: ChatWidgetConfig) {
             if (resultData && typeof window !== 'undefined') {
               if (resultData.action === 'open_checkout') {
                 window.dispatchEvent(new CustomEvent('gunma:open_checkout', { detail: resultData }));
+                // Direct bridge (survives listener timing / duplicate instances)
+                (window as unknown as { __gunmaOpenCheckout?: (d?: unknown) => void }).__gunmaOpenCheckout?.(resultData);
               } else if (resultData.action === 'open_login') {
                 window.dispatchEvent(new CustomEvent('gunma:open_login', { detail: resultData }));
+                (window as unknown as { __gunmaOpenLogin?: (d?: unknown) => void }).__gunmaOpenLogin?.(resultData);
               } else if (resultData.action === 'redirect' && resultData.url) {
                 window.location.href = resultData.url;
               }
