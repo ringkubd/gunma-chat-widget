@@ -102,6 +102,7 @@ export function useCommerce(config, opts = {}) {
     const [successDelivery, setSuccessDelivery] = useState({});
     const [errorMessage, setErrorMessage] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [cartLoading, setCartLoading] = useState(false);
     const [stripeSecret, setStripeSecret] = useState(null);
     const busyRef = useRef(false);
     const subtotal = useMemo(() => cart.reduce((s, i) => s + Number(i.total_amount || 0), 0), [cart]);
@@ -121,6 +122,7 @@ export function useCommerce(config, opts = {}) {
     const refreshCart = useCallback(async () => {
         if (!enabled)
             return [];
+        setCartLoading(true);
         try {
             const items = await api.getCart();
             setCart(items);
@@ -129,6 +131,9 @@ export function useCommerce(config, opts = {}) {
         catch (e) {
             // ignore — cart may be empty
             return [];
+        }
+        finally {
+            setCartLoading(false);
         }
     }, [enabled, api]);
     const removeItem = useCallback(async (id) => {
@@ -573,6 +578,7 @@ export function useCommerce(config, opts = {}) {
         step,
         setStep,
         cart,
+        cartLoading,
         subtotal,
         totalTax,
         shippingCharge,

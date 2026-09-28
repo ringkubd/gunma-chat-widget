@@ -19,11 +19,11 @@ function stableVisitorId(visitorIdKey = 'gunma_visitor_id') {
         return 'anon';
     }
 }
-export function usePageTracking(config, getSessionId) {
+export function usePageTracking(config, getSessionId, enabled = true) {
     const last = useRef({ url: '', pid: null, pidTitle: null });
     const lastSent = useRef(0);
     useEffect(() => {
-        if (typeof window === 'undefined' || !config.apiUrl)
+        if (!enabled || typeof window === 'undefined' || !config.apiUrl)
             return;
         const send = (action, payload) => {
             const sessionId = getSessionId();
@@ -98,5 +98,5 @@ export function usePageTracking(config, getSessionId) {
             if (push)
                 window.history.pushState = push;
         };
-    }, [config, getSessionId]);
+    }, [config, getSessionId, enabled]);
 }

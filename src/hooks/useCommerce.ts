@@ -84,6 +84,8 @@ export interface UseCommerceResult {
   stripeSecret: string | null;
 
   loading: boolean;
+  /** True while the cart contents are (re)fetching — show a spinner. */
+  cartLoading: boolean;
   refreshCart: () => Promise<CommerceCartItem[]>;
   stockIssues: StockIssue[];
   hasStockIssues: boolean;
@@ -209,6 +211,7 @@ export function useCommerce(
   const [successDelivery, setSuccessDelivery] = useState<{ date?: string | null; time?: string | null }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
   const [stripeSecret, setStripeSecret] = useState<string | null>(null);
 
   const busyRef = useRef(false);
@@ -240,6 +243,7 @@ export function useCommerce(
 
   const refreshCart = useCallback(async (): Promise<CommerceCartItem[]> => {
     if (!enabled) return [];
+    setCartLoading(true);
     try {
       const items = await api.getCart();
       setCart(items);
@@ -247,6 +251,8 @@ export function useCommerce(
     } catch (e) {
       // ignore — cart may be empty
       return [];
+    } finally {
+      setCartLoading(false);
     }
   }, [enabled, api]);
 
@@ -703,6 +709,7 @@ export function useCommerce(
     step,
     setStep,
     cart,
+    cartLoading,
     subtotal,
     totalTax,
     shippingCharge,

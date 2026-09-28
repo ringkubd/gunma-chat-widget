@@ -77,6 +77,11 @@ export interface ChatWidgetConfig {
     commerce?: ChatCommerceConfig;
     /** Optional float-follow companion on pages (product suggestions etc.). */
     doodle?: ChatDoodleConfig;
+    /** Master gate for the whole chat widget (bubble + panel). Default true.
+     *  When the dashboard/Agent Settings turns it off, the widget hides itself. */
+    widget?: {
+        enabled?: boolean;
+    };
 }
 /**
  * In-chat commerce settings. `frontendBase`/`apiBase` derive host endpoints:

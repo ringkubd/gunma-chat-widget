@@ -21,12 +21,12 @@ function stableVisitorId(visitorIdKey = 'gunma_visitor_id'): string {
   }
 }
 
-export function usePageTracking(config: ChatWidgetConfig, getSessionId: () => string | null) {
+export function usePageTracking(config: ChatWidgetConfig, getSessionId: () => string | null, enabled: boolean = true) {
   const last = useRef<{ url: string; pid: number | null; pidTitle: string | null }>({ url: '', pid: null, pidTitle: null });
   const lastSent = useRef(0);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !config.apiUrl) return;
+    if (!enabled || typeof window === 'undefined' || !config.apiUrl) return;
 
     const send = (
       action: 'page_view' | 'product_view',
@@ -104,5 +104,5 @@ export function usePageTracking(config: ChatWidgetConfig, getSessionId: () => st
       window.removeEventListener('popstate', read);
       if (push) window.history.pushState = push;
     };
-  }, [config, getSessionId]);
+  }, [config, getSessionId, enabled]);
 }

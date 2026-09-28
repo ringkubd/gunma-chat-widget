@@ -28,6 +28,11 @@ export interface WidgetStrings {
     continueToPayment: string;
     payNow: (amount: string) => string;
     processing: string;
+    addingToCart: string;
+    addingAllToCart: string;
+    updatingCart: string;
+    preparingCheckout: string;
+    loadingCart: string;
     delivery: string;
     payment: string;
     deliveryDate: string;

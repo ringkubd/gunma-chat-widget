@@ -54,9 +54,6 @@ export function ChatWidget(config: ChatWidgetConfig) {
   const [lastMessage, setLastMessage] = useState('');
   const [showCommerce, setShowCommerce] = useState(false);
 
-  // Live page heartbeat so Piku knows what the customer is viewing.
-  usePageTracking(config, getSessionId);
-
   const commerce = useCommerce(config, {
     onCartChanged: () => {
       if (typeof window !== 'undefined') {
@@ -108,20 +105,50 @@ export function ChatWidget(config: ChatWidgetConfig) {
       : { bottom: '24px', left: '24px' }),
   };
 
-  // Agent-settings gate for the doodle: unless the host hard-disables it
-  // (enabled: false), probe the backend feature flag and honour it.
-  const [doodleRuntime, setDoodleRuntime] = React.useState<boolean | null>(null);
+  // Agent-settings gates (widget master switch + doodle). Polled so a dashboard
+  // toggle takes effect on live pages without a reload.
+  const [features, setFeatures] = React.useState<{ widget: boolean | null; doodle: boolean | null }>(
+    { widget: null, doodle: null },
+  );
   React.useEffect(() => {
-    if (!config.doodle || (config.doodle as { enabled?: boolean }).enabled === false) return;
+    if (typeof window === 'undefined' || !config.apiUrl) return;
+    // Host can hard-disable entirely — skip probing then.
+    const hostWidgetOff = (config.widget as { enabled?: boolean } | undefined)?.enabled === false;
+    if (hostWidgetOff) { setFeatures({ widget: false, doodle: false }); return; }
+
     const prefix = config.routes?.prefix ?? 'api/chat';
-    fetch(`${config.apiUrl}/${prefix}/agent-features`, {
-      headers: { Accept: 'application/json' },
-      credentials: 'include',
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => setDoodleRuntime(!!j?.doodle?.enabled))
-      .catch(() => setDoodleRuntime(true));
-  }, [config.apiUrl, config.doodle]);
+    let alive = true;
+    const load = () => {
+      fetch(`${config.apiUrl}/${prefix}/agent-features`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (!alive || !j) return;
+          setFeatures({ widget: !!j?.widget?.enabled, doodle: !!j?.doodle?.enabled });
+        })
+        .catch(() => { /* keep previous state on network hiccups */ });
+    };
+    load();
+    const iv = window.setInterval(load, 8000);
+    const onVis = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      alive = false;
+      window.clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, [config.apiUrl, config.routes?.prefix, config.widget]);
+
+  const widgetEnabled = (config.widget as { enabled?: boolean } | undefined)?.enabled !== false
+    && (features.widget ?? true);
+  const doodleEnabled = (config.doodle?.enabled ?? true) && (features.doodle ?? true);
+
+  // Live page heartbeat so Piku knows what the customer is viewing.
+  usePageTracking(config, getSessionId, widgetEnabled);
 
   // Doodle click with context → open chat and let Piku answer right away.
   const openWithPrefill = useCallback((prefill?: string) => {
@@ -144,8 +171,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
   return (
     <div style={positionStyle} className={`gunma-chat-root ${themeClass}`}>
-      {/* Floating Chat Panel */}
-      {isOpen && (
+      {/* Floating Chat Panel (master widget gate) */}
+      {widgetEnabled && isOpen && (
         <div
           className="gunma-chat-panel"
           style={{ '--gunma-brand': brandColor } as React.CSSProperties}
@@ -231,19 +258,21 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
       {/* Piku Doodle (opt-in) */}
       <PikuDoodle
-        doodle={{ ...(config.doodle || { enabled: true }), enabled: (config.doodle?.enabled ?? true) && (doodleRuntime ?? true) }}
+        doodle={{ ...(config.doodle || { enabled: true }), enabled: doodleEnabled }}
         brandColor={brandColor}
         chatOpen={isOpen}
-        onOpenChat={openWithPrefill}
+        onOpenChat={widgetEnabled ? openWithPrefill : () => {}}
       />
 
-      {/* Floating Bubble Button */}
-      <ChatBubble
-        isOpen={isOpen}
-        onClick={toggle}
-        brandColor={brandColor}
-        unreadCount={unreadCount}
-      />
+      {/* Floating Bubble Button (master widget gate) */}
+      {widgetEnabled && (
+        <ChatBubble
+          isOpen={isOpen}
+          onClick={toggle}
+          brandColor={brandColor}
+          unreadCount={unreadCount}
+        />
+      )}
     </div>
   );
 }

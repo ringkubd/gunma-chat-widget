@@ -33,6 +33,8 @@ export interface UseCommerceResult {
     errorMessage: string | null;
     stripeSecret: string | null;
     loading: boolean;
+    /** True while the cart contents are (re)fetching — show a spinner. */
+    cartLoading: boolean;
     refreshCart: () => Promise<CommerceCartItem[]>;
     stockIssues: StockIssue[];
     hasStockIssues: boolean;

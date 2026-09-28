@@ -338,11 +338,24 @@ export function useChat(config) {
                 case 'thinking':
                     setToolStatus(String(data.status || 'Thinking...'));
                     break;
-                case 'tool_call':
-                    setToolStatus(`🔍 Searching ${String(data.name || '')}...`);
+                case 'tool_call': {
+                    const name = String(data.name || '');
+                    const strs = stringsRef.current;
+                    const friendly = {
+                        add_item_to_cart: `🛒 ${strs.addingToCart}`,
+                        bulk_add_to_cart: `🛒 ${strs.addingAllToCart}`,
+                        remove_item_from_cart: `🛒 ${strs.updatingCart}`,
+                        update_cart_quantity: `🛒 ${strs.updatingCart}`,
+                        clear_cart: `🛒 ${strs.updatingCart}`,
+                        get_cart_contents: `🛒 ${strs.loadingCart}`,
+                        open_checkout: `🧾 ${strs.preparingCheckout}`,
+                        open_login: '🔐 Opening login…',
+                    };
+                    setToolStatus(friendly[name] ?? `🔍 ${name.replace(/_/g, ' ')}…`);
                     break;
+                }
                 case 'tool_result':
-                    setToolStatus(`✅ ${String(data.name || '')} complete`);
+                    setToolStatus(null);
                     const resultData = data.result;
                     // The commerce panel (when enabled) reacts to these events; when it is
                     // not enabled, fall back to navigating the host site.

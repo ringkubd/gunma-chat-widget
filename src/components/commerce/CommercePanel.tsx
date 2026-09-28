@@ -73,7 +73,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime,
     coins, appliedCoins, setAppliedCoins,
     email, setEmail, customerName,
-    successOrderId, errorMessage, loading,
+    successOrderId, errorMessage, loading, cartLoading,
     refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register,
     stockIssues, hasStockIssues, fixStockIssue, removeStockIssue, fixAllStockIssues,
     saveAddress,
@@ -475,7 +475,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
               disabled={loading || !deliveryDate || !deliveryTime}
               onClick={() => confirmCash()}
             >
-              {loading ? 'Placing…' : s.placeOrderCash}
+              {loading ? s.processing : s.placeOrderCash}
             </button>
           ) : (
             <button
@@ -523,7 +523,12 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     <div className="gunma-commerce">
       {header}
       <div className="gunma-commerce-section">
-        {cart.length === 0 ? (
+        {cartLoading && cart.length === 0 ? (
+          <div className="gunma-commerce-loading">
+            <div className="gunma-commerce-spinner" />
+            <p>{s.loadingCart}</p>
+          </div>
+        ) : cart.length === 0 ? (
           <p className="gunma-commerce-muted">{s.cartEmpty}</p>
         ) : (
           <>
@@ -614,7 +619,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
               disabled={loading || hasStockIssues}
               onClick={() => startCheckout()}
             >
-              {loading ? 'Please wait…' : s.checkout}
+              {loading ? s.preparingCheckout : s.checkout}
             </button>
             {errorMessage && <p className="gunma-commerce-error">{errorMessage}</p>}
           </>
