@@ -343,74 +343,108 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       >
         <svg viewBox="0 0 120 140" className="gunma-chef-svg" aria-hidden="true">
           <defs>
+            <radialGradient id="chefGlow" cx="50%" cy="52%" r="55%">
+              <stop offset="0" stopColor={brandColor} stopOpacity="0.45" />
+              <stop offset="0.62" stopColor={brandColor} stopOpacity="0.16" />
+              <stop offset="1" stopColor={brandColor} stopOpacity="0" />
+            </radialGradient>
             <linearGradient id="chefCoat" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#ffffff" />
-              <stop offset="1" stopColor="#eef2f3" />
+              <stop offset="1" stopColor="#dfe9ee" />
             </linearGradient>
             <linearGradient id="chefHat" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#ffffff" />
-              <stop offset="1" stopColor="#eef2f3" />
+              <stop offset="0" stopColor="#fffdf5" />
+              <stop offset="1" stopColor="#ffe9a8" />
             </linearGradient>
             <linearGradient id="chefScarf" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor={brandColor} />
-              <stop offset="1" stopColor="#0d9488" />
+              <stop offset="0" stopColor="#34d399" />
+              <stop offset="1" stopColor={brandColor} />
+            </linearGradient>
+            <linearGradient id="chefSkin" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#ffd9b0" />
+              <stop offset="1" stopColor="#f6bd8a" />
+            </linearGradient>
+            <linearGradient id="chefPan" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#6b7175" />
+              <stop offset="1" stopColor="#3a3f43" />
             </linearGradient>
           </defs>
 
+          {/* soft brand glow so the chef pops on any background */}
+          <circle className="chef-glow" cx="60" cy="74" r="60" fill="url(#chefGlow)" />
+
+          {/* sparkles */}
+          <g className="chef-sparkles" fill="#fbbf24">
+            <path className="sp sp1" d="M26 40 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" />
+            <path className="sp sp2" d="M94 46 l1.6 4 4 1.6 -4 1.6 -1.6 4 -1.6 -4 -4 -1.6 4 -1.6 z" />
+            <path className="sp sp3" d="M88 18 l1.3 3.4 3.4 1.3 -3.4 1.3 -1.3 3.4 -1.3 -3.4 -3.4 -1.3 3.4 -1.3 z" />
+          </g>
+
           {/* shadow */}
-          <ellipse className="chef-shadow" cx="60" cy="134" rx="26" ry="5" fill="#000" opacity=".12" />
+          <ellipse className="chef-shadow" cx="60" cy="134" rx="26" ry="5" fill="#000" opacity=".16" />
 
           <g className="chef-body">
             {/* legs */}
-            <rect className="chef-leg" x="47" y="112" width="9" height="18" rx="4" fill="#3b3b3b" />
-            <rect className="chef-leg" x="64" y="112" width="9" height="18" rx="4" fill="#3b3b3b" />
-            <ellipse cx="51" cy="132" rx="8" ry="4" fill="#26211d" />
-            <ellipse cx="69" cy="132" rx="8" ry="4" fill="#26211d" />
+            <rect x="47" y="112" width="9" height="18" rx="4" fill="#334155" />
+            <rect x="64" y="112" width="9" height="18" rx="4" fill="#334155" />
+            <ellipse cx="51" cy="132" rx="8" ry="4" fill="#1e293b" />
+            <ellipse cx="69" cy="132" rx="8" ry="4" fill="#1e293b" />
 
             {/* coat */}
-            <path d="M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z" fill="url(#chefCoat)" stroke="#d9dfe2" />
+            <path d="M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z" fill="url(#chefCoat)" stroke="#cbd9e2" />
+            {/* buttons */}
+            <circle cx="60" cy="82" r="1.8" fill={brandColor} />
+            <circle cx="60" cy="92" r="1.8" fill={brandColor} />
             {/* scarf / neckerchief */}
-            <path d="M50 62 q10 8 20 0 l-3 10 q-7 5 -14 0 z" fill="url(#chefScarf)" />
+            <path d="M48 62 q12 9 24 0 l-4 12 q-8 6 -16 0 z" fill="url(#chefScarf)" />
 
             {/* left arm */}
             <g className="chef-arm-left">
-              <rect x="33" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#d9dfe2" />
-              <circle cx="37" cy="98" r="5" fill="#f2c6a0" />
+              <rect x="33" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#cbd9e2" />
+              <circle cx="37" cy="98" r="5.4" fill="url(#chefSkin)" />
             </g>
 
             {/* right arm + pan (stirs) */}
             <g className="chef-arm-right">
-              <rect x="78" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#d9dfe2" />
-              <circle cx="83" cy="98" r="5" fill="#f2c6a0" />
+              <rect x="78" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#cbd9e2" />
+              <circle cx="83" cy="98" r="5.4" fill="url(#chefSkin)" />
               <g className="chef-pan">
-                <rect x="80" y="96" width="22" height="3" rx="1.5" fill="#8a8f94" />
-                <ellipse cx="104" cy="97" rx="12" ry="5" fill="#4b5054" />
-                <ellipse cx="104" cy="96" rx="9" ry="3" fill="#6b7175" />
+                <rect x="80" y="95" width="22" height="3" rx="1.5" fill="#aab4bb" />
+                <ellipse cx="104" cy="96" rx="12" ry="5.5" fill="url(#chefPan)" />
+                <ellipse cx="104" cy="95" rx="9" ry="3.4" fill="#8b949a" />
+                <ellipse className="chef-steam" cx="104" cy="90" rx="3" ry="2" fill="#ffffff" opacity=".6" />
               </g>
             </g>
 
             {/* head */}
             <g className="chef-head">
-              <circle cx="60" cy="46" r="20" fill="#f7cda6" />
-              {/* eyes */}
-              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="53" cy="45" r="2.6" fill="#26211d" />
-              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="67" cy="45" r="2.6" fill="#26211d" />
-              <circle cx="53.8" cy="44" r=".9" fill="#fff" />
-              <circle cx="67.8" cy="44" r=".9" fill="#fff" />
+              <circle cx="60" cy="46" r="20.5" fill="url(#chefSkin)" />
+              {/* ears */}
+              <circle cx="40" cy="47" r="3" fill="url(#chefSkin)" />
+              <circle cx="80" cy="47" r="3" fill="url(#chefSkin)" />
+              {/* eyes (bigger, glossy) */}
+              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="53" cy="45" r="3.2" fill="#1f2937" />
+              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="67" cy="45" r="3.2" fill="#1f2937" />
+              <circle cx="54.2" cy="43.6" r="1.1" fill="#fff" />
+              <circle cx="68.2" cy="43.6" r="1.1" fill="#fff" />
+              {/* eyebrows */}
+              <path d="M49.5 39.5 q3.5 -2 7 0" stroke="#6b4a2f" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+              <path d="M63.5 39.5 q3.5 -2 7 0" stroke="#6b4a2f" strokeWidth="1.3" fill="none" strokeLinecap="round" />
               {/* blush */}
-              <circle cx="48" cy="51" r="3" fill="#ffb7b0" opacity=".75" />
-              <circle cx="72" cy="51" r="3" fill="#ffb7b0" opacity=".75" />
-              {/* smile / mouth (open while talking) */}
+              <circle cx="47" cy="52" r="3.4" fill="#ff9d9d" opacity=".8" />
+              <circle cx="73" cy="52" r="3.4" fill="#ff9d9d" opacity=".8" />
+              {/* mouth */}
               {talking ? (
-                <ellipse className="chef-mouth" cx="60" cy="54" rx="4.5" ry="3.4" fill="#7a2f2f" />
+                <ellipse className="chef-mouth" cx="60" cy="54.5" rx="4.6" ry="3.6" fill="#8c3b3b" />
               ) : (
-                <path d="M55 53 q5 4 10 0" stroke="#26211d" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                <path d="M54.5 53 q5.5 5 11 0" stroke="#5b3a24" strokeWidth="1.9" fill="none" strokeLinecap="round" />
               )}
-              {/* chef hat */}
+              {/* chef hat (warm, golden band) */}
               <g className="chef-hat">
-                <ellipse cx="60" cy="29" rx="24" ry="7" fill="url(#chefHat)" stroke="#e2e8ea" />
-                <rect x="45" y="12" width="30" height="18" rx="9" fill="url(#chefHat)" stroke="#e2e8ea" />
-                <path className="chef-hat-puff" d="M40 20 q-6 -8 4 -10 q2 -8 10 -5 q6 -6 12 0 q8 -3 10 5 q10 2 4 10" fill="url(#chefHat)" stroke="#e2e8ea" />
+                <ellipse cx="60" cy="29" rx="24" ry="7.5" fill="url(#chefHat)" stroke="#e6c268" />
+                <rect x="45" y="12" width="30" height="18" rx="9" fill="url(#chefHat)" stroke="#e6c268" />
+                <rect x="45" y="26" width="30" height="5" rx="2.5" fill={brandColor} opacity=".85" />
+                <path className="chef-hat-puff" d="M40 20 q-6 -8 4 -10 q2 -8 10 -5 q6 -6 12 0 q8 -3 10 5 q10 2 4 10" fill="url(#chefHat)" stroke="#e6c268" />
               </g>
             </g>
           </g>
