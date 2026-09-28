@@ -4,6 +4,8 @@ export interface DoodleConfig {
     followCursor?: boolean;
     /** Allow random chit-chat while idle. Default FALSE (product-focus only). */
     speakIdle?: boolean;
+    /** Warm one-time greeting per page load. Default true. */
+    greetOnce?: boolean;
     /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
     talkChance?: number;
     texts?: {

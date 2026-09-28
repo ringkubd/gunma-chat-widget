@@ -116,7 +116,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }) {
                         ? pickOf(doodle.texts.product).replace('%s', hit.title)
                         : pickOf(PRODUCT_LINES).replace('%s', hit.title))
                     : `"${hit.title}" category te onek darun jinish ache — dekhen! 💬`);
-            }, 900);
+            }, 700);
         };
         const onOut = () => { window.clearTimeout(dwell); dwell = undefined; };
         document.addEventListener('pointerover', onOver, { passive: true });
@@ -127,6 +127,73 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }) {
             window.clearTimeout(dwell);
         };
     }, [doodle.enabled, doodle.texts?.product, speakCached]);
+    /* ── Greeting once + speak about products that are ON SCREEN ──
+       Ensures the doodle always does something useful even without hover,
+       while staying strictly product-topic (no random unrelated chatter). */
+    useEffect(() => {
+        if (!doodle.enabled || typeof window === 'undefined')
+            return;
+        if (doodle.greetOnce === false)
+            return;
+        let greeted = false;
+        const greetTimer = window.setTimeout(() => {
+            if (greeted)
+                return;
+            greeted = true;
+            if (messageRef.current)
+                return;
+            prefillRef.current = undefined;
+            setMessage(pickOf(GENERAL_LINES));
+            window.setTimeout(() => setMessage(null), 8000);
+        }, 7000);
+        const seen = new Set();
+        const observer = new IntersectionObserver((entries) => {
+            for (const e of entries) {
+                if (!e.isIntersecting || e.intersectionRatio < 0.5)
+                    continue;
+                const el = e.target;
+                if (el.dataset.doodleTalked === '1')
+                    continue;
+                const pid = el.getAttribute('data-product-id') || '';
+                let title = (el.getAttribute('data-product-title') || '').trim();
+                if (!title) {
+                    const a = el.querySelector('a');
+                    const t = (a?.textContent || '').replace(/\s+/g, ' ').trim();
+                    if (t && t.length <= 70)
+                        title = t;
+                }
+                if (!title)
+                    continue;
+                const key = `p:${pid || title}`;
+                if (seen.has(key))
+                    continue;
+                // dwell 2s in viewport before talking about it
+                window.setTimeout(() => {
+                    if (document.hidden || messageRef.current)
+                        return;
+                    el.dataset.doodleTalked = '1';
+                    seen.add(key);
+                    if (el.getBoundingClientRect().bottom < 0 && el.getBoundingClientRect().top < 0)
+                        return;
+                    const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+                    const line = pickOf(pool).replace('%s', title);
+                    prefillRef.current = `Ei product ta niye aro jante chai: ${title}`;
+                    setMessage(line);
+                    window.setTimeout(() => setMessage(null), 8000);
+                }, 2000);
+            }
+        }, { threshold: [0.5] });
+        const attach = () => {
+            document.querySelectorAll('[data-product-id],[data-product-title]').forEach((el) => observer.observe(el));
+        };
+        attach();
+        const iv = window.setInterval(attach, 4000);
+        return () => {
+            window.clearTimeout(greetTimer);
+            window.clearInterval(iv);
+            observer.disconnect();
+        };
+    }, [doodle.enabled, doodle.greetOnce, doodle.texts?.product]);
     /* ── Pointer-follow loop: one rAF, direct DOM writes ─────────── */
     useEffect(() => {
         if (!doodle.enabled || typeof window === 'undefined')
