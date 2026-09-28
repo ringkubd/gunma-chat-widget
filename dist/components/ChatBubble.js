@@ -48,13 +48,6 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
                     bellyRef.current = 'walking';
                     setWalking(true);
                     setSpeakingJump(true);
-                    // ace: doodle walks to the opposite side while slimming down
-                    const hold = holdRef.current;
-                    if (hold) {
-                        const dx = -Math.round((0.45 + Math.random() * 0.3) * window.innerWidth);
-                        const dy = -Math.round((0.25 + Math.random() * 0.3) * window.innerHeight);
-                        hold.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
-                    }
                     // funny speech: weight-loss caper (নিজের উপর হাসি)
                     setMessage('Biryani kheye nudh হলাম! Hatahati kore weight কমাচ্ছি 😄🏃');
                     window.setTimeout(() => setMessage(null), 4000);
@@ -63,7 +56,6 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
                         setChubby(false);
                         setWalking(false);
                         setSpeakingJump(false);
-                        holdRef.current?.style.setProperty('transform', 'translate3d(0,0,0)'); // বাড়িতে ফিরে আসো
                     }, 3400);
                     cleanups.push(() => window.clearTimeout(t3));
                     cleanups.push(() => window.clearTimeout(t3));
@@ -76,31 +68,22 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
     }, [isOpen, speech]);
     const belly = bellyRef.current;
     /* ── Choro/jump: chef screen-এর মধ্যে সর্বশেষ accepted spot-এ সরে ── */
+    // এক জায়গায়-ই animate: মাঝেমধ্যে in-place ঝাঁপ হপ (position change নয়)
     useEffect(() => {
         if (isOpen)
-            return; // chat খোলা → doodle লুকোয়, তবু মাপ ফিক্স রাখো
-        const move = () => {
+            return;
+        const hop = () => {
             if (document.hidden || window.innerWidth < 768)
-                return;
-            if (!holdRef.current)
                 return;
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             if (reduce)
                 return;
-            // hold is anchored right=24/bottom=24 → translate is a DELTA; negative = বামে/উপরে (সবসময় on-screen)
-            const dx = -Math.round((0.08 + Math.random() * 0.28) * window.innerWidth); // বামে ছোট drift
-            const dy = -Math.round((0.04 + Math.random() * 0.22) * window.innerHeight); // উপরে ছোট drift
-            holdRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
             setSpeakingJump(true);
             window.setTimeout(() => setSpeakingJump(false), 620);
         };
-        // initial: bottom-right anchored (normal), then 1st move after 24s
-        holdRef.current?.style.setProperty('transform', 'translate3d(0,0,0)');
-        const t = window.setTimeout(move, 60000);
-        const iv = window.setInterval(move, 95000);
-        window.addEventListener('resize', move);
-        window.addEventListener('focus', move);
-        return () => { window.clearTimeout(t); window.clearInterval(iv); window.removeEventListener('resize', move); window.removeEventListener('focus', move); };
+        const t = window.setTimeout(hop, 55000);
+        const iv = window.setInterval(hop, 105000);
+        return () => { window.clearTimeout(t); window.clearInterval(iv); };
     }, [isOpen]);
     return (_jsxs("div", { ref: holdRef, className: `gunma-bubble-hold pk-robot-wrap ${bellyRef.current === 'eating' ? 'chef-eating' : ''} ${chubby ? 'chef-chubby' : ''} ${walking ? 'chef-walking' : ''}`, style: {
             display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
