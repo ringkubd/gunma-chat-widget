@@ -118,14 +118,6 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     useEffect(() => {
         if (!enabled || typeof window === 'undefined')
             return;
-        const talkChance = doodle.talkChance ?? 0.3;
-        let greeted = false;
-        const greet = window.setTimeout(() => {
-            if (greeted || messageRef.current)
-                return;
-            greeted = true;
-            say(pickOf(GENERAL_LINES));
-        }, 7000);
         // Speak about products that stay in view (~2s)
         const seen = new Set();
         const observer = new IntersectionObserver((entries) => {
@@ -164,11 +156,10 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         attach();
         const attachIv = window.setInterval(attach, 4000);
         return () => {
-            window.clearTimeout(greet);
             window.clearInterval(attachIv);
             observer.disconnect();
         };
-    }, [enabled, say, doodle.talkChance, doodle.texts?.product]);
+    }, [enabled, say, doodle.texts?.product]);
     /* ── Pre-generated blurbs cache (instant hover) ──────────────── */
     const briefsRef = useRef(new Map());
     const fetchBriefs = useCallback(async (ids) => {
@@ -210,8 +201,6 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         let items = [];
         let cartStale = 0;
         const load = async () => {
-            if (!isProductScreen())
-                return;
             const sid = getSessionId?.() ?? '';
             try {
                 const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
@@ -223,6 +212,8 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
                 const json = await res.json();
                 items = Array.isArray(json?.data) ? json.data : [];
                 cartStale = Number(json?.cart_stale_hours ?? 0);
+                if (items.length > 1)
+                    idx = Math.floor(Math.random() * items.length);
                 if (items.length)
                     void fetchBriefs(items.map((i) => String(i.product_id)));
             }
@@ -232,25 +223,36 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         const reload = window.setInterval(load, 60000);
         const onNav = () => { idx = 0; void load(); };
         window.addEventListener('popstate', onNav);
-        // Speak one suggestion at a time, spaced out, only on product screens.
+        // Single master speech tick — suggestions wherever we are, gentle
+        // generic lines otherwise. No collision with the greeting timer.
+        let greetedScreen = false;
         const speakIv = window.setInterval(() => {
             if (!alive || document.hidden || messageRef.current)
                 return;
-            if (!isProductScreen() || items.length === 0)
+            // On product screens, rotate the AI suggestions first (live price/stock).
+            if (isProductScreen() && items.length > 0) {
+                const it = items[idx % items.length];
+                idx++;
+                const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
+                const price = `¥${Math.round(it.price).toLocaleString()}`;
+                let line = it.in_stock
+                    ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
+                    : `"${it.title}" ekhon stock e nei — khub shigroi jhore astese. ${blurb}`.trim();
+                if (it.kind === 'cart_recovery' && cartStale >= 6) {
+                    line = `Apnar cart e ki ki ache! Checkout ta hoy ni — ekhon kore niben? 💬 (${price})`;
+                }
+                say(line, `Ei product ta niye aro jante chai: ${it.title}`);
                 return;
-            const it = items[idx % items.length];
-            idx++;
-            const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
-            const price = `¥${Math.round(it.price).toLocaleString()}`;
-            let line = it.in_stock
-                ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
-                : `"${it.title}" ekhon stock e nei — khub shigroi abar ashe. ${blurb}`.trim();
-            if (it.kind === 'cart_recovery' && cartStale >= 6) {
-                // abandoned-cart recovery nudge — gentle, once before rotating on
-                line = `Apnar cart e ki ki ache dekhe nini! Checkout ta hoy ni — ekhon kore niben? 💬 (${price})`;
             }
-            say(line, `Ei product ta niye aro jante chai: ${it.title}`);
-        }, 15000);
+            // Elsewhere (product detail / other pages): one warm line, then variety
+            if (!greetedScreen && Math.random() < 0.85) {
+                greetedScreen = true;
+                say(pickOf(GENERAL_LINES));
+            }
+            else if (doodle.speakIdle && Math.random() < (doodle.talkChance ?? 0.3)) {
+                say(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
+            }
+        }, 12000);
         return () => {
             alive = false;
             window.clearInterval(reload);
