@@ -98,16 +98,16 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (reduce) return;
       // hold is anchored right=24/bottom=24 → translate is a DELTA; negative = বামে/উপরে (সবসময় on-screen)
-      const dx = -Math.round((0.15 + Math.random() * 0.6) * window.innerWidth);  // বামে 15–75vw
-      const dy = -Math.round((0.05 + Math.random() * 0.55) * window.innerHeight); // উপরে 5–60vh
+      const dx = -Math.round((0.08 + Math.random() * 0.28) * window.innerWidth);   // বামে ছোট drift
+      const dy = -Math.round((0.04 + Math.random() * 0.22) * window.innerHeight);  // উপরে ছোট drift
       holdRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
       setSpeakingJump(true);
       window.setTimeout(() => setSpeakingJump(false), 620);
     };
     // initial: bottom-right anchored (normal), then 1st move after 24s
     holdRef.current?.style.setProperty('transform', 'translate3d(0,0,0)');
-    const t = window.setTimeout(move, 20000);
-    const iv = window.setInterval(move, 26000);
+    const t = window.setTimeout(move, 60000);
+    const iv = window.setInterval(move, 95000);
     window.addEventListener('resize', move);
     window.addEventListener('focus', move);
     return () => { window.clearTimeout(t); window.clearInterval(iv); window.removeEventListener('resize', move); window.removeEventListener('focus', move); };
