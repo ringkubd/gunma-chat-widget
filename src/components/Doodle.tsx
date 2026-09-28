@@ -44,6 +44,14 @@ interface Props {
   chatOpen?: boolean;
   /** Open chat with optional prefill context. */
   onOpenChat: (prefill?: string) => void;
+  /** Backend API base (for pre-generated blurbs + suggestions). */
+  apiUrl?: string;
+  /** Chat route prefix (default api/chat). */
+  routePrefix?: string;
+  /** Current chat session id (may be null for guests). */
+  getSessionId?: () => string | null;
+  /** Widget locale hint (en|bn|ja). */
+  lang?: string;
 }
 
 const PRODUCT_LINES = [
@@ -67,7 +75,7 @@ function pickOf<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) {
+export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, routePrefix = 'api/chat', getSessionId, lang }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [blink, setBlink] = useState(false);
   const [stir, setStir] = useState(false);
@@ -179,6 +187,82 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
     };
   }, [enabled, say, doodle.talkChance, doodle.texts?.product]);
 
+  /* ── Pre-generated blurbs cache (instant hover) ──────────────── */
+  const briefsRef = useRef<Map<string, string>>(new Map());
+  const fetchBriefs = useCallback(async (ids: string[]) => {
+    if (!apiUrl || ids.length === 0) return;
+    const need = ids.filter((id) => id && !briefsRef.current.has(id)).slice(0, 40);
+    if (need.length === 0) return;
+    try {
+      const res = await fetch(`${apiUrl}/${routePrefix}/products/briefs?ids=${need.join(',')}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      const data = (json?.data ?? {}) as Record<string, string>;
+      Object.entries(data).forEach(([id, text]) => { if (text) briefsRef.current.set(id, text); });
+    } catch { /* ignore */ }
+  }, [apiUrl, routePrefix]);
+
+  /* ── Proactive suggestions on home / shop / category screens ─── */
+  useEffect(() => {
+    if (!enabled || !apiUrl || typeof window === 'undefined') return;
+
+    const isProductScreen = () => {
+      const p = window.location.pathname.toLowerCase();
+      if (p === '/' ) return true;
+      if (p.startsWith('/shop')) return true;
+      if (p.includes('categor')) return true;
+      return false;
+    };
+
+    let alive = true;
+    let idx = 0;
+    let items: Array<{ title: string; text: string | null; price: number; in_stock: boolean; product_id: number; slug: string }> = [];
+
+    const load = async () => {
+      if (!isProductScreen()) return;
+      const sid = getSessionId?.() ?? '';
+      try {
+        const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
+          headers: { Accept: 'application/json' },
+          credentials: 'include',
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        items = Array.isArray(json?.data) ? json.data : [];
+        if (items.length) void fetchBriefs(items.map((i) => String(i.product_id)));
+      } catch { /* ignore */ }
+    };
+
+    void load();
+    const reload = window.setInterval(load, 60000);
+    const onNav = () => { idx = 0; void load(); };
+    window.addEventListener('popstate', onNav);
+
+    // Speak one suggestion at a time, spaced out, only on product screens.
+    const speakIv = window.setInterval(() => {
+      if (!alive || document.hidden || messageRef.current) return;
+      if (!isProductScreen() || items.length === 0) return;
+      const it = items[idx % items.length];
+      idx++;
+      const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
+      const price = `¥${Math.round(it.price).toLocaleString()}`;
+      const line = it.in_stock
+        ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
+        : `"${it.title}" ekhon stock e nei — khub shigroi abar ashe. ${blurb}`.trim();
+      say(line, `Ei product ta niye aro jante chai: ${it.title}`);
+    }, 15000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(reload);
+      window.clearInterval(speakIv);
+      window.removeEventListener('popstate', onNav);
+    };
+  }, [enabled, apiUrl, routePrefix, getSessionId, lang, say, fetchBriefs]);
+
   /* ── Hover dwell (600ms) → instant cached line ───────────────── */
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
@@ -217,12 +301,15 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
       dwell = window.setTimeout(() => {
         if (document.hidden || messageRef.current) return;
         const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
-        say(
-          hit.kind === 'p'
-            ? pickOf(pool).replace('%s', hit.title)
-            : `"${hit.title}" category te onek darun jinish ache — dekhen! 💬`,
-          hit.kind === 'p' ? `Ei product ta niye aro jante chai: ${hit.title}` : undefined,
-        );
+        if (hit.kind === 'p') {
+          const pidKey = hit.key.replace(/^p:/, '');
+          const cached = briefsRef.current.get(pidKey);
+          const line = cached || pickOf(pool).replace('%s', hit.title);
+          void fetchBriefs([pidKey]);
+          say(line, `Ei product ta niye aro jante chai: ${hit.title}`);
+        } else {
+          say(`"${hit.title}" category te onek darun jinish ache — dekhen! 💬`);
+        }
       }, 600);
     };
     const onOut = () => { window.clearTimeout(dwell); dwell = undefined; };

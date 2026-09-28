@@ -26,6 +26,14 @@ interface Props {
     chatOpen?: boolean;
     /** Open chat with optional prefill context. */
     onOpenChat: (prefill?: string) => void;
+    /** Backend API base (for pre-generated blurbs + suggestions). */
+    apiUrl?: string;
+    /** Chat route prefix (default api/chat). */
+    routePrefix?: string;
+    /** Current chat session id (may be null for guests). */
+    getSessionId?: () => string | null;
+    /** Widget locale hint (en|bn|ja). */
+    lang?: string;
 }
-export declare function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props): import("react/jsx-runtime").JSX.Element | null;
+export declare function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, routePrefix, getSessionId, lang }: Props): import("react/jsx-runtime").JSX.Element | null;
 export {};

@@ -282,6 +282,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
         brandColor={brandColor}
         chatOpen={isOpen}
         onOpenChat={widgetEnabled ? openWithPrefill : () => {}}
+        apiUrl={config.apiUrl}
+        routePrefix={config.routes?.prefix ?? 'api/chat'}
+        getSessionId={getSessionId}
+        lang={config.locale}
       />
 
       {/* Floating Bubble Button (master widget gate) */}
