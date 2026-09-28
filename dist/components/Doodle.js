@@ -56,30 +56,6 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         setMessage(line);
         window.setTimeout(() => setMessage(null), 8000);
     }, []);
-    /* ── Wandering: the chef strolls to a random safe spot every ~9s ── */
-    const rootRef = useRef(null);
-    const setChefPos = useCallback((xVw, yVh) => {
-        const el = rootRef.current;
-        if (el) {
-            el.style.transform = `translate3d(${xVw}vw, ${yVh}vh, 0)`;
-        }
-        // face travel direction
-        el?.classList.toggle('flip-left', xVw < 12);
-    }, []);
-    useEffect(() => {
-        if (!enabled || typeof window === 'undefined')
-            return;
-        // initial anchor
-        setChefPos(78, 72);
-        const iv = window.setInterval(() => {
-            if (document.hidden)
-                return;
-            const x = 6 + Math.random() * 82; // 6–88 vw
-            const y = 52 + Math.random() * 32; // 52–84 vh
-            setChefPos(x, y);
-        }, 11000);
-        return () => window.clearInterval(iv);
-    }, [enabled, setChefPos]);
     /* ── Blink + breathe + occasional stir/hop ───────────────────── */
     useEffect(() => {
         if (!enabled || typeof window === 'undefined')
@@ -189,84 +165,114 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         }
         catch { /* ignore */ }
     }, [apiUrl, routePrefix]);
-    /* ── Proactive suggestions on home / shop / category screens ─── */
+    /* ── Message pool (typed, varied intents) — one speech scheduler ── */
     useEffect(() => {
         if (!enabled || !apiUrl || typeof window === 'undefined')
             return;
-        const isProductScreen = () => {
-            const p = window.location.pathname.toLowerCase();
-            if (p === '/')
-                return true;
-            if (p.startsWith('/shop'))
-                return true;
-            if (p.includes('categor'))
-                return true;
-            return false;
-        };
+        const cfgRef = doodleRef.current;
+        const maxMsgs = cfgRef.maxMessages ?? 5;
+        const startDelay = cfgRef.startDelayMs ?? 2500;
+        const minGap = Math.max(8000, cfgRef.minGapMs ?? 45000);
         let alive = true;
-        let idx = 0;
-        let items = [];
-        let cartStale = 0;
+        let pool = [];
+        let shownKey = '';
+        let spoken = 0;
+        try {
+            shownKey = `pk_shown_${getSessionIdRef.current?.() ?? 'anon'}`;
+        }
+        catch {
+            shownKey = 'pk_shown';
+        }
         const load = async () => {
             const sid = getSessionIdRef.current?.() ?? '';
             try {
-                const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
+                const res = await fetch(`${apiUrl}/${routePrefix}/piku-messages?limit=8${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
                     headers: { Accept: 'application/json' },
                     credentials: 'include',
                 });
                 if (!res.ok)
                     return;
                 const json = await res.json();
-                items = Array.isArray(json?.data) ? json.data : [];
-                cartStale = Number(json?.cart_stale_hours ?? 0);
-                if (items.length > 1)
-                    idx = Math.floor(Math.random() * items.length);
-                if (items.length)
-                    void fetchBriefs(items.map((i) => String(i.product_id)));
+                pool = Array.isArray(json?.data) ? json.data : [];
+                // prefer unseen first (sessionStorage memory)
+                let shown = [];
+                try {
+                    shown = JSON.parse(sessionStorage.getItem(shownKey + '_types') || '[]');
+                }
+                catch {
+                    shown = [];
+                }
+                const unseen = pool.filter((m) => !shown.includes(m.type));
+                const rest = pool.filter((m) => shown.includes(m.type));
+                pool = [...unseen, ...rest];
             }
             catch { /* ignore */ }
         };
-        void load();
-        const reload = window.setInterval(load, 60000);
-        const onNav = () => { idx = 0; void load(); };
-        window.addEventListener('popstate', onNav);
-        // Single master speech tick — suggestions wherever we are, gentle
-        // generic lines otherwise. No collision with the greeting timer.
-        let greetedScreen = false;
-        const speakIv = window.setInterval(() => {
+        // mark type shown
+        const markShown = (type) => {
+            try {
+                const arr = JSON.parse(sessionStorage.getItem(shownKey + '_types') || '[]');
+                arr.push(type);
+                sessionStorage.setItem(shownKey + '_types', JSON.stringify(arr.slice(-6)));
+            }
+            catch { }
+        };
+        const loadOnce = () => { void load(); };
+        loadOnce();
+        const onVis = () => { if (!document.hidden)
+            return; };
+        window.addEventListener('focus', onVis);
+        let timer;
+        const schedule = (ms) => {
+            if (timer)
+                window.clearTimeout(timer);
+            timer = window.setTimeout(() => { void speakNext(); }, ms);
+        };
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        const tick = () => {
             if (!alive || document.hidden || messageRef.current)
                 return;
-            // On product screens, rotate the AI suggestions first (live price/stock).
-            if (isProductScreen() && items.length > 0) {
-                const it = items[idx % items.length];
-                idx++;
-                const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
-                const price = `¥${Math.round(it.price).toLocaleString()}`;
-                let line = it.in_stock
-                    ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
-                    : `"${it.title}" ekhon stock e nei — khub shigroi jhore astese. ${blurb}`.trim();
-                if (it.kind === 'cart_recovery' && cartStale >= 6) {
-                    line = `Apnar cart e ki ki ache! Checkout ta hoy ni — ekhon kore niben? 💬 (${price})`;
-                }
-                say(line, `Ei product ta niye aro jante chai: ${it.title}`);
+            if (pool.length === 0) {
+                schedule(minGap);
                 return;
             }
-            // Elsewhere (product detail / other pages): one warm line, then variety
-            if (!greetedScreen && Math.random() < 0.85) {
-                greetedScreen = true;
-                say(pickOf(GENERAL_LINES));
+            const m = pool.shift();
+            markShown(m.type);
+            prefillRef.current = m.chips?.[0]?.prefill ?? undefined;
+            setMessage(`${m.text}${m.chips ? ' ⇩' : ''}`);
+            lastChipsRef.current = m.chips ?? [];
+            window.setTimeout(() => setMessage(null), 9000);
+            // speakCount handled in sessionStorage? keep count in ref via sessionStorage
+            schedule(minGap);
+        };
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        const speakNext = () => {
+            let spoken = 0;
+            try {
+                spoken = Number(sessionStorage.getItem(shownKey + '_count') || '0');
             }
-            else if (doodleRef.current.speakIdle && Math.random() < (doodleRef.current.talkChance ?? 0.3)) {
-                say(pickOf(doodleRef.current.texts?.general?.length ? doodleRef.current.texts.general : GENERAL_LINES));
+            catch {
+                spoken = 0;
             }
-        }, 12000);
+            if (spoken >= maxMsgs) {
+                return;
+            } // session cap reached — quiet until new session
+            try {
+                sessionStorage.setItem(shownKey + '_count', String(spoken + 1));
+            }
+            catch { }
+            tick();
+        };
+        window.setTimeout(() => { void speakNext(); }, startDelay);
         return () => {
             alive = false;
-            window.clearInterval(reload);
-            window.clearInterval(speakIv);
-            window.removeEventListener('popstate', onNav);
+            if (timer)
+                window.clearTimeout(timer);
+            window.removeEventListener('focus', onVis);
         };
-    }, [enabled, apiUrl, routePrefix, say, fetchBriefs]);
+    }, [enabled, apiUrl, routePrefix, lang, say]);
+    /** Title of chips currently in bubble (kept for click handling). */
+    const lastChipsRef = useRef([]);
     /* ── Hover dwell (600ms) → instant cached line ───────────────── */
     useEffect(() => {
         if (!enabled || typeof window === 'undefined')
@@ -339,7 +345,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     }, [enabled, say]);
     if (!enabled || chatOpen)
         return null;
-    return (_jsxs("div", { ref: rootRef, className: `gunma-chef-root wander ${doodle.variant !== 'chef' ? 'pk-robot-wrap' : ''}`, style: { ['--chef-size']: `${size}px`, ['--chef-flip']: '1' }, children: [message && (_jsx("div", { className: "gunma-chef-bubble", onClick: (e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }, children: message })), _jsx("button", { className: `gunma-chef ${talking ? 'talking' : ''} ${stir ? 'stirring' : ''} ${hop ? 'hopping' : ''}`, style: { '--chef-brand': brandColor }, "aria-label": "Piku \u2014 click to chat", title: "Piku \u2014 click to chat", onClick: () => { setMessage(null); onOpenChat(prefillRef.current); }, children: doodle.variant === 'chef' ? (_jsxs("svg", { viewBox: "0 0 120 140", className: "gunma-chef-svg", "aria-hidden": "true", children: [_jsxs("defs", { children: [_jsxs("radialGradient", { id: "chefGlow2", cx: "50%", cy: "52%", r: "55%", children: [_jsx("stop", { offset: "0", stopColor: brandColor, stopOpacity: "0.45" }), _jsx("stop", { offset: "1", stopColor: brandColor, stopOpacity: "0" })] }), _jsxs("linearGradient", { id: "chefCoat", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#ffffff" }), _jsx("stop", { offset: "1", stopColor: "#dfe9ee" })] }), _jsxs("linearGradient", { id: "chefCoatB", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#fffdf5" }), _jsx("stop", { offset: "1", stopColor: "#e6c268" })] })] }), _jsx("circle", { className: "chef-glow", cx: "60", cy: "74", r: "58", fill: "url(#chefGlow2)" }), _jsxs("g", { className: "chef-body", children: [_jsx("rect", { x: "47", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("rect", { x: "64", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("path", { d: "M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("path", { d: "M48 62 q12 9 24 0 l-4 12 q-8 6 -16 0 z", fill: "#10b981" }), _jsxs("g", { className: "chef-arm-right", children: [_jsx("rect", { x: "78", y: "70", width: "9", height: "26", rx: "4", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("g", { className: "chef-pan", children: _jsx("ellipse", { cx: "100", cy: "96", rx: "11", ry: "5", fill: "#4b5054" }) })] }), _jsx("circle", { cx: "60", cy: "46", r: "20", fill: "#f7cda6" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "53", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "67", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("rect", { x: "45", y: "12", width: "30", height: "18", rx: "9", fill: "url(#chefCoatB)", stroke: "#e6c268" }), _jsx("ellipse", { cx: "60", cy: "29", rx: "24", ry: "7", fill: "url(#chefCoatB)", stroke: "#e6c268" })] })] })) : (_jsx(PikuRobotArt, { blink: blink, talking: talking })) })] }));
+    return (_jsxs("div", { className: `gunma-chef-root ${doodle.variant !== 'chef' ? 'pk-robot-wrap' : ''}`, style: { ['--chef-size']: `${size}px` }, children: [message && (_jsxs("div", { className: "gunma-chef-bubble", onClick: (e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }, children: [message, true && lastChipsRef.current.map((c) => (_jsx("button", { className: "gunma-chef-chip", onClick: (e) => { e.stopPropagation(); setMessage(null); onOpenChat(c.prefill); }, children: c.label }, c.label)))] })), _jsx("button", { className: `gunma-chef ${talking ? 'talking' : ''} ${stir ? 'stirring' : ''} ${hop ? 'hopping' : ''}`, style: { '--chef-brand': brandColor }, "aria-label": "Piku \u2014 click to chat", title: "Piku \u2014 click to chat", onClick: () => { setMessage(null); onOpenChat(prefillRef.current); }, children: doodle.variant === 'chef' ? (_jsxs("svg", { viewBox: "0 0 120 140", className: "gunma-chef-svg", "aria-hidden": "true", children: [_jsxs("defs", { children: [_jsxs("radialGradient", { id: "chefGlow2", cx: "50%", cy: "52%", r: "55%", children: [_jsx("stop", { offset: "0", stopColor: brandColor, stopOpacity: "0.45" }), _jsx("stop", { offset: "1", stopColor: brandColor, stopOpacity: "0" })] }), _jsxs("linearGradient", { id: "chefCoat", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#ffffff" }), _jsx("stop", { offset: "1", stopColor: "#dfe9ee" })] }), _jsxs("linearGradient", { id: "chefCoatB", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#fffdf5" }), _jsx("stop", { offset: "1", stopColor: "#e6c268" })] })] }), _jsx("circle", { className: "chef-glow", cx: "60", cy: "74", r: "58", fill: "url(#chefGlow2)" }), _jsxs("g", { className: "chef-body", children: [_jsx("rect", { x: "47", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("rect", { x: "64", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("path", { d: "M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("path", { d: "M48 62 q12 9 24 0 l-4 12 q-8 6 -16 0 z", fill: "#10b981" }), _jsxs("g", { className: "chef-arm-right", children: [_jsx("rect", { x: "78", y: "70", width: "9", height: "26", rx: "4", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("g", { className: "chef-pan", children: _jsx("ellipse", { cx: "100", cy: "96", rx: "11", ry: "5", fill: "#4b5054" }) })] }), _jsx("circle", { cx: "60", cy: "46", r: "20", fill: "#f7cda6" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "53", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "67", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("rect", { x: "45", y: "12", width: "30", height: "18", rx: "9", fill: "url(#chefCoatB)", stroke: "#e6c268" }), _jsx("ellipse", { cx: "60", cy: "29", rx: "24", ry: "7", fill: "url(#chefCoatB)", stroke: "#e6c268" })] })] })) : (_jsx(PikuRobotArt, { blink: blink, talking: talking })) })] }));
 }
 /** Stable dep list for the doodle texts. */
 function dpsTextDeps(d) {

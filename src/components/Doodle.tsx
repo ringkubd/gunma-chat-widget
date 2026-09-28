@@ -34,6 +34,12 @@ export interface DoodleConfig {
   size?: number;
   /** Enable the occasional pan-stir action. Default true. */
   stir?: boolean;
+  /** Max bubbles per session. Default 5. */
+  maxMessages?: number;
+  /** First message delay (ms). Default 2500. */
+  startDelayMs?: number;
+  /** Min gap between bubbles (ms). Default 45000. */
+  minGapMs?: number;
   texts?: {
     product?: string[];
     general?: string[];
@@ -104,30 +110,6 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     window.setTimeout(() => setMessage(null), 8000);
   }, []);
 
-  /* ── Wandering: the chef strolls to a random safe spot every ~9s ── */
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  const setChefPos = useCallback((xVw: number, yVh: number) => {
-    const el = rootRef.current;
-    if (el) {
-      el.style.transform = `translate3d(${xVw}vw, ${yVh}vh, 0)`;
-    }
-    // face travel direction
-    el?.classList.toggle('flip-left', xVw < 12);
-  }, []);
-
-  useEffect(() => {
-    if (!enabled || typeof window === 'undefined') return;
-    // initial anchor
-    setChefPos(78, 72);
-    const iv = window.setInterval(() => {
-      if (document.hidden) return;
-      const x = 6 + Math.random() * 82;          // 6–88 vw
-      const y = 52 + Math.random() * 32;         // 52–84 vh
-      setChefPos(x, y);
-    }, 11000);
-    return () => window.clearInterval(iv);
-  }, [enabled, setChefPos]);
 
   /* ── Blink + breathe + occasional stir/hop ───────────────────── */
   useEffect(() => {
@@ -229,83 +211,96 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     } catch { /* ignore */ }
   }, [apiUrl, routePrefix]);
 
-  /* ── Proactive suggestions on home / shop / category screens ─── */
+  /* ── Message pool (typed, varied intents) — one speech scheduler ── */
   useEffect(() => {
     if (!enabled || !apiUrl || typeof window === 'undefined') return;
-
-    const isProductScreen = () => {
-      const p = window.location.pathname.toLowerCase();
-      if (p === '/' ) return true;
-      if (p.startsWith('/shop')) return true;
-      if (p.includes('categor')) return true;
-      return false;
-    };
+    const cfgRef = doodleRef.current;
+    const maxMsgs = cfgRef.maxMessages ?? 5;
+    const startDelay = cfgRef.startDelayMs ?? 2500;
+    const minGap = Math.max(8000, cfgRef.minGapMs ?? 45000);
 
     let alive = true;
-    let idx = 0;
-    let items: Array<{ title: string; text: string | null; price: number; in_stock: boolean; product_id: number; slug: string; kind?: string }> = [];
-    let cartStale = 0;
+    let pool: Array<{ type: string; text: string; product?: { product_id: number; title: string }; chips?: Array<{ label: string; prefill: string }> }> = [];
+    let shownKey = '';
+    let spoken = 0;
+    try {
+      shownKey = `pk_shown_${getSessionIdRef.current?.() ?? 'anon'}`;
+    } catch { shownKey = 'pk_shown'; }
 
     const load = async () => {
       const sid = getSessionIdRef.current?.() ?? '';
-    try {
-      const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
-        headers: { Accept: 'application/json' },
-        credentials: 'include',
-      });
+      try {
+        const res = await fetch(`${apiUrl}/${routePrefix}/piku-messages?limit=8${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
+          headers: { Accept: 'application/json' },
+          credentials: 'include',
+        });
         if (!res.ok) return;
         const json = await res.json();
-        items = Array.isArray(json?.data) ? json.data : [];
-        cartStale = Number(json?.cart_stale_hours ?? 0);
-        if (items.length > 1) idx = Math.floor(Math.random() * items.length);
-        if (items.length) void fetchBriefs(items.map((i) => String(i.product_id)));
+        pool = Array.isArray(json?.data) ? json.data : [];
+        // prefer unseen first (sessionStorage memory)
+        let shown: string[] = [];
+        try { shown = JSON.parse(sessionStorage.getItem(shownKey + '_types') || '[]'); } catch { shown = []; }
+        const unseen = pool.filter((m) => !shown.includes(m.type));
+        const rest = pool.filter((m) => shown.includes(m.type));
+        pool = [...unseen, ...rest];
       } catch { /* ignore */ }
     };
 
-    void load();
-    const reload = window.setInterval(load, 60000);
-    const onNav = () => { idx = 0; void load(); };
-    window.addEventListener('popstate', onNav);
+    // mark type shown
+    const markShown = (type: string) => {
+      try {
+        const arr = JSON.parse(sessionStorage.getItem(shownKey + '_types') || '[]');
+        arr.push(type);
+        sessionStorage.setItem(shownKey + '_types', JSON.stringify(arr.slice(-6)));
+      } catch {}
+    };
 
-    // Single master speech tick — suggestions wherever we are, gentle
-    // generic lines otherwise. No collision with the greeting timer.
-    let greetedScreen = false;
-    const speakIv = window.setInterval(() => {
+    const loadOnce = () => { void load(); };
+    loadOnce();
+    const onVis = () => { if (!document.hidden) return; };
+    window.addEventListener('focus', onVis);
+
+    let timer: number | undefined;
+    const schedule = (ms: number) => {
+      if (timer) window.clearTimeout(timer);
+      timer = window.setTimeout(() => { void speakNext(); }, ms);
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const tick = () => {
       if (!alive || document.hidden || messageRef.current) return;
+      if (pool.length === 0) { schedule(minGap); return; }
+      const m = pool.shift()!;
+      markShown(m.type);
 
-      // On product screens, rotate the AI suggestions first (live price/stock).
-      if (isProductScreen() && items.length > 0) {
-        const it = items[idx % items.length];
-        idx++;
-        const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
-        const price = `¥${Math.round(it.price).toLocaleString()}`;
-        let line = it.in_stock
-          ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
-          : `"${it.title}" ekhon stock e nei — khub shigroi jhore astese. ${blurb}`.trim();
+      prefillRef.current = m.chips?.[0]?.prefill ?? undefined;
+      setMessage(`${m.text}${m.chips ? ' ⇩' : ''}`);
+      lastChipsRef.current = m.chips ?? [];
+      window.setTimeout(() => setMessage(null), 9000);
+      // speakCount handled in sessionStorage? keep count in ref via sessionStorage
+      schedule(minGap);
+    };
 
-        if (it.kind === 'cart_recovery' && cartStale >= 6) {
-          line = `Apnar cart e ki ki ache! Checkout ta hoy ni — ekhon kore niben? 💬 (${price})`;
-        }
-        say(line, `Ei product ta niye aro jante chai: ${it.title}`);
-        return;
-      }
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const speakNext = () => {
+      let spoken = 0;
+      try { spoken = Number(sessionStorage.getItem(shownKey + '_count') || '0'); } catch { spoken = 0; }
+      if (spoken >= maxMsgs) { return; } // session cap reached — quiet until new session
+      try { sessionStorage.setItem(shownKey + '_count', String(spoken + 1)); } catch {}
+      tick();
+    };
 
-      // Elsewhere (product detail / other pages): one warm line, then variety
-      if (!greetedScreen && Math.random() < 0.85) {
-        greetedScreen = true;
-        say(pickOf(GENERAL_LINES));
-      } else if (doodleRef.current.speakIdle && Math.random() < (doodleRef.current.talkChance ?? 0.3)) {
-        say(pickOf(doodleRef.current.texts?.general?.length ? doodleRef.current.texts.general : GENERAL_LINES));
-      }
-    }, 12000);
+    window.setTimeout(() => { void speakNext(); }, startDelay);
 
     return () => {
       alive = false;
-      window.clearInterval(reload);
-      window.clearInterval(speakIv);
-      window.removeEventListener('popstate', onNav);
+      if (timer) window.clearTimeout(timer);
+      window.removeEventListener('focus', onVis);
     };
-  }, [enabled, apiUrl, routePrefix, say, fetchBriefs]);
+  }, [enabled, apiUrl, routePrefix, lang, say]);
+
+  /** Title of chips currently in bubble (kept for click handling). */
+  const lastChipsRef = useRef<Array<{ label: string; prefill: string }>>([]);
 
   /* ── Hover dwell (600ms) → instant cached line ───────────────── */
   useEffect(() => {
@@ -371,13 +366,17 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
 
   return (
     <div
-      ref={rootRef}
-      className={`gunma-chef-root wander ${doodle.variant !== 'chef' ? 'pk-robot-wrap' : ''}`}
-      style={{ ['--chef-size' as string]: `${size}px`, ['--chef-flip' as string]: '1' } as React.CSSProperties}
+      className={`gunma-chef-root ${doodle.variant !== 'chef' ? 'pk-robot-wrap' : ''}`}
+      style={{ ['--chef-size' as string]: `${size}px` } as React.CSSProperties}
     >
       {message && (
         <div className="gunma-chef-bubble" onClick={(e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }}>
           {message}
+          {true && lastChipsRef.current.map((c) => (
+            <button key={c.label} className="gunma-chef-chip" onClick={(e) => { e.stopPropagation(); setMessage(null); onOpenChat(c.prefill); }}>
+              {c.label}
+            </button>
+          ))}
         </div>
       )}
       <button

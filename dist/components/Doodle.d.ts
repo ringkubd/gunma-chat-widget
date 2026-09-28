@@ -16,6 +16,12 @@ export interface DoodleConfig {
     size?: number;
     /** Enable the occasional pan-stir action. Default true. */
     stir?: boolean;
+    /** Max bubbles per session. Default 5. */
+    maxMessages?: number;
+    /** First message delay (ms). Default 2500. */
+    startDelayMs?: number;
+    /** Min gap between bubbles (ms). Default 45000. */
+    minGapMs?: number;
     texts?: {
         product?: string[];
         general?: string[];

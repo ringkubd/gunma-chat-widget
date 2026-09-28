@@ -1384,16 +1384,8 @@
   display: flex; flex-direction: column; align-items: flex-start;
   gap: 8px;
   pointer-events: none;
-  will-change: transform;
-  transform: translate3d(78vw, 72vh, 0);
-  transition: transform 1.9s cubic-bezier(.42,.05,.29,1.02);
+  align-self: flex-end;
 }
-.gunma-chef-root.wander .gunma-chef-bubble {
-  /* bubble stays near the chef wherever it floats */
-  align-self: flex-start;
-}
-.gunma-chef-root.wander .chef-hat { animation-duration: 2.4s; }
-.gunma-chef-root.flip-left .gunma-chef-svg { transform: scaleX(-1); }
 
 .gunma-chef {
   pointer-events: auto;
@@ -1490,3 +1482,18 @@
 @keyframes rbChest { 0%,100% { opacity:.85; transform: scaleX(1) } 50% { opacity:1; transform: scaleX(1.25) } }
 .gunma-chef.pk-robot-wrap .rb-mic { animation: rbMic 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes rbMic { 0%,100% { opacity:.7; transform: scale(1) } 50% { opacity:1; transform: scale(1.25) } }
+
+/* ── Performance pass: kill blend/isolation on robot subtree + minimal anims ── */
+.pk-robot .pk-st1, .pk-robot .pk-st2, .pk-robot .pk-st3 { mix-blend-mode: normal !important; }
+.pk-robot { isolation: auto !important; }
+.pk-robot .pk-eyes rect { transform-box: fill-box; transform-origin: center; }
+
+/* ── Quick-reply chips (Piku robot bubble) ── */
+.gunma-chef-bubble .gunma-chef-chip {
+  display: inline-block; margin: 6px 6px 0 0;
+  padding: 5px 12px; border-radius: 999px;
+  background: #fff; border: 1.5px solid #10b98150; color: #065f46;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: transform .12s ease, background .12s ease;
+}
+.gunma-chef-bubble .gunma-chef-chip:hover { background: #10b981; color: #fff; transform: translateY(-1px); }
