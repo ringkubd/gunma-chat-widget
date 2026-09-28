@@ -80,7 +80,7 @@ export function ChatWidget(config) {
         };
     }, [commerce.enabled, commerce.setStep, toggle]);
     const position = config.position || 'bottom-right';
-    const brandColor = config.brandColor || '#10b981';
+    const brandColor = config.brandColor || '#0da487';
     const brandName = config.brandName || 'Piku';
     const welcomeMessage = config.welcomeMessage || 'Hello, this is Piku from Gunma Halal Food Customer Support. How may I assist you today?';
     const theme = config.theme || 'auto';

@@ -6,15 +6,15 @@
 
 /* ── CSS Custom Properties ──────────────────────────────────────── */
 :root {
-  --gunma-brand: #10b981;
-  --gunma-brand-dark: #059669;
+  --gunma-brand: #0da487;
+  --gunma-brand-dark: #0b8a75;
   --gunma-bg: #ffffff;
-  --gunma-bg-secondary: #f8fafc;
-  --gunma-bg-tertiary: #f1f5f9;
-  --gunma-text: #0f172a;
-  --gunma-text-secondary: #64748b;
-  --gunma-text-muted: #94a3b8;
-  --gunma-border: #e2e8f0;
+  --gunma-bg-secondary: #f7f8f9;
+  --gunma-bg-tertiary: #f4f6f7;
+  --gunma-text: #2d3748;
+  --gunma-text-secondary: #777b84;
+  --gunma-text-muted: #9aa2ab;
+  --gunma-border: #e9ecef;
   --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
   --gunma-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   --gunma-radius: 16px;
@@ -30,36 +30,36 @@
 /* Applied automatically (auto) or forced via .gunma-theme-dark/.light */
 @media (prefers-color-scheme: dark) {
   .gunma-theme-auto {
-    --gunma-bg: #0f172a;
+    --gunma-bg: #2d3748;
     --gunma-bg-secondary: #1e293b;
-    --gunma-bg-tertiary: #334155;
-    --gunma-text: #f1f5f9;
-    --gunma-text-secondary: #94a3b8;
-    --gunma-text-muted: #64748b;
-    --gunma-border: #334155;
+    --gunma-bg-tertiary: #4a5568;
+    --gunma-text: #f4f6f7;
+    --gunma-text-secondary: #9aa2ab;
+    --gunma-text-muted: #777b84;
+    --gunma-border: #4a5568;
     --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 }
 
 .gunma-theme-dark {
-  --gunma-bg: #0f172a;
+  --gunma-bg: #2d3748;
   --gunma-bg-secondary: #1e293b;
-  --gunma-bg-tertiary: #334155;
-  --gunma-text: #f1f5f9;
-  --gunma-text-secondary: #94a3b8;
-  --gunma-text-muted: #64748b;
-  --gunma-border: #334155;
+  --gunma-bg-tertiary: #4a5568;
+  --gunma-text: #f4f6f7;
+  --gunma-text-secondary: #9aa2ab;
+  --gunma-text-muted: #777b84;
+  --gunma-border: #4a5568;
   --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .gunma-theme-light {
   --gunma-bg: #ffffff;
-  --gunma-bg-secondary: #f8fafc;
-  --gunma-bg-tertiary: #f1f5f9;
-  --gunma-text: #0f172a;
-  --gunma-text-secondary: #64748b;
-  --gunma-text-muted: #94a3b8;
-  --gunma-border: #e2e8f0;
+  --gunma-bg-secondary: #f7f8f9;
+  --gunma-bg-tertiary: #f4f6f7;
+  --gunma-text: #2d3748;
+  --gunma-text-secondary: #777b84;
+  --gunma-text-muted: #9aa2ab;
+  --gunma-border: #e9ecef;
   --gunma-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
 }
 
@@ -1238,7 +1238,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #10b981;
+  background: #0da487;
   color: #fff;
   font-size: 28px;
   line-height: 56px;
@@ -1274,7 +1274,7 @@
   object-fit: cover;
 }
 .gunma-msg-img--uploaded {
-  border: 1px solid var(--gunma-border, #e2e8f0);
+  border: 1px solid var(--gunma-border, #e9ecef);
 }
 
 /* ── Stock pre-validation warning + smart fixes ── */
@@ -1304,7 +1304,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.gunma-commerce-stock-fix { border-color: #10b981; color: #047857; }
+.gunma-commerce-stock-fix { border-color: #0da487; color: #047857; }
 .gunma-commerce-stock-fix-all {
   margin-top: 8px;
   border-color: #991b1b;
@@ -1492,11 +1492,11 @@
 .gunma-chef-bubble .gunma-chef-chip {
   display: inline-block; margin: 6px 6px 0 0;
   padding: 5px 12px; border-radius: 999px;
-  background: #fff; border: 1.5px solid #10b98150; color: #065f46;
+  background: #fff; border: 1.5px solid #0da48750; color: #065f46;
   font-size: 12px; font-weight: 600; cursor: pointer;
   transition: transform .12s ease, background .12s ease;
 }
-.gunma-chef-bubble .gunma-chef-chip:hover { background: #10b981; color: #fff; transform: translateY(-1px); }
+.gunma-chef-bubble .gunma-chef-chip:hover { background: #0da487; color: #fff; transform: translateY(-1px); }
 
 /* ── Bubble-holder: speech floats above the icon, never confined ── */
 .gunma-bubble-hold {
@@ -1526,10 +1526,10 @@
 .gunma-speech-chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; position: static; }
 .gunma-speech .gunma-chef-chip {
   display: inline-block; margin: 0; padding: 5px 12px; border-radius: 999px;
-  background: #fff; border: 1.5px solid #10b98155; color: #065f46;
+  background: #fff; border: 1.5px solid #0da48755; color: #065f46;
   font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s ease;
 }
-.gunma-speech .gunma-chef-chip:hover { background: #10b981; color: #fff; }
+.gunma-speech .gunma-chef-chip:hover { background: #0da487; color: #fff; }
 /* robot art fills the round button nicely */
 .gunma-bubble .gunma-chef-svg.pk-robot { width: 130% !important; height: 130% !important; margin: -15%; }
 
