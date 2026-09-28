@@ -1,5 +1,7 @@
 export interface DoodleConfig {
     enabled?: boolean;
+    /** 'robot' (default) = Piku mascot bot; 'chef' = rice-bowl chef. */
+    variant?: 'robot' | 'chef';
     /** Follow the cursor (desktop). Default FALSE — chef stays put. */
     followCursor?: boolean;
     /** Random idle chit-chat. Default false (product-focus only). */

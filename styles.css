@@ -1479,3 +1479,14 @@
 @media (prefers-reduced-motion: reduce) {
   .gunma-chef, .gunma-chef * { animation: none !important; transition: none !important; }
 }
+
+/* ── Piku robot mascot (variant robot) ── */
+.gunma-chef.pk-robot-wrap .pk-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.gunma-chef.pk-robot-wrap .chef-eye.blink { transform: scaleY(.08); }
+.gunma-chef.pk-robot-wrap .rb-chest { animation: rbChest 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes rbChest { 0%,100% { opacity:.85; transform: scaleX(1) } 50% { opacity:1; transform: scaleX(1.25) } }
+.gunma-chef.pk-robot-wrap .rb-mic { animation: rbMic 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes rbMic { 0%,100% { opacity:.7; transform: scale(1) } 50% { opacity:1; transform: scale(1.25) } }
