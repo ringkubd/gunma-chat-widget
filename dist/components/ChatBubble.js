@@ -51,9 +51,9 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
                     // ace: doodle walks to the opposite side while slimming down
                     const hold = holdRef.current;
                     if (hold) {
-                        const cur = hold.style.transform.match(/-?\d+(?=px)/);
-                        const startX = cur ? parseInt(cur[0], 10) : 300;
-                        hold.style.transform = `translate3d(${startX > window.innerWidth / 2 ? Math.round(window.innerWidth * 0.18) : Math.round(window.innerWidth * 0.72)}px, ${Math.round(window.innerHeight * 0.7)}px, 0)`;
+                        const dx = -Math.round((0.45 + Math.random() * 0.3) * window.innerWidth);
+                        const dy = -Math.round((0.25 + Math.random() * 0.3) * window.innerHeight);
+                        hold.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
                     }
                     // funny speech: weight-loss caper (নিজের উপর হাসি)
                     setMessage('Biryani kheye nudh হলাম! Hatahati kore weight কমাচ্ছি 😄🏃');
@@ -63,6 +63,7 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
                         setChubby(false);
                         setWalking(false);
                         setSpeakingJump(false);
+                        holdRef.current?.style.setProperty('transform', 'translate3d(0,0,0)'); // বাড়িতে ফিরে আসো
                     }, 3400);
                     cleanups.push(() => window.clearTimeout(t3));
                     cleanups.push(() => window.clearTimeout(t3));
@@ -78,7 +79,6 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
     useEffect(() => {
         if (isOpen)
             return; // chat খোলা → doodle লুকোয়, তবু মাপ ফিক্স রাখো
-        const topBand = [0.08, 0.45];
         const move = () => {
             if (document.hidden || window.innerWidth < 768)
                 return;
@@ -87,9 +87,10 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
             const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             if (reduce)
                 return;
-            const rx = 0.45 + Math.random() * 0.45; // 45–90vw
-            const ry = topBand[0] + Math.random() * (0.78 - topBand[0]); // band
-            holdRef.current.style.transform = `translate3d(${Math.round(rx * window.innerWidth)}px, ${Math.round(ry * window.innerHeight)}px, 0)`;
+            // hold is anchored right=24/bottom=24 → translate is a DELTA; negative = বামে/উপরে (সবসময় on-screen)
+            const dx = -Math.round((0.15 + Math.random() * 0.6) * window.innerWidth); // বামে 15–75vw
+            const dy = -Math.round((0.05 + Math.random() * 0.55) * window.innerHeight); // উপরে 5–60vh
+            holdRef.current.style.transform = `translate3d(${dx}px, ${dy}px, 0)`;
             setSpeakingJump(true);
             window.setTimeout(() => setSpeakingJump(false), 620);
         };
