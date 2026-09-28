@@ -1,13 +1,19 @@
 export interface DoodleConfig {
     enabled?: boolean;
-    /** Follow the customer's pointer (desktop only). Default true. */
+    /** Follow the cursor (desktop). Default FALSE — chef stays put. */
     followCursor?: boolean;
-    /** Allow random chit-chat while idle. Default FALSE (product-focus only). */
+    /** Random idle chit-chat. Default false (product-focus only). */
     speakIdle?: boolean;
-    /** Warm one-time greeting per page load. Default true. */
+    /** Warm greeting once per page load. Default true. */
     greetOnce?: boolean;
-    /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
+    /** Nudge probability per tick when idle. Default 0.3. */
     talkChance?: number;
+    /** Corner position. Default 'bottom-right'. */
+    position?: 'bottom-left' | 'bottom-right';
+    /** Pixel size of the chef. Default 48. */
+    size?: number;
+    /** Enable the occasional pan-stir action. Default true. */
+    stir?: boolean;
     texts?: {
         product?: string[];
         general?: string[];
@@ -16,9 +22,9 @@ export interface DoodleConfig {
 interface Props {
     doodle: DoodleConfig;
     brandColor: string;
-    /** Chat panel open state — doodle hides itself while chatting. */
+    /** Chat panel open → doodle hides. */
     chatOpen?: boolean;
-    /** Open chat; carries an optional prefill context message. */
+    /** Open chat with optional prefill context. */
     onOpenChat: (prefill?: string) => void;
 }
 export declare function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props): import("react/jsx-runtime").JSX.Element | null;

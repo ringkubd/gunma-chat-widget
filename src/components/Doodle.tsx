@@ -1,24 +1,36 @@
 /**
- * Piku Doodle v3 — pointer-following companion.
+ * Piku Doodle v4 — animated chef mascot.
  *
- * Desktop (fine pointer): the mascot chases the customer's cursor with a
- * springy lerp — movements are applied DIRECTLY to the DOM via transform in
- * one rAF loop (zero React re-renders ⇒ 60fps, lightning fast).
- * Touch devices / coarse pointers: falls back to a calm bottom-band patrol.
- * Bubbles keep product-aware lines; click opens Piku chat (with context).
+ * A hand-drawn inline SVG chef (no external deps/assets): toque + chef
+ * coat, stirring a pan, blinking, breathing, waving while talking, and a
+ * little hop when it moves. It does NOT follow the cursor — it lives in a
+ * corner and proactively talks about products (interest / cart / offers).
+ *
+ * Behaviour (kept lightweight — GPU transforms only, no JS animation loop
+ * unless following the pointer, which is OFF by default):
+ *  - greets once per page load
+ *  - speaks about a product card that stays in view, or the product page
+ *  - hover a product/category for ~600ms → instant (cached) line
+ *  - click → open Piku chat with the product context
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface DoodleConfig {
   enabled?: boolean;
-  /** Follow the customer's pointer (desktop only). Default true. */
+  /** Follow the cursor (desktop). Default FALSE — chef stays put. */
   followCursor?: boolean;
-  /** Allow random chit-chat while idle. Default FALSE (product-focus only). */
+  /** Random idle chit-chat. Default false (product-focus only). */
   speakIdle?: boolean;
-  /** Warm one-time greeting per page load. Default true. */
+  /** Warm greeting once per page load. Default true. */
   greetOnce?: boolean;
-  /** Pointer mode: nudges should still occur. Default: 0.18 bubble chance on long idle. */
+  /** Nudge probability per tick when idle. Default 0.3. */
   talkChance?: number;
+  /** Corner position. Default 'bottom-right'. */
+  position?: 'bottom-left' | 'bottom-right';
+  /** Pixel size of the chef. Default 48. */
+  size?: number;
+  /** Enable the occasional pan-stir action. Default true. */
+  stir?: boolean;
   texts?: {
     product?: string[];
     general?: string[];
@@ -28,9 +40,9 @@ export interface DoodleConfig {
 interface Props {
   doodle: DoodleConfig;
   brandColor: string;
-  /** Chat panel open state — doodle hides itself while chatting. */
+  /** Chat panel open → doodle hides. */
   chatOpen?: boolean;
-  /** Open chat; carries an optional prefill context message. */
+  /** Open chat with optional prefill context. */
   onOpenChat: (prefill?: string) => void;
 }
 
@@ -58,122 +70,76 @@ function pickOf<T>(arr: T[]): T {
 export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [blink, setBlink] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const posRef = useRef<{ x: number; y: number } | null>(null);   // px, viewport
-  const targetRef = useRef<{ x: number; y: number } | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const walkingUntilRef = useRef(0);
-  const lastProduct = useRef('');
+  const [stir, setStir] = useState(false);
+  const [hop, setHop] = useState(false);
+
   const prefillRef = useRef<string | undefined>(undefined);
-  // instant-speech cache: key → ready-made line (composed once, reused forever)
-  const speechCache = useRef<Map<string, string>>(new Map());
   const messageRef = useRef<string | null>(null);
   messageRef.current = message;
-  const followRef = useRef<boolean>(doodle.followCursor ?? true);
-  followRef.current = doodle.followCursor ?? true;
 
-  const renderNow = () => {
-    const el = rootRef.current;
-    const p = posRef.current;
-    if (el && p) {
-      el.style.transform = `translate3d(${Math.round(p.x)}px, ${Math.round(p.y)}px, 0)`;
-    }
-  };
+  const size = Math.max(36, Math.min(72, doodle.size ?? 48));
+  const pos = doodle.position ?? 'bottom-right';
+  const enabled = !!doodle.enabled;
 
-  /* ── Instant cached speech ────────────────────────────────────── */
-  const speakCached = useCallback((key: string, compose: () => string) => {
-    let line = speechCache.current.get(key);
-    if (!line) {
-      line = compose();
-      speechCache.current.set(key, line);
-    }
-    prefillRef.current = key.startsWith('p:')
-      ? `Ei product ta niye aro jante chai: ${line.replace(/^"|"$/g, '')}`
-      : undefined;
+  const say = useCallback((line: string, prefill?: string) => {
+    prefillRef.current = prefill;
     setMessage(line);
     window.setTimeout(() => setMessage(null), 8000);
   }, []);
 
-  /* ── Hover-speak: dwell 900ms on a product/category ⇒ instantly talks ── */
+  /* ── Blink + breathe + occasional stir/hop ───────────────────── */
   useEffect(() => {
-    if (!doodle.enabled || typeof window === 'undefined') return;
-    let dwell: number | undefined;
-    let lastHoverKey = '';
-
-    const resolve = (el: HTMLElement): { kind: 'p' | 'c'; key: string; title: string } | null => {
-      // 1) product cards — data attributes the storefront renders
-      const prodEl = el.closest('[data-product-id],[data-product-title]') as HTMLElement | null;
-      if (prodEl) {
-        const pid = prodEl.getAttribute('data-product-id') ?? '';
-        let title = (prodEl.getAttribute('data-product-title') || '').trim();
-        if (!title) {
-          // short anchor text only (never the whole card blob)
-          const a = prodEl.querySelector('a') as HTMLAnchorElement | null;
-          const t = (a?.textContent || '').replace(/\s+/g, ' ').trim();
-          if (t && t.length <= 70) title = t;
-        }
-        if (title) {
-          return { kind: 'p', key: `p:${pid || title}`, title: title.slice(0, 80) };
-        }
+    if (!enabled || typeof window === 'undefined') return;
+    const iv = window.setInterval(() => {
+      if (document.hidden) return;
+      if (Math.random() < 0.4) {
+        setBlink(true);
+        window.setTimeout(() => setBlink(false), 130);
       }
-      // 2) category links / menu items
-      const catEl = el.closest('[data-category]') as HTMLElement | null
-        ?? el.closest('a[href*="categor"]') as HTMLElement | null;
-      if (catEl) {
-        const title = (catEl.getAttribute('data-category') || catEl.textContent || '')
-          .replace(/\s+/g, ' ').trim().slice(0, 60);
-        if (title && title.length <= 60) return { kind: 'c', key: `c:${title}`, title };
+      if ((doodle.stir ?? true) && Math.random() < 0.18) {
+        setStir(true);
+        window.setTimeout(() => setStir(false), 1600);
       }
-      return null;
-    };
-
-    const onOver = (e: PointerEvent) => {
-      if (!(e.target instanceof HTMLElement)) return;
-      const hit = resolve(e.target);
-      if (!hit || hit.key === lastHoverKey) {
-        if (!hit && dwell) { window.clearTimeout(dwell); dwell = undefined; }
-        return;
+      if (Math.random() < 0.12) {
+        setHop(true);
+        window.setTimeout(() => setHop(false), 500);
       }
-      lastHoverKey = hit.key;
-      window.clearTimeout(dwell);
-      dwell = window.setTimeout(() => {
-        speakCached(hit.key, () =>
-          hit.kind === 'p'
-            ? (doodle.texts?.product?.length
-                ? pickOf(doodle.texts.product).replace('%s', hit.title)
-                : pickOf(PRODUCT_LINES).replace('%s', hit.title))
-            : `"${hit.title}" category te onek darun jinish ache — dekhen! 💬`
-        );
-      }, 700);
-    };
-    const onOut = () => { window.clearTimeout(dwell); dwell = undefined; };
+    }, 2600);
+    return () => window.clearInterval(iv);
+  }, [enabled, doodle.stir]);
 
-    document.addEventListener('pointerover', onOver, { passive: true });
-    window.addEventListener('pointerleave', onOut);
-    return () => {
-      document.removeEventListener('pointerover', onOver);
-      window.removeEventListener('pointerleave', onOut);
-      window.clearTimeout(dwell);
-    };
-  }, [doodle.enabled, doodle.texts?.product, speakCached]);
+  /* ── Interactive speech state (wave while bubble is visible) ─── */
+  const talking = !!message;
 
-  /* ── Greeting once + speak about products that are ON SCREEN ──
-     Ensures the doodle always does something useful even without hover,
-     while staying strictly product-topic (no random unrelated chatter). */
+  /* ── Greeting + in-view product talk ─────────────────────────── */
+  const readProduct = useCallback((): { key: string; title: string } | null => {
+    if (typeof window === 'undefined') return null;
+    const el = document.querySelector('[data-product-id]') as HTMLElement | null;
+    if (el) {
+      const title = (el.getAttribute('data-product-title') || '').trim().slice(0, 80);
+      if (title) return { key: `p:${el.getAttribute('data-product-id')}`, title };
+    }
+    const og = document.querySelector('meta[property="og:title"]') as HTMLMetaElement | null;
+    const h1 = document.querySelector('h1') as HTMLElement | null;
+    const detail = (og?.content || h1?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (detail && /add to cart|কার্ট|basket/i.test(document.body.innerText.slice(0, 4000))) {
+      return { key: `p:${location.pathname}`, title: detail };
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
-    if (!doodle.enabled || typeof window === 'undefined') return;
-    if (doodle.greetOnce === false) return;
-
+    if (!enabled || typeof window === 'undefined') return;
+    const talkChance = doodle.talkChance ?? 0.3;
     let greeted = false;
-    const greetTimer = window.setTimeout(() => {
-      if (greeted) return;
+
+    const greet = window.setTimeout(() => {
+      if (greeted || messageRef.current) return;
       greeted = true;
-      if (messageRef.current) return;
-      prefillRef.current = undefined;
-      setMessage(pickOf(GENERAL_LINES));
-      window.setTimeout(() => setMessage(null), 8000);
+      say(pickOf(GENERAL_LINES));
     }, 7000);
 
+    // Speak about products that stay in view (~2s)
     const seen = new Set<string>();
     const observer = new IntersectionObserver((entries) => {
       for (const e of entries) {
@@ -190,17 +156,12 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
         if (!title) continue;
         const key = `p:${pid || title}`;
         if (seen.has(key)) continue;
-        // dwell 2s in viewport before talking about it
         window.setTimeout(() => {
           if (document.hidden || messageRef.current) return;
           el.dataset.doodleTalked = '1';
           seen.add(key);
-          if (el.getBoundingClientRect().bottom < 0 && el.getBoundingClientRect().top < 0) return;
           const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
-          const line = pickOf(pool).replace('%s', title);
-          prefillRef.current = `Ei product ta niye aro jante chai: ${title}`;
-          setMessage(line);
-          window.setTimeout(() => setMessage(null), 8000);
+          say(pickOf(pool).replace('%s', title), `Ei product ta niye aro jante chai: ${title}`);
         }, 2000);
       }
     }, { threshold: [0.5] });
@@ -209,185 +170,170 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat }: Props) 
       document.querySelectorAll('[data-product-id],[data-product-title]').forEach((el) => observer.observe(el));
     };
     attach();
-    const iv = window.setInterval(attach, 4000);
+    const attachIv = window.setInterval(attach, 4000);
 
     return () => {
-      window.clearTimeout(greetTimer);
-      window.clearInterval(iv);
+      window.clearTimeout(greet);
+      window.clearInterval(attachIv);
       observer.disconnect();
     };
-  }, [doodle.enabled, doodle.greetOnce, doodle.texts?.product]);
+  }, [enabled, say, doodle.talkChance, doodle.texts?.product]);
 
-  /* ── Pointer-follow loop: one rAF, direct DOM writes ─────────── */
+  /* ── Hover dwell (600ms) → instant cached line ───────────────── */
   useEffect(() => {
-    if (!doodle.enabled || typeof window === 'undefined') return;
-    if (!window.matchMedia('(pointer: fine)').matches) followRef.current = false;
+    if (!enabled || typeof window === 'undefined') return;
+    let dwell: number | undefined;
+    let lastKey = '';
 
-    // initial anchor: bottom-right-ish; set instantly so no jump
-    const start = { x: window.innerWidth * 0.78, y: window.innerHeight * 0.72 };
-    posRef.current = start;
-    targetRef.current = start;
-    renderNow();
-
-    const onMove = (e: PointerEvent) => {
-      if (!followRef.current) return;
-      // mascot hovers a bit ABOVE-RIGHT of the pointer, never under it
-      targetRef.current = {
-        x: Math.min(window.innerWidth - 84, Math.max(4, e.clientX + 6)),
-        y: Math.min(window.innerHeight - 40, Math.max(4, e.clientY - 86)),
-      };
-    };
-    window.addEventListener('pointermove', onMove, { passive: true });
-
-    const loop = () => {
-      const p = posRef.current!;
-      const t = targetRef.current;
-      if (t) {
-        const dx = t.x - p.x;
-        const dy = t.y - p.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist > 1.2) {
-          // springy chase — arrives fast, feels alive
-          const k = dist > 90 ? 0.16 : 0.09;
-          p.x += dx * k;
-          p.y += dy * k;
-          walkingUntilRef.current = Date.now() + 260;
+    const resolve = (el: HTMLElement) => {
+      const prodEl = el.closest('[data-product-id],[data-product-title]') as HTMLElement | null;
+      if (prodEl) {
+        const pid = prodEl.getAttribute('data-product-id') ?? '';
+        let title = (prodEl.getAttribute('data-product-title') || '').trim();
+        if (!title) {
+          const a = prodEl.querySelector('a') as HTMLAnchorElement | null;
+          const t = (a?.textContent || '').replace(/\s+/g, ' ').trim();
+          if (t && t.length <= 70) title = t;
         }
+        if (title) return { kind: 'p' as const, key: `p:${pid || title}`, title };
       }
-      const isWalking = Date.now() < walkingUntilRef.current;
-      const elR = rootRef.current;
-      if (elR && elR.dataset.walking !== String(isWalking)) {
-        elR.dataset.walking = String(isWalking);
+      const cat = el.closest('[data-category]') as HTMLElement | null
+        ?? el.closest('a[href*="categor"]') as HTMLElement | null;
+      if (cat) {
+        const title = (cat.getAttribute('data-category') || cat.textContent || '')
+          .replace(/\s+/g, ' ').trim().slice(0, 60);
+        if (title && title.length <= 60) return { kind: 'c' as const, key: `c:${title}`, title };
       }
-      renderNow();
-      rafRef.current = requestAnimationFrame(loop);
+      return null;
     };
-    rafRef.current = requestAnimationFrame(loop);
 
+    const onOver = (e: PointerEvent) => {
+      if (!(e.target instanceof HTMLElement)) return;
+      const hit = resolve(e.target);
+      if (!hit) { if (dwell) { window.clearTimeout(dwell); dwell = undefined; } return; }
+      if (hit.key === lastKey) return;
+      lastKey = hit.key;
+      window.clearTimeout(dwell);
+      dwell = window.setTimeout(() => {
+        if (document.hidden || messageRef.current) return;
+        const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+        say(
+          hit.kind === 'p'
+            ? pickOf(pool).replace('%s', hit.title)
+            : `"${hit.title}" category te onek darun jinish ache — dekhen! 💬`,
+          hit.kind === 'p' ? `Ei product ta niye aro jante chai: ${hit.title}` : undefined,
+        );
+      }, 600);
+    };
+    const onOut = () => { window.clearTimeout(dwell); dwell = undefined; };
+
+    document.addEventListener('pointerover', onOver, { passive: true });
+    window.addEventListener('pointerleave', onOut);
     return () => {
-      window.removeEventListener('pointermove', onMove);
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      document.removeEventListener('pointerover', onOver);
+      window.removeEventListener('pointerleave', onOut);
+      window.clearTimeout(dwell);
     };
-  }, [doodle.enabled]);
+  }, [enabled, say, dpsTextDeps(doodle)]);
 
-  /* ── Behaviour: talks, blinks, product awareness ─────────────── */
-  const readProduct = useCallback((): { key: string; title: string } | null => {
-    if (typeof window === 'undefined') return null;
-    // 1) product cards rendered by the storefront (data attrs we add)
-    const el = document.querySelector('[data-product-id]') as HTMLElement | null;
-    if (el) {
-      const title = (el.getAttribute('data-product-title') || '').trim().slice(0, 80);
-      if (title) return { key: `p:${el.getAttribute('data-product-id')}`, title };
-    }
-    // 2) product DETAIL page — use social title / heading
-    const og = document.querySelector('meta[property="og:title"]') as HTMLMetaElement | null;
-    const h1 = document.querySelector('h1') as HTMLElement | null;
-    const detailTitle = (og?.content || h1?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
-    if (detailTitle && /add to cart|কার্ট|basket/i.test(document.body.innerText.slice(0, 4000))) {
-      return { key: `p:${location.pathname}`, title: detailTitle };
-    }
-    return null;
-  }, []);
+  if (!enabled || chatOpen) return null;
 
-  useEffect(() => {
-    if (!doodle.enabled || typeof window === 'undefined') return;
-    const talkChance = doodle.talkChance ?? 0.3;
-
-    const iv = window.setInterval(() => {
-      if (document.hidden || messageRef.current) return;
-
-      if (Math.random() < 0.35) {
-        setBlink(true);
-        window.setTimeout(() => setBlink(false), 130);
-      }
-
-      const p = readProduct();
-      if (p && p.key !== lastProduct.current) {
-        lastProduct.current = p.key;
-        if (Math.random() < 0.65) {
-          const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
-          const line = pickOf(pool).replace('%s', p.title);
-          prefillRef.current = `Ei product ta niye aro jante chai: ${p.title}`;
-          setMessage(line);
-          window.setTimeout(() => setMessage(null), 8000);
-          return;
-        }
-      }
-
-      if (doodle.speakIdle && Math.random() < talkChance) {
-        prefillRef.current = undefined;
-        setMessage(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
-        window.setTimeout(() => setMessage(null), 8000);
-      }
-    }, 4500);
-
-    return () => window.clearInterval(iv);
-  }, [doodle.enabled, doodle.texts?.product, doodle.texts?.general, doodle.talkChance, readProduct]);
-
-  if (!doodle.enabled || chatOpen) return null;
+  const corner = pos === 'bottom-right' ? { right: 18, bottom: 96 } : { left: 18, bottom: 96 };
 
   return (
-    <div ref={rootRef} className="gunma-doodle-root" style={{ left: 0, top: 0 }}>
+    <div className="gunma-chef-root" style={{ ...corner, ['--chef-size' as string]: `${size}px` } as React.CSSProperties}>
       {message && (
-        <div
-          className="gunma-doodle-bubble"
-          onClick={(e) => {
-            e.stopPropagation();
-            const ctx = prefillRef.current;
-            setMessage(null);
-            onOpenChat(ctx);
-          }}
-        >
+        <div className="gunma-chef-bubble" onClick={(e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }}>
           {message}
         </div>
       )}
       <button
-        className={`gunma-doodle-float ${message ? 'talking' : ''}`}
-        style={{ '--doodle-ring': brandColor } as React.CSSProperties}
+        className={`gunma-chef ${talking ? 'talking' : ''} ${stir ? 'stirring' : ''} ${hop ? 'hopping' : ''}`}
+        style={{ '--chef-brand': brandColor } as React.CSSProperties}
         aria-label="Piku — click to chat"
         title="Piku — click to chat"
         onClick={() => { setMessage(null); onOpenChat(prefillRef.current); }}
       >
-        <svg viewBox="0 0 120 120" className="gunma-doodle-svg" aria-hidden="true">
+        <svg viewBox="0 0 120 140" className="gunma-chef-svg" aria-hidden="true">
           <defs>
-            <linearGradient id="pdBody" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="chefCoat" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#ffffff" />
+              <stop offset="1" stopColor="#eef2f3" />
+            </linearGradient>
+            <linearGradient id="chefHat" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#ffffff" />
+              <stop offset="1" stopColor="#eef2f3" />
+            </linearGradient>
+            <linearGradient id="chefScarf" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor={brandColor} />
               <stop offset="1" stopColor="#0d9488" />
             </linearGradient>
-            {/* warm honey chef-hat — no more white-on-white */}
-            <linearGradient id="pdHat" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#ffefc2" />
-              <stop offset="1" stopColor="#ffd964" />
-            </linearGradient>
           </defs>
-          {/* hat */}
-          <ellipse cx="60" cy="26" rx="26" ry="9" fill="#f7c93c" stroke="#e0a516" />
-          <rect x="42" y="10" width="36" height="18" rx="9" fill="url(#pdHat)" stroke="#e0a516" />
-          <ellipse cx="52" cy="16" rx="7" ry="4" fill="#fff7d6" opacity=".85" />
-          <path d="M46 21 h28" stroke="#c99a17" strokeWidth="1.4" />
-          {/* bowl body */}
-          <path d="M22 66 a38 34 0 0 0 76 0 z" fill="url(#pdBody)" />
-          <ellipse cx="60" cy="62" rx="30" ry="12" fill="#ffffff" />
-          <ellipse cx="46" cy="56" rx="12" ry="7" fill="#ffffff" />
-          <ellipse cx="72" cy="55" rx="12" ry="7" fill="#ffffff" />
-          {/* face */}
-          <circle className="gunma-doodle-eye" cx="48" cy="76" r="4.6" fill="#26211d" />
-          <circle className="gunma-doodle-eye" cx="72" cy="76" r="4.6" fill="#26211d" />
-          <circle cx="49.6" cy="74.4" r="1.4" fill="#fff" />
-          <circle cx="73.6" cy="74.4" r="1.4" fill="#fff" />
-          <circle cx="40" cy="83" r="3.4" fill="#ffb7b0" opacity=".8" />
-          <circle cx="80" cy="83" r="3.4" fill="#ffb7b0" opacity=".8" />
-          <path d="M54 86 q6 5 12 0" stroke="#26211d" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-          {/* hand wave */}
-          <g className="hand-wave">
-            <ellipse cx="98" cy="58" rx="6" ry="9" fill="url(#pdBody)" stroke="#0d9488" />
+
+          {/* shadow */}
+          <ellipse className="chef-shadow" cx="60" cy="134" rx="26" ry="5" fill="#000" opacity=".12" />
+
+          <g className="chef-body">
+            {/* legs */}
+            <rect className="chef-leg" x="47" y="112" width="9" height="18" rx="4" fill="#3b3b3b" />
+            <rect className="chef-leg" x="64" y="112" width="9" height="18" rx="4" fill="#3b3b3b" />
+            <ellipse cx="51" cy="132" rx="8" ry="4" fill="#26211d" />
+            <ellipse cx="69" cy="132" rx="8" ry="4" fill="#26211d" />
+
+            {/* coat */}
+            <path d="M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z" fill="url(#chefCoat)" stroke="#d9dfe2" />
+            {/* scarf / neckerchief */}
+            <path d="M50 62 q10 8 20 0 l-3 10 q-7 5 -14 0 z" fill="url(#chefScarf)" />
+
+            {/* left arm */}
+            <g className="chef-arm-left">
+              <rect x="33" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#d9dfe2" />
+              <circle cx="37" cy="98" r="5" fill="#f2c6a0" />
+            </g>
+
+            {/* right arm + pan (stirs) */}
+            <g className="chef-arm-right">
+              <rect x="78" y="70" width="9" height="26" rx="4" fill="url(#chefCoat)" stroke="#d9dfe2" />
+              <circle cx="83" cy="98" r="5" fill="#f2c6a0" />
+              <g className="chef-pan">
+                <rect x="80" y="96" width="22" height="3" rx="1.5" fill="#8a8f94" />
+                <ellipse cx="104" cy="97" rx="12" ry="5" fill="#4b5054" />
+                <ellipse cx="104" cy="96" rx="9" ry="3" fill="#6b7175" />
+              </g>
+            </g>
+
+            {/* head */}
+            <g className="chef-head">
+              <circle cx="60" cy="46" r="20" fill="#f7cda6" />
+              {/* eyes */}
+              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="53" cy="45" r="2.6" fill="#26211d" />
+              <circle className={blink ? 'chef-eye blink' : 'chef-eye'} cx="67" cy="45" r="2.6" fill="#26211d" />
+              <circle cx="53.8" cy="44" r=".9" fill="#fff" />
+              <circle cx="67.8" cy="44" r=".9" fill="#fff" />
+              {/* blush */}
+              <circle cx="48" cy="51" r="3" fill="#ffb7b0" opacity=".75" />
+              <circle cx="72" cy="51" r="3" fill="#ffb7b0" opacity=".75" />
+              {/* smile / mouth (open while talking) */}
+              {talking ? (
+                <ellipse className="chef-mouth" cx="60" cy="54" rx="4.5" ry="3.4" fill="#7a2f2f" />
+              ) : (
+                <path d="M55 53 q5 4 10 0" stroke="#26211d" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+              )}
+              {/* chef hat */}
+              <g className="chef-hat">
+                <ellipse cx="60" cy="29" rx="24" ry="7" fill="url(#chefHat)" stroke="#e2e8ea" />
+                <rect x="45" y="12" width="30" height="18" rx="9" fill="url(#chefHat)" stroke="#e2e8ea" />
+                <path className="chef-hat-puff" d="M40 20 q-6 -8 4 -10 q2 -8 10 -5 q6 -6 12 0 q8 -3 10 5 q10 2 4 10" fill="url(#chefHat)" stroke="#e2e8ea" />
+              </g>
+            </g>
           </g>
-          <ellipse cx="22" cy="58" rx="6" ry="9" fill="url(#pdBody)" stroke="#0d9488" />
-          {/* feet */}
-          <ellipse cx="48" cy="106" rx="9" ry="5" fill="#26211d" />
-          <ellipse cx="72" cy="106" rx="9" ry="5" fill="#26211d" />
         </svg>
       </button>
     </div>
   );
+}
+
+/** Stable dep list for the doodle texts. */
+function dpsTextDeps(d: DoodleConfig): string {
+  return JSON.stringify(d.texts || {});
 }

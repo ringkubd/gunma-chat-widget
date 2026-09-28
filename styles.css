@@ -1374,80 +1374,76 @@
 }
 
 
-/* ═════════════ Piku Doodle v2 — cute walking chef ═════════════ */
-.gunma-doodle-root {
+
+/* ═════════════ Piku Chef Doodle (animated chef) ═════════════ */
+.gunma-chef-root {
   position: fixed;
-  left: 0; top: 0;
   z-index: 9985;
-  will-change: transform;
-  transform: translate3d(0,0,0);
-  contain: layout style;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 8px;
   pointer-events: none;
 }
-.gunma-doodle-root.flip .gunma-doodle-svg { transform: scaleX(-1); }
-.gunma-doodle-float {
+.gunma-chef {
   pointer-events: auto;
-  width: 66px; height: 66px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 4px 14px rgba(0,0,0,.16), 0 0 0 2px var(--doodle-ring, #10b981);
-  padding: 5px;
-  cursor: pointer;
+  width: var(--chef-size, 48px);
+  height: calc(var(--chef-size, 48px) * 1.16);
+  border: 0; background: transparent; padding: 0; cursor: pointer;
   position: relative; display: block;
-  contain: layout style;
+  will-change: transform;
 }
-.gunma-doodle-svg { width: 100%; height: 100%; overflow: visible; }
+.gunma-chef-svg { width: 100%; height: 100%; overflow: visible; }
 
-/* idle breathing */
-.gunma-doodle-float .gunma-doodle-svg { animation: doodleBreath 3s ease-in-out infinite; transform-origin: 50% 85%; }
-.gunma-doodle-float[data-walking="true"] .gunma-doodle-svg { animation: doodleHop .42s ease-in-out infinite alternate; }
-@keyframes doodleBreath { 0%,100% { transform: scaleY(1);} 50% { transform: scaleY(1.035);} }
-@keyframes doodleHop { from { transform: translateY(0) rotate(2deg);} to { transform: translateY(-4px) rotate(-2deg);} }
+/* idle: gentle breathing + hat wobble */
+.gunma-chef .chef-body { animation: chefBreath 3s ease-in-out infinite; transform-origin: 50% 90%; }
+.gunma-chef .chef-hat { animation: chefHatWobble 3s ease-in-out infinite; transform-origin: 60px 30px; }
+.gunma-chef .chef-hat-puff { animation: chefPuff 2.4s ease-in-out infinite; transform-origin: 60px 20px; }
+.gunma-chef .chef-shadow { animation: chefShadow 3s ease-in-out infinite; transform-origin: 60px 134px; }
+@keyframes chefBreath { 0%,100% { transform: scaleY(1) } 50% { transform: scaleY(1.03) } }
+@keyframes chefHatWobble { 0%,100% { transform: rotate(-2deg) } 50% { transform: rotate(2deg) } }
+@keyframes chefPuff { 0%,100% { transform: scale(1) } 50% { transform: scale(1.05) } }
+@keyframes chefShadow { 0%,100% { transform: scaleX(1); opacity:.12 } 50% { transform: scaleX(.92); opacity:.09 } }
 
-/* feet */
-.gunma-doodle-float[data-walking="true"] .foot-l { animation: footA .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-.gunma-doodle-float[data-walking="true"] .foot-r { animation: footB .38s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-@keyframes footA { from { transform: translateY(-2px) rotate(8deg);} to { transform: translateY(1px) rotate(0);} }
-@keyframes footB { from { transform: translateY(1px) rotate(-8deg);} to { transform: translateY(-2px) rotate(0);} }
-
-/* waving hand while talking */
-.gunma-doodle-float.talking .hand-wave { transform-origin: 84px 52px; animation: wave .8s ease-in-out infinite; }
-@keyframes wave { 0%,100% { transform: rotate(0);} 50% { transform: rotate(-22deg);} }
+/* hop */
+.gunma-chef.hopping { animation: chefHop .5s ease-in-out; }
+@keyframes chefHop { 0%{transform:translateY(0)} 40%{transform:translateY(-8px)} 100%{transform:translateY(0)} }
 
 /* blink */
-.gunma-doodle-eye.blink { transform: scaleY(.12); transform-origin: center; }
+.gunma-chef .chef-eye.blink { transform: scaleY(.12); transform-origin: center; }
 
-/* speech bubble (soft, rounded, animated) */
-.gunma-doodle-bubble {
-  position: absolute;
-  bottom: 86px; left: 50%; transform: translateX(-22%);
-  background: #ffffff; color: #222222;
+/* right arm rests; while talking/visible bubble → wave */
+.gunma-chef .chef-arm-right { transform-origin: 80px 72px; transition: transform .2s ease; }
+.gunma-chef.talking .chef-arm-right { animation: chefWave .7s ease-in-out infinite; }
+@keyframes chefWave { 0%,100% { transform: rotate(0) } 50% { transform: rotate(-20deg) } }
+
+/* stirring pan action */
+.gunma-chef .chef-pan { transform-origin: 100px 97px; }
+.gunma-chef.stirring .chef-pan { animation: chefStir 1.6s ease-in-out; }
+.gunma-chef.stirring .chef-arm-right { animation: chefArmStir 1.6s ease-in-out; }
+@keyframes chefStir { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-9deg) } 75% { transform: rotate(9deg) } }
+@keyframes chefArmStir { 0%,100% { transform: rotate(0) } 25% { transform: rotate(-6deg) } 75% { transform: rotate(6deg) } }
+
+/* speech bubble */
+.gunma-chef-bubble {
+  position: relative;
+  background: #fff; color: #222;
   font-size: 13px; line-height: 1.5;
-  padding: 10px 13px; border-radius: 14px 14px 4px 14px;
-  max-width: 230px; min-width: 140px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  padding: 10px 13px; border-radius: 14px 14px 14px 4px;
+  max-width: 232px; min-width: 140px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
   border: 1px solid #eee;
   cursor: default; pointer-events: auto;
   white-space: pre-line;
-  animation: bubbleIn .22s ease-out;
+  animation: chefBubbleIn .2s ease-out;
 }
-.gunma-doodle-bubble::after {
-  content:''; position:absolute; left: 26px; bottom: -8px;
-  border-left: 15px solid transparent; border-top: 13px solid #ffffff;
+.gunma-chef-bubble::after {
+  content:''; position:absolute; right: 18px; bottom: -8px;
+  border-right: 14px solid transparent; border-top: 12px solid #fff;
 }
-@keyframes bubbleIn { from { opacity:0; transform: translateX(-22%) translateY(10px) scale(.94);} to { opacity:1; transform: translateX(-22%) translateY(0) scale(1);} }
+@keyframes chefBubbleIn { from { opacity:0; transform: translateY(8px) scale(.95);} to { opacity:1; transform: translateY(0) scale(1);} }
 
 @media (max-width: 640px) {
-  .gunma-doodle-float { width: 46px; height: 50px; }
-  .gunma-doodle-bubble { font-size: 12px; max-width: 180px; }
+  .gunma-chef-bubble { font-size: 12px; max-width: 190px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .gunma-doodle-root, .gunma-doodle-float, .gunma-doodle-svg { animation: none !important; transition: none !important; }
+  .gunma-chef, .gunma-chef * { animation: none !important; transition: none !important; }
 }
-
-/* ── Commerce cart loading ── */
-.gunma-commerce-loading {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 10px; padding: 28px 12px; color: var(--gunma-text-secondary); font-size: 13px;
-}
-.gunma-commerce-loading p { margin: 0; }

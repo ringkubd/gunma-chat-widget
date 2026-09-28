@@ -208,16 +208,20 @@ export type CommerceStep = 'cart' | 'auth' | 'address' | 'delivery' | 'payment' 
  */
 export interface ChatDoodleConfig {
     enabled?: boolean;
-    /** Milliseconds between doodle behaviour ticks. Default 5000. */
-    tickMs?: number;
     /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.3. */
     talkChance?: number;
-    /** Follow the customer's pointer (desktop, fine pointer only). Default true. */
+    /** Follow the customer's pointer (desktop). Default false (chef stays put). */
     followCursor?: boolean;
     /** Allow random idle chit-chat. Default false (product-focused). */
     speakIdle?: boolean;
-    /** Vertical patrol band in vh (touch fallback mode). Default [64, 84]. */
-    band?: [number, number];
+    /** Warm greeting once per page load. Default true. */
+    greetOnce?: boolean;
+    /** Corner position. Default 'bottom-right'. */
+    position?: 'bottom-left' | 'bottom-right';
+    /** Pixel size of the chef. Default 48. */
+    size?: number;
+    /** Enable the occasional pan-stir animation. Default true. */
+    stir?: boolean;
     texts?: {
         product?: string[];
         general?: string[];
