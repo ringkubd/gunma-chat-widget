@@ -95,6 +95,31 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     window.setTimeout(() => setMessage(null), 8000);
   }, []);
 
+  /* ── Wandering: the chef strolls to a random safe spot every ~9s ── */
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  const setChefPos = useCallback((xVw: number, yVh: number) => {
+    const el = rootRef.current;
+    if (el) {
+      el.style.transform = `translate3d(${xVw}vw, ${yVh}vh, 0)`;
+    }
+    // face travel direction
+    el?.classList.toggle('flip-left', xVw < 12);
+  }, []);
+
+  useEffect(() => {
+    if (!enabled || typeof window === 'undefined') return;
+    // initial anchor
+    setChefPos(78, 72);
+    const iv = window.setInterval(() => {
+      if (document.hidden) return;
+      const x = 6 + Math.random() * 82;          // 6–88 vw
+      const y = 52 + Math.random() * 32;         // 52–84 vh
+      setChefPos(x, y);
+    }, 11000);
+    return () => window.clearInterval(iv);
+  }, [enabled, setChefPos]);
+
   /* ── Blink + breathe + occasional stir/hop ───────────────────── */
   useEffect(() => {
     if (!enabled || typeof window === 'undefined') return;
@@ -332,10 +357,12 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
 
   if (!enabled || chatOpen) return null;
 
-  const corner = pos === 'bottom-right' ? { right: 18, bottom: 96 } : { left: 18, bottom: 96 };
-
   return (
-    <div className="gunma-chef-root" style={{ ...corner, ['--chef-size' as string]: `${size}px` } as React.CSSProperties}>
+    <div
+      ref={rootRef}
+      className={`gunma-chef-root wander`}
+      style={{ ['--chef-size' as string]: `${size}px`, ['--chef-flip' as string]: '1' } as React.CSSProperties}
+    >
       {message && (
         <div className="gunma-chef-bubble" onClick={(e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }}>
           {message}

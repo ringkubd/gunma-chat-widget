@@ -1379,11 +1379,22 @@
 /* ═════════════ Piku Chef Doodle (colorful animated chef) ═════════════ */
 .gunma-chef-root {
   position: fixed;
+  left: 0; top: 0;
   z-index: 9985;
-  display: flex; flex-direction: column; align-items: flex-end;
+  display: flex; flex-direction: column; align-items: flex-start;
   gap: 8px;
   pointer-events: none;
+  will-change: transform;
+  transform: translate3d(78vw, 72vh, 0);
+  transition: transform 1.9s cubic-bezier(.42,.05,.29,1.02);
 }
+.gunma-chef-root.wander .gunma-chef-bubble {
+  /* bubble stays near the chef wherever it floats */
+  align-self: flex-start;
+}
+.gunma-chef-root.wander .chef-hat { animation-duration: 2.4s; }
+.gunma-chef-root.flip-left .gunma-chef-svg { transform: scaleX(-1); }
+
 .gunma-chef {
   pointer-events: auto;
   width: var(--chef-size, 48px);
