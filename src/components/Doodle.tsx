@@ -219,7 +219,8 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
 
     let alive = true;
     let idx = 0;
-    let items: Array<{ title: string; text: string | null; price: number; in_stock: boolean; product_id: number; slug: string }> = [];
+    let items: Array<{ title: string; text: string | null; price: number; in_stock: boolean; product_id: number; slug: string; kind?: string }> = [];
+    let cartStale = 0;
 
     const load = async () => {
       if (!isProductScreen()) return;
@@ -232,6 +233,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         if (!res.ok) return;
         const json = await res.json();
         items = Array.isArray(json?.data) ? json.data : [];
+        cartStale = Number(json?.cart_stale_hours ?? 0);
         if (items.length) void fetchBriefs(items.map((i) => String(i.product_id)));
       } catch { /* ignore */ }
     };
@@ -249,9 +251,14 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       idx++;
       const blurb = it.text || briefsRef.current.get(String(it.product_id)) || '';
       const price = `¥${Math.round(it.price).toLocaleString()}`;
-      const line = it.in_stock
+      let line = it.in_stock
         ? (blurb ? `${blurb} (${price})` : `"${it.title}" — ${price}. Nite chan? 💬`)
         : `"${it.title}" ekhon stock e nei — khub shigroi abar ashe. ${blurb}`.trim();
+
+      if (it.kind === 'cart_recovery' && cartStale >= 6) {
+        // abandoned-cart recovery nudge — gentle, once before rotating on
+        line = `Apnar cart e ki ki ache dekhe nini! Checkout ta hoy ni — ekhon kore niben? 💬 (${price})`;
+      }
       say(line, `Ei product ta niye aro jante chai: ${it.title}`);
     }, 15000);
 
