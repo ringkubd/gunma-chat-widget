@@ -42,6 +42,12 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     const prefillRef = useRef(undefined);
     const messageRef = useRef(null);
     messageRef.current = message;
+    // Props/buttons can churn identity on every render — effects must NOT
+    // reset their timers because of that (this is why the doodle went mute).
+    const doodleRef = useRef(doodle);
+    doodleRef.current = doodle;
+    const getSessionIdRef = useRef(getSessionId);
+    getSessionIdRef.current = getSessionId;
     const size = Math.max(36, Math.min(72, doodle.size ?? 48));
     const pos = doodle.position ?? 'bottom-right';
     const enabled = !!doodle.enabled;
@@ -146,7 +152,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
                         return;
                     el.dataset.doodleTalked = '1';
                     seen.add(key);
-                    const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+                    const pool = doodleRef.current.texts?.product?.length ? doodleRef.current.texts.product : PRODUCT_LINES;
                     say(pickOf(pool).replace('%s', title), `Ei product ta niye aro jante chai: ${title}`);
                 }, 2000);
             }
@@ -160,7 +166,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
             window.clearInterval(attachIv);
             observer.disconnect();
         };
-    }, [enabled, say, doodle.texts?.product]);
+    }, [enabled, say]);
     /* ── Pre-generated blurbs cache (instant hover) ──────────────── */
     const briefsRef = useRef(new Map());
     const fetchBriefs = useCallback(async (ids) => {
@@ -202,7 +208,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         let items = [];
         let cartStale = 0;
         const load = async () => {
-            const sid = getSessionId?.() ?? '';
+            const sid = getSessionIdRef.current?.() ?? '';
             try {
                 const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
                     headers: { Accept: 'application/json' },
@@ -250,8 +256,8 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
                 greetedScreen = true;
                 say(pickOf(GENERAL_LINES));
             }
-            else if (doodle.speakIdle && Math.random() < (doodle.talkChance ?? 0.3)) {
-                say(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
+            else if (doodleRef.current.speakIdle && Math.random() < (doodleRef.current.talkChance ?? 0.3)) {
+                say(pickOf(doodleRef.current.texts?.general?.length ? doodleRef.current.texts.general : GENERAL_LINES));
             }
         }, 12000);
         return () => {
@@ -260,7 +266,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
             window.clearInterval(speakIv);
             window.removeEventListener('popstate', onNav);
         };
-    }, [enabled, apiUrl, routePrefix, getSessionId, lang, say, fetchBriefs]);
+    }, [enabled, apiUrl, routePrefix, say, fetchBriefs]);
     /* ── Hover dwell (600ms) → instant cached line ───────────────── */
     useEffect(() => {
         if (!enabled || typeof window === 'undefined')
@@ -309,7 +315,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
             dwell = window.setTimeout(() => {
                 if (document.hidden || messageRef.current)
                     return;
-                const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+                const pool = doodleRef.current.texts?.product?.length ? doodleRef.current.texts.product : PRODUCT_LINES;
                 if (hit.kind === 'p') {
                     const pidKey = hit.key.replace(/^p:/, '');
                     const cached = briefsRef.current.get(pidKey);
@@ -330,7 +336,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
             window.removeEventListener('pointerleave', onOut);
             window.clearTimeout(dwell);
         };
-    }, [enabled, say, dpsTextDeps(doodle)]);
+    }, [enabled, say]);
     if (!enabled || chatOpen)
         return null;
     return (_jsxs("div", { ref: rootRef, className: `gunma-chef-root wander ${doodle.variant !== 'chef' ? 'pk-robot-wrap' : ''}`, style: { ['--chef-size']: `${size}px`, ['--chef-flip']: '1' }, children: [message && (_jsx("div", { className: "gunma-chef-bubble", onClick: (e) => { e.stopPropagation(); const c = prefillRef.current; setMessage(null); onOpenChat(c); }, children: message })), _jsx("button", { className: `gunma-chef ${talking ? 'talking' : ''} ${stir ? 'stirring' : ''} ${hop ? 'hopping' : ''}`, style: { '--chef-brand': brandColor }, "aria-label": "Piku \u2014 click to chat", title: "Piku \u2014 click to chat", onClick: () => { setMessage(null); onOpenChat(prefillRef.current); }, children: doodle.variant === 'chef' ? (_jsxs("svg", { viewBox: "0 0 120 140", className: "gunma-chef-svg", "aria-hidden": "true", children: [_jsxs("defs", { children: [_jsxs("radialGradient", { id: "chefGlow2", cx: "50%", cy: "52%", r: "55%", children: [_jsx("stop", { offset: "0", stopColor: brandColor, stopOpacity: "0.45" }), _jsx("stop", { offset: "1", stopColor: brandColor, stopOpacity: "0" })] }), _jsxs("linearGradient", { id: "chefCoat", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#ffffff" }), _jsx("stop", { offset: "1", stopColor: "#dfe9ee" })] }), _jsxs("linearGradient", { id: "chefCoatB", x1: "0", y1: "0", x2: "0", y2: "1", children: [_jsx("stop", { offset: "0", stopColor: "#fffdf5" }), _jsx("stop", { offset: "1", stopColor: "#e6c268" })] })] }), _jsx("circle", { className: "chef-glow", cx: "60", cy: "74", r: "58", fill: "url(#chefGlow2)" }), _jsxs("g", { className: "chef-body", children: [_jsx("rect", { x: "47", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("rect", { x: "64", y: "112", width: "9", height: "18", rx: "4", fill: "#334155" }), _jsx("path", { d: "M38 66 q22 -10 44 0 l4 46 q-26 8 -52 0 z", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("path", { d: "M48 62 q12 9 24 0 l-4 12 q-8 6 -16 0 z", fill: "#10b981" }), _jsxs("g", { className: "chef-arm-right", children: [_jsx("rect", { x: "78", y: "70", width: "9", height: "26", rx: "4", fill: "url(#chefCoat)", stroke: "#cbd9e2" }), _jsx("g", { className: "chef-pan", children: _jsx("ellipse", { cx: "100", cy: "96", rx: "11", ry: "5", fill: "#4b5054" }) })] }), _jsx("circle", { cx: "60", cy: "46", r: "20", fill: "#f7cda6" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "53", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("circle", { className: blink ? 'chef-eye blink' : 'chef-eye', cx: "67", cy: "45", r: "2.6", fill: "#26211d" }), _jsx("rect", { x: "45", y: "12", width: "30", height: "18", rx: "9", fill: "url(#chefCoatB)", stroke: "#e6c268" }), _jsx("ellipse", { cx: "60", cy: "29", rx: "24", ry: "7", fill: "url(#chefCoatB)", stroke: "#e6c268" })] })] })) : (_jsx(PikuRobotArt, { blink: blink, talking: talking })) })] }));

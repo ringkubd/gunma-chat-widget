@@ -87,6 +87,12 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
   const prefillRef = useRef<string | undefined>(undefined);
   const messageRef = useRef<string | null>(null);
   messageRef.current = message;
+  // Props/buttons can churn identity on every render — effects must NOT
+  // reset their timers because of that (this is why the doodle went mute).
+  const doodleRef = useRef(doodle);
+  doodleRef.current = doodle;
+  const getSessionIdRef = useRef(getSessionId);
+  getSessionIdRef.current = getSessionId;
 
   const size = Math.max(36, Math.min(72, doodle.size ?? 48));
   const pos = doodle.position ?? 'bottom-right';
@@ -187,7 +193,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
           if (document.hidden || messageRef.current) return;
           el.dataset.doodleTalked = '1';
           seen.add(key);
-          const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+          const pool = doodleRef.current.texts?.product?.length ? doodleRef.current.texts.product : PRODUCT_LINES;
           say(pickOf(pool).replace('%s', title), `Ei product ta niye aro jante chai: ${title}`);
         }, 2000);
       }
@@ -203,7 +209,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       window.clearInterval(attachIv);
       observer.disconnect();
     };
-  }, [enabled, say, doodle.texts?.product]);
+  }, [enabled, say]);
 
   /* ── Pre-generated blurbs cache (instant hover) ──────────────── */
   const briefsRef = useRef<Map<string, string>>(new Map());
@@ -241,12 +247,12 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
     let cartStale = 0;
 
     const load = async () => {
-      const sid = getSessionId?.() ?? '';
-      try {
-        const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
-          headers: { Accept: 'application/json' },
-          credentials: 'include',
-        });
+      const sid = getSessionIdRef.current?.() ?? '';
+    try {
+      const res = await fetch(`${apiUrl}/${routePrefix}/piku-suggestions?limit=6${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
+        headers: { Accept: 'application/json' },
+        credentials: 'include',
+      });
         if (!res.ok) return;
         const json = await res.json();
         items = Array.isArray(json?.data) ? json.data : [];
@@ -288,8 +294,8 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       if (!greetedScreen && Math.random() < 0.85) {
         greetedScreen = true;
         say(pickOf(GENERAL_LINES));
-      } else if (doodle.speakIdle && Math.random() < (doodle.talkChance ?? 0.3)) {
-        say(pickOf(doodle.texts?.general?.length ? doodle.texts.general : GENERAL_LINES));
+      } else if (doodleRef.current.speakIdle && Math.random() < (doodleRef.current.talkChance ?? 0.3)) {
+        say(pickOf(doodleRef.current.texts?.general?.length ? doodleRef.current.texts.general : GENERAL_LINES));
       }
     }, 12000);
 
@@ -299,7 +305,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       window.clearInterval(speakIv);
       window.removeEventListener('popstate', onNav);
     };
-  }, [enabled, apiUrl, routePrefix, getSessionId, lang, say, fetchBriefs]);
+  }, [enabled, apiUrl, routePrefix, say, fetchBriefs]);
 
   /* ── Hover dwell (600ms) → instant cached line ───────────────── */
   useEffect(() => {
@@ -338,7 +344,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       window.clearTimeout(dwell);
       dwell = window.setTimeout(() => {
         if (document.hidden || messageRef.current) return;
-        const pool = doodle.texts?.product?.length ? doodle.texts.product : PRODUCT_LINES;
+        const pool = doodleRef.current.texts?.product?.length ? doodleRef.current.texts.product : PRODUCT_LINES;
         if (hit.kind === 'p') {
           const pidKey = hit.key.replace(/^p:/, '');
           const cached = briefsRef.current.get(pidKey);
@@ -359,7 +365,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
       window.removeEventListener('pointerleave', onOut);
       window.clearTimeout(dwell);
     };
-  }, [enabled, say, dpsTextDeps(doodle)]);
+  }, [enabled, say]);
 
   if (!enabled || chatOpen) return null;
 
