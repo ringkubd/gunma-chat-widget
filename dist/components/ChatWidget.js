@@ -126,7 +126,7 @@ export function ChatWidget(config) {
     const brandColor = config.brandColor || '#2AB191';
     const brandName = config.brandName || 'Piku';
     const welcomeMessage = config.welcomeMessage || 'Hello, this is Piku from Gunma Halal Food Customer Support. How may I assist you today?';
-    const theme = config.theme || 'auto';
+    const theme = config.theme || 'light';
     const themeClass = theme === 'dark' ? 'gunma-theme-dark' : theme === 'light' ? 'gunma-theme-light' : 'gunma-theme-auto';
     const strings = getStrings(config.locale);
     const positionStyle = {
