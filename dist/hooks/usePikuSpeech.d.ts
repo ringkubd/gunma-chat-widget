@@ -12,6 +12,8 @@ interface UsePikuSpeechOpts {
     routePrefix?: string;
     lang?: string;
     getSessionId?: () => string | null;
+    getToken?: () => string | null;
+    getVisitorId?: () => string | null;
 }
 export declare function usePikuSpeech(opts: UsePikuSpeechOpts): {
     readonly message: string | null;

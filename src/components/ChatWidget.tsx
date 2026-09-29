@@ -192,6 +192,13 @@ export function ChatWidget(config: ChatWidgetConfig) {
     routePrefix: config.routes?.prefix ?? 'api/chat',
     lang: config.locale,
     getSessionId,
+    getToken: config.getToken,
+    getVisitorId: () => {
+      try {
+        const key = config.storage?.visitorIdKey;
+        return key ? localStorage.getItem(key) : null;
+      } catch { return null; }
+    },
   });
 
   // Live page heartbeat so Piku knows what the customer is viewing.

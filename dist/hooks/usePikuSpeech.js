@@ -25,6 +25,23 @@ export function usePikuSpeech(opts) {
     const startDelay = opts.startDelayMs ?? 2500;
     const minGap = Math.max(8000, opts.minGapMs ?? 45000);
     const routePrefix = opts.routePrefix ?? 'api/chat';
+    const getTokenRef = useRef(opts.getToken);
+    getTokenRef.current = opts.getToken;
+    const getVisitorIdRef = useRef(opts.getVisitorId);
+    getVisitorIdRef.current = opts.getVisitorId;
+    const buildPikuHeaders = () => {
+        const headers = { Accept: 'application/json' };
+        try {
+            const token = getTokenRef.current?.() ?? null;
+            if (token)
+                headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+            const vid = getVisitorIdRef.current?.() ?? null;
+            if (vid)
+                headers['X-Visitor-Id'] = vid;
+        }
+        catch { /* host errors never break Piku */ }
+        return headers;
+    };
     const lang = opts.lang;
     const [message, setMessage] = useState(null);
     const [chips, setChips] = useState([]);
@@ -128,7 +145,7 @@ export function usePikuSpeech(opts) {
             const sid = getSessionIdRef.current?.() ?? '';
             try {
                 const res = await fetch(`${optsRef.current.apiUrl}/${routePrefix}/piku-messages?limit=8${sid ? `&session_id=${encodeURIComponent(sid)}` : ''}${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`, {
-                    headers: { Accept: 'application/json' },
+                    headers: buildPikuHeaders(),
                     credentials: 'include',
                 });
                 if (!res.ok)
