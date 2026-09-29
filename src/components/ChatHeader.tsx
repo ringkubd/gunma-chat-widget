@@ -14,6 +14,8 @@ interface ChatHeaderProps {
   onCartClick?: () => void;
   /** Number of items in the cart (shows a badge when > 0). */
   cartCount?: number;
+  /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
+  avatarUrl?: string;
   /** UI strings (i18n). */
   strings?: {
     online: string;
@@ -33,6 +35,7 @@ export function ChatHeader({
   isConnected = true,
   onCartClick,
   cartCount = 0,
+  avatarUrl,
   strings,
 }: ChatHeaderProps) {
   const s = strings ?? {
@@ -46,10 +49,14 @@ export function ChatHeader({
     <div className="gunma-header" style={{ background: `linear-gradient(135deg, ${brandColor}, ${adjustColor(brandColor, -30)})` }}>
       <div className="gunma-header-info">
         {/* Avatar */}
-        <div className="gunma-header-avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-          </svg>
+        <div className="gunma-header-avatar gunma-avatar-round">
+          {avatarUrl ? (
+            <img className="gunma-avatar-img" src={avatarUrl} alt={brandName} />
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+            </svg>
+          )}
         </div>
         <div>
           <h3 className="gunma-header-title">{brandName}</h3>

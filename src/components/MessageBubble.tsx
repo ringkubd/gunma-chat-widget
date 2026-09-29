@@ -11,16 +11,22 @@ interface MessageBubbleProps {
   websiteUrl: string;
   /** Currency symbol for product cards. Default: '¥'. */
   currencySymbol?: string;
+  /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
+  avatarUrl?: string;
 }
 
-export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false }: MessageBubbleProps & { retireCartCtas?: boolean }) {
+export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false, avatarUrl }: MessageBubbleProps & { retireCartCtas?: boolean }) {
   const isUser = message.role === 'user';
 
   return (
     <div className={`gunma-msg ${isUser ? 'gunma-msg--user' : 'gunma-msg--assistant'}`}>
       {!isUser && (
-        <div className="gunma-msg-avatar gunma-msg-avatar--piku" style={{ backgroundColor: `${brandColor}14` }}>
-          <PikuRobotArt blink={false} talking={false} />
+        <div className="gunma-msg-avatar gunma-msg-avatar--piku gunma-avatar-round" style={{ backgroundColor: `${brandColor}14` }}>
+          {avatarUrl ? (
+            <img className="gunma-avatar-img" src={avatarUrl} alt="Piku" loading="lazy" />
+          ) : (
+            <PikuRobotArt blink={false} talking={false} />
+          )}
         </div>
       )}
       <div

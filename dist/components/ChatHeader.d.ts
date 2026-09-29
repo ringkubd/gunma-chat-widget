@@ -10,6 +10,8 @@ interface ChatHeaderProps {
     onCartClick?: () => void;
     /** Number of items in the cart (shows a badge when > 0). */
     cartCount?: number;
+    /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
+    avatarUrl?: string;
     /** UI strings (i18n). */
     strings?: {
         online: string;
@@ -19,5 +21,5 @@ interface ChatHeaderProps {
         cart: string;
     };
 }
-export declare function ChatHeader({ brandName, brandColor, onClose, onCloseWidget, onEndChat, isConnected, onCartClick, cartCount, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
+export declare function ChatHeader({ brandName, brandColor, onClose, onCloseWidget, onEndChat, isConnected, onCartClick, cartCount, avatarUrl, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
 export {};

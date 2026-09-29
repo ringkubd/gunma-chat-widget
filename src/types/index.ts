@@ -47,6 +47,13 @@ export interface ChatWidgetConfig {
   /** UI locale. Agent replies follow the customer's own language. Default: 'en' */
   locale?: 'en' | 'bn' | 'ja';
   brandName?: string;
+  /**
+   * Piku's profile picture URL (e.g. 'https://store.com/piku-avatar.png').
+   * When set, it is shown in the chat header, the welcome card and the
+   * assistant message avatars. When omitted, the built-in animated Piku
+   * robot art is used (no regression for existing hosts).
+   */
+  avatarUrl?: string;
   brandColor?: string;
   welcomeMessage?: string;
   visitorId?: string;

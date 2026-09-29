@@ -2,9 +2,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { escapeAttr, escapeHtml, sanitizeHtml } from '../lib/sanitize';
 import { PikuRobotArt } from './PikuRobotArt';
-export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false }) {
+export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false, avatarUrl }) {
     const isUser = message.role === 'user';
-    return (_jsxs("div", { className: `gunma-msg ${isUser ? 'gunma-msg--user' : 'gunma-msg--assistant'}`, children: [!isUser && (_jsx("div", { className: "gunma-msg-avatar gunma-msg-avatar--piku", style: { backgroundColor: `${brandColor}14` }, children: _jsx(PikuRobotArt, { blink: false, talking: false }) })), _jsxs("div", { className: `gunma-msg-bubble ${isUser ? 'gunma-msg-bubble--user' : 'gunma-msg-bubble--assistant'}`, style: isUser ? { backgroundColor: brandColor } : undefined, children: [_jsx("div", { className: "gunma-msg-content", suppressHydrationWarning: true, dangerouslySetInnerHTML: { __html: renderMarkdown(message.content, websiteUrl, currencySymbol, retireCartCtas) } }), _jsx("span", { className: "gunma-msg-time", children: formatTime(message.created_at) })] })] }));
+    return (_jsxs("div", { className: `gunma-msg ${isUser ? 'gunma-msg--user' : 'gunma-msg--assistant'}`, children: [!isUser && (_jsx("div", { className: "gunma-msg-avatar gunma-msg-avatar--piku gunma-avatar-round", style: { backgroundColor: `${brandColor}14` }, children: avatarUrl ? (_jsx("img", { className: "gunma-avatar-img", src: avatarUrl, alt: "Piku", loading: "lazy" })) : (_jsx(PikuRobotArt, { blink: false, talking: false })) })), _jsxs("div", { className: `gunma-msg-bubble ${isUser ? 'gunma-msg-bubble--user' : 'gunma-msg-bubble--assistant'}`, style: isUser ? { backgroundColor: brandColor } : undefined, children: [_jsx("div", { className: "gunma-msg-content", suppressHydrationWarning: true, dangerouslySetInnerHTML: { __html: renderMarkdown(message.content, websiteUrl, currencySymbol, retireCartCtas) } }), _jsx("span", { className: "gunma-msg-time", children: formatTime(message.created_at) })] })] }));
 }
 function renderMarkdown(text, websiteUrl, currencySymbol, retireCartCtas = false) {
     if (!text)

@@ -1643,3 +1643,14 @@
   overflow: visible;
 }
 .gunma-welcome-icon--piku { border-radius: 50%; }
+
+/* ── Piku profile photo (config.avatarUrl) in round avatars ── */
+.gunma-avatar-round { overflow: hidden; }
+.gunma-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+.gunma-header-avatar .gunma-avatar-img { border-radius: 50%; }

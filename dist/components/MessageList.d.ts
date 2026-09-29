@@ -6,8 +6,11 @@ interface MessageListProps {
     websiteUrl: string;
     /** Currency symbol shown on product cards. Default: '¥'. */
     currencySymbol?: string;
+    /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
+    avatarUrl?: string;
 }
-export declare function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol, retireCartCtas }: MessageListProps & {
+export declare function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol, retireCartCtas, avatarUrl }: MessageListProps & {
     retireCartCtas?: boolean;
+    avatarUrl?: string;
 }): import("react/jsx-runtime").JSX.Element;
 export {};

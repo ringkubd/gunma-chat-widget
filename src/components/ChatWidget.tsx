@@ -378,6 +378,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
             isConnected={isConnected}
             onCartClick={commerce.enabled ? () => setShowCommerce((v) => !v) : undefined}
             cartCount={commerce.enabled ? commerce.cart.length : 0}
+            avatarUrl={config.avatarUrl}
             strings={strings}
           />
 
@@ -402,6 +403,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
                   websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
                   currencySymbol={config.commerce?.currencySymbol ?? '¥'}
                   retireCartCtas={orderJustPlaced}
+                  avatarUrl={config.avatarUrl}
                 />
               </div>
 
