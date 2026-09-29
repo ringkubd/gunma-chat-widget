@@ -63,6 +63,16 @@ export function useCartActions(config) {
                 }),
             });
             if (res.ok) {
+                // Persist the guest identity the server used so cart reads match
+                // (critical in incognito where Set-Cookie on cross-origin fetch is ignored).
+                const body = await res.clone().json().catch(() => null);
+                const ck = typeof body?.cookie === 'string' ? body.cookie : null;
+                if (ck && cookieKey) {
+                    try {
+                        localStorage.setItem(cookieKey, ck);
+                    }
+                    catch { }
+                }
                 btn.innerHTML = '✓';
                 btn.style.backgroundColor = '#059669';
                 btn.style.color = '#fff';
@@ -108,6 +118,14 @@ export function useCartActions(config) {
                 }),
             });
             if (res.ok) {
+                const body = await res.clone().json().catch(() => null);
+                const ck = typeof body?.guest_cookie === 'string' ? body.guest_cookie : (typeof body?.cookie === 'string' ? body.cookie : null);
+                if (ck && cookieKey) {
+                    try {
+                        localStorage.setItem(cookieKey, ck);
+                    }
+                    catch { }
+                } // incognito শোধ
                 target.textContent = 'All Added ✓';
                 target.style.backgroundColor = '#059669';
                 target.style.color = '#fff';

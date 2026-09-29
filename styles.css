@@ -1559,3 +1559,27 @@
   0% { transform: translateY(0) rotate(4deg) }
   100% { transform: translateY(-7px) rotate(-4deg) }
 }
+
+/* ═══ Site-theme polish: brand teal header, soft cards, teal chips ═══ */
+.gunma-chat-header,
+.gunma-panel-header,
+.gunma-chat-panel .chat-header {
+  background: linear-gradient(135deg, #0da487, #15af90) !important;
+}
+.gunma-chat-header button,
+.gunma-panel-header button { color: #fff !important; }
+.gunma-message.agent .gunma-msg-bubble,
+.gunma-msg.agent { background: #f2fbf8; border: 1px solid #d9efe9; color: #2d3748; }
+.gunma-message.user .gunma-msg-bubble,
+.gunma-msg.user { background: #0da487; color: #fff; }
+.gunma-chip, .gunma-quick-chip {
+  border: 1px solid #bfe6dc !important; color: #0b8a75 !important;
+  background: #f4fbf9 !important;
+}
+.gunma-chip:hover, .gunma-quick-chip:hover { background: #0da487 !important; color: #fff !important; border-color: #0da487 !important; }
+.gunma-input input:focus, .gunma-input:focus-within { border-color: #0da487 !important; box-shadow: 0 0 0 2px rgba(13,164,135,.12); }
+.gunma-bulk-cart-btn, .gunma-add-to-cart-btn {
+  background: #0da487 !important; color: #fff !important; border-radius: 10px !important;
+}
+.gunma-speaker, .gunma-typing-dot { color: #0da487; }
+.gunma-send-btn { background: #0da487 !important; }
