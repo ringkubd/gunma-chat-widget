@@ -97,6 +97,19 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
     return () => { window.clearTimeout(t); window.clearInterval(iv); };
   }, [isOpen]);
 
+  // Chat open হলে (x) সবসময় fixed bottom-right-এ — আগের কোনো স্থানাঙ্ক
+  // leftover থাকলে সাথে সাথে snap করে দাও (transition ছাড়া)।
+  useEffect(() => {
+    const hold = holdRef.current;
+    if (!hold) return;
+    if (isOpen) {
+      hold.style.transition = 'none';
+      hold.style.transform = 'translate3d(0,0,0)';
+    } else {
+      hold.style.transition = '';
+    }
+  }, [isOpen]);
+
   return (
     <div
       ref={holdRef}
