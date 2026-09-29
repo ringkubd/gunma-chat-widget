@@ -2,6 +2,8 @@ interface ChatHeaderProps {
     brandName: string;
     brandColor: string;
     onClose: () => void;
+    /** Fully hide the widget (leaves a small reopen tab). */
+    onCloseWidget?: () => void;
     onEndChat: () => void;
     isConnected?: boolean;
     /** When provided, shows a cart button that opens the commerce panel. */
@@ -17,5 +19,5 @@ interface ChatHeaderProps {
         cart: string;
     };
 }
-export declare function ChatHeader({ brandName, brandColor, onClose, onEndChat, isConnected, onCartClick, cartCount, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
+export declare function ChatHeader({ brandName, brandColor, onClose, onCloseWidget, onEndChat, isConnected, onCartClick, cartCount, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
 export {};

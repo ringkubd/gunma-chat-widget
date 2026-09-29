@@ -1584,3 +1584,28 @@
 .gunma-speaker, .gunma-typing-dot { color: #0da487; }
 .gunma-send-btn { background: #0da487 !important; }
 .gunma-ordered-note { display:inline-block; padding:6px 10px; border-radius:9px; background:#eefaf6; color:#0b8a75; font-size:12px; font-weight:600; }
+
+/* ── Piku widget: draggable cursor, header close, reopen tab ── */
+.gunma-bubble:not(.gunma-bubble--open) { cursor: grab; touch-action: none; }
+.gunma-bubble:not(.gunma-bubble--open):active { cursor: grabbing; }
+.gunma-header-close:hover { background: rgba(255,255,255,.28) !important; }
+
+.gunma-reopen-tab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 99999;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px 8px 10px; border-radius: 999px;
+  border: 1.5px solid rgba(13,164,135,.45);
+  background: linear-gradient(135deg, #ffffff, #f2fbf8);
+  color: #0b8a75; font-size: 13px; font-weight: 700; font-family: inherit;
+  box-shadow: 0 10px 26px rgba(13,164,135,.28), 0 2px 6px rgba(0,0,0,.10);
+  cursor: pointer; transition: transform .15s ease, box-shadow .15s ease;
+  animation: gunmaSlideUp .24s cubic-bezier(.34,1.56,.64,1);
+}
+.gunma-reopen-tab:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(13,164,135,.34); }
+.gunma-reopen-face { display: inline-flex; width: 26px; height: 26px; color: #0da487; }
+.gunma-reopen-face svg { width: 100%; height: 100%; }
+.gunma-reopen-label { letter-spacing: .2px; }
+@media (max-width: 480px) {
+  .gunma-reopen-label { display: none; }
+  .gunma-reopen-tab { padding: 8px; }
+}

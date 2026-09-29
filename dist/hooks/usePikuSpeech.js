@@ -193,8 +193,14 @@ export function usePikuSpeech(opts) {
             prefillRef.current = m.chips?.[0]?.prefill ?? undefined;
             setChips(m.chips ?? []);
             setMessage(m.text);
-            window.setTimeout(() => { if (messageRef.current === m.text)
-                setChips([]); }, 9000);
+            // Speak → show → clear. Without this clear the first message sticks
+            // forever and messageRef blocks every later line (doodle goes silent).
+            window.setTimeout(() => {
+                if (messageRef.current === m.text) {
+                    setMessage(null);
+                    setChips([]);
+                }
+            }, 12000);
         };
         // mark type shown (helper split for clarity)
         function sessionMark(_m) { markShown(_m.type); }

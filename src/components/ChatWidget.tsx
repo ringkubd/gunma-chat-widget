@@ -59,6 +59,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
   });
   const [lastMessage, setLastMessage] = useState('');
   const [showCommerce, setShowCommerce] = useState(false);
+  // Fully hidden (reopen tab shown) vs minimized (Piku bubble stays).
+  const [widgetClosed, setWidgetClosed] = useState(false);
 
   const commerce = useCommerce(config, {
     onCartChanged: () => {
@@ -249,7 +251,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   return (
     <div style={positionStyle} className={`gunma-chat-root ${themeClass}`}>
       {/* Floating Chat Panel (master widget gate) */}
-      {widgetEnabled && isOpen && (
+      {widgetEnabled && isOpen && !widgetClosed && (
         <div
           className="gunma-chat-panel"
           style={{ '--gunma-brand': brandColor } as React.CSSProperties}
@@ -258,6 +260,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
             brandName={brandName}
             brandColor={brandColor}
             onClose={toggle}
+            onCloseWidget={() => setWidgetClosed(true)}
             onEndChat={endChat}
             isConnected={isConnected}
             onCartClick={commerce.enabled ? () => setShowCommerce((v) => !v) : undefined}
@@ -338,7 +341,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
       )}
 
       {/* Floating Bubble Button (master widget gate) */}
-      {widgetEnabled && (
+      {widgetEnabled && !widgetClosed && (
         <ChatBubble
           isOpen={isOpen}
           onClick={toggle}
@@ -349,6 +352,28 @@ export function ChatWidget(config: ChatWidgetConfig) {
           onChipClick={openWithPrefill}
           variant={config.doodle?.variant ?? 'robot'}
         />
+      )}
+
+      {/* Reopen tab — appears only when the widget is fully closed */}
+      {widgetEnabled && widgetClosed && (
+        <button
+          className="gunma-reopen-tab"
+          onClick={() => { setWidgetClosed(false); if (!isOpen) toggle(); }}
+          aria-label="Reopen Piku chat"
+          title="Open Piku chat"
+          style={{ '--gunma-brand': brandColor } as React.CSSProperties}
+        >
+          <span className="gunma-reopen-face" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <rect x="4" y="7" width="16" height="12" rx="5" />
+              <circle cx="9.5" cy="13" r="1.6" fill="currentColor" stroke="none" />
+              <circle cx="14.5" cy="13" r="1.6" fill="currentColor" stroke="none" />
+              <path d="M10 16.5c1.2.9 2.8.9 4 0" />
+              <path d="M12 3v3M9 4.2 10.4 6M15 4.2 13.6 6" />
+            </svg>
+          </span>
+          <span className="gunma-reopen-label">Piku</span>
+        </button>
       )}
     </div>
   );

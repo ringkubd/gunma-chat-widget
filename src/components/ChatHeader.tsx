@@ -6,6 +6,8 @@ interface ChatHeaderProps {
   brandName: string;
   brandColor: string;
   onClose: () => void;
+  /** Fully hide the widget (leaves a small reopen tab). */
+  onCloseWidget?: () => void;
   onEndChat: () => void;
   isConnected?: boolean;
   /** When provided, shows a cart button that opens the commerce panel. */
@@ -26,6 +28,7 @@ export function ChatHeader({
   brandName,
   brandColor,
   onClose,
+  onCloseWidget,
   onEndChat,
   isConnected = true,
   onCartClick,
@@ -84,7 +87,7 @@ export function ChatHeader({
             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
           </svg>
         </button>
-        {/* Close Button */}
+        {/* Minimize Button */}
         <button
           className="gunma-header-btn"
           onClick={onClose}
@@ -95,6 +98,20 @@ export function ChatHeader({
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
         </button>
+        {/* Close Widget Button (hides everything → reopen tab) */}
+        {onCloseWidget && (
+          <button
+            className="gunma-header-btn gunma-header-close"
+            onClick={onCloseWidget}
+            title="Close"
+            aria-label="Close widget"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

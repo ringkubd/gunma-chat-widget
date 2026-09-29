@@ -20,6 +20,59 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
   const [speakingJump, setSpeakingJump] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const holdRef = useRef<HTMLDivElement | null>(null);
+  // Drag-to-move: offset from the fixed bottom-right anchor (negative = left/up).
+  const posRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number; moved: boolean } | null>(null);
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('pk_pos');
+      const p = raw ? JSON.parse(raw) : null;
+      if (p && typeof p.x === 'number' && typeof p.y === 'number') {
+        posRef.current = { x: p.x, y: p.y };
+        if (holdRef.current) holdRef.current.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const clampPos = (x: number, y: number) => ({
+    x: Math.min(0, Math.max(-(window.innerWidth - 90), x)),
+    y: Math.min(0, Math.max(-(window.innerHeight - 220), y)),
+  });
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (isOpen) return;
+    dragRef.current = { sx: e.clientX, sy: e.clientY, ox: posRef.current.x, oy: posRef.current.y, moved: false };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.sx;
+    const dy = e.clientY - d.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 5) d.moved = true;
+    if (!d.moved) return;
+    const next = clampPos(d.ox + dx, d.oy + dy);
+    posRef.current = next;
+    if (holdRef.current) {
+      holdRef.current.style.transition = 'none';
+      holdRef.current.style.transform = `translate3d(${next.x}px, ${next.y}px, 0)`;
+    }
+  };
+
+  const onPointerUp = () => {
+    const d = dragRef.current;
+    if (!d) return;
+    dragRef.current = null;
+    if (holdRef.current) holdRef.current.style.transition = '';
+    if (d.moved) {
+      suppressClickRef.current = true;
+      try { localStorage.setItem('pk_pos', JSON.stringify(posRef.current)); } catch { /* ignore */ }
+      window.setTimeout(() => { suppressClickRef.current = false; }, 300);
+    }
+  };
 
   useEffect(() => {
     const iv = window.setInterval(() => {
@@ -143,7 +196,11 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
 
       <button
         className={`gunma-bubble ${isOpen ? 'gunma-bubble--open pk-robot-wrap' : 'pk-robot-wrap'}`}
-        onClick={onClick}
+        onClick={() => { if (!suppressClickRef.current) onClick(); }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
         style={{ backgroundColor: isOpen ? brandColor : 'transparent' }}
       >
