@@ -156,26 +156,53 @@ export function usePikuBrain(opts) {
         show(line);
     }, [lang, show]);
     /* ── Compose (LLM, best-quality path) ────────────────────── */
+    // Single-flight per key: never fire two identical composes in parallel, and
+    // reuse a recently composed line without another round-trip.
+    const composeCacheRef = useRef(new Map());
+    const composeInflightRef = useRef(new Map());
     const compose = useCallback(async (signal, context) => {
         const api = optsRef.current.apiUrl;
         if (!api)
             return null;
-        try {
-            const res = await fetch(`${api}/${routePrefix}/piku-compose`, {
-                method: 'POST',
-                headers: headers(),
-                credentials: 'include',
-                body: JSON.stringify({ signal, context, lang }),
-            });
-            if (!res.ok)
+        const key = `${signal.type}:${context.product_id ?? ''}:${context.keyword ?? ''}:${lang}`;
+        const cached = composeCacheRef.current.get(key);
+        if (cached)
+            return cached;
+        const inflight = composeInflightRef.current.get(key);
+        if (inflight)
+            return inflight;
+        const run = (async () => {
+            try {
+                const res = await fetch(`${api}/${routePrefix}/piku-compose`, {
+                    method: 'POST',
+                    headers: headers(),
+                    credentials: 'include',
+                    body: JSON.stringify({ signal, context, lang }),
+                });
+                if (!res.ok)
+                    return null;
+                const json = await res.json();
+                const text = typeof json?.text === 'string' ? json.text.trim() : '';
+                if (text) {
+                    composeCacheRef.current.set(key, text);
+                    // cap the client cache
+                    if (composeCacheRef.current.size > 40) {
+                        const first = composeCacheRef.current.keys().next().value;
+                        if (first)
+                            composeCacheRef.current.delete(first);
+                    }
+                }
+                return text || null;
+            }
+            catch {
                 return null;
-            const json = await res.json();
-            const text = typeof json?.text === 'string' ? json.text.trim() : '';
-            return text || null;
-        }
-        catch {
-            return null;
-        }
+            }
+            finally {
+                composeInflightRef.current.delete(key);
+            }
+        })();
+        composeInflightRef.current.set(key, run);
+        return run;
     }, [headers, routePrefix, lang]);
     /* ── Decision: should we speak for this signal, and what? ─── */
     const pendingRef = useRef(null);
@@ -191,17 +218,19 @@ export function usePikuBrain(opts) {
                 pendingRef.current = signal;
             return;
         }
-        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches && signal.type === 'engagement')
-            return;
         const now = Date.now();
-        // budget dynamics
+        // budget + engagement tracking
         if (signal.type === 'engagement') {
             s.state = signal.state || 'browsing';
-            if (signal.state === 'idle')
-                s.budget = Math.max(0, s.budget - 0.15);
-            else
+            if (signal.state === 'idle') {
+                s.budget = Math.max(0.5, s.budget - 0.15);
+                // Entered idle → this is our chance for a soft, non-nagging tip.
+                // Fall through to the normal tip logic below.
+            }
+            else {
                 s.budget = Math.min(maxBudget, s.budget + 0.1);
-            return;
+                return;
+            }
         }
         if (signal.type === 'navigation' || signal.type === 'product_focus' || signal.type === 'product_hover' || signal.type === 'intent') {
             s.budget = Math.min(maxBudget, s.budget + 1); // engagement replenishes
@@ -216,7 +245,7 @@ export function usePikuBrain(opts) {
             reason = 'search_intent';
         else if (signal.type === 'intent')
             reason = 'tip';
-        else if (signal.type === 'navigation' || signal.type === 'page_dwell' || signal.type === 'return_visit')
+        else if (signal.type === 'navigation' || signal.type === 'page_dwell' || signal.type === 'return_visit' || signal.type === 'engagement')
             reason = 'tip';
         const cd = COOLDOWN[reason] ?? COOLDOWN.tip;
         if ((now - (s.lastSpokenAt[reason] ?? 0)) < cd) {

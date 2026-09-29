@@ -216,7 +216,10 @@ export function ChatWidget(config) {
                 .catch(() => { });
         };
         load();
-        const iv = window.setInterval(load, 8000);
+        // Feature flags rarely change — poll slowly (30s) instead of every 8s to
+        // keep concurrent HTTP load flat; refresh immediately on tab return.
+        const iv = window.setInterval(() => { if (!document.hidden)
+            load(); }, 30000);
         const onVis = () => { if (!document.hidden)
             load(); };
         document.addEventListener('visibilitychange', onVis);

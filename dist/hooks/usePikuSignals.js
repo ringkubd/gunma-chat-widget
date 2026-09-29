@@ -69,6 +69,7 @@ export function usePikuSignals(config, onSignal, enabled = true) {
             onInput();
             deepSince = 0; // any scroll activity resets "deep reading" until it slows
         };
+        let lastDwellTick = 0;
         const evaluate = () => {
             if (document.hidden) {
                 setState('away');
@@ -80,6 +81,7 @@ export function usePikuSignals(config, onSignal, enabled = true) {
             const sinceInput = now - lastInput;
             if (sinceInput >= IDLE_AFTER_MS) {
                 setState('idle');
+                checkFocus();
                 return;
             }
             if (sinceInput >= DEEP_AFTER_MS && now - pageSince >= DEEP_AFTER_MS) {
@@ -89,9 +91,11 @@ export function usePikuSignals(config, onSignal, enabled = true) {
             else if (currentState !== 'browsing') {
                 setState('browsing');
             }
-            // page dwell pulse
+            checkFocus();
+            // page dwell pulse (every DWELL_TICK_MS, based on elapsed, not modulo)
             const dwell = Math.round((now - pageSince) / 1000);
-            if (dwell > 0 && dwell % Math.round(DWELL_TICK_MS / 1000) === 0) {
+            if (dwell > 0 && (now - lastDwellTick) >= DWELL_TICK_MS) {
+                lastDwellTick = now;
                 emitRef.current({ type: 'page_dwell', at: now, dwellSeconds: dwell, url: currentUrl() });
             }
         };
@@ -118,29 +122,44 @@ export function usePikuSignals(config, onSignal, enabled = true) {
                 window.setTimeout(onNav, 30);
             };
         }
-        /* ── Product focus (IntersectionObserver) ─────────────────── */
+        /* ── Product focus (IntersectionObserver + dwell tick) ────── */
+        // IO only fires when the ratio CROSSES a threshold, so we track which
+        // cards are intersecting and let a 1s tick emit once each has dwelled.
         const seenFocus = new Set();
         const visibleSince = new Map();
+        const intersecting = new Set();
+        const checkFocus = () => {
+            if (document.hidden)
+                return;
+            const now = Date.now();
+            intersecting.forEach((el) => {
+                const since = visibleSince.get(el) ?? now;
+                if (now - since < 1500)
+                    return;
+                const p = readProduct(el);
+                const key = `${p.id ?? ''}:${p.title ?? ''}`;
+                if (key === ':' || seenFocus.has(key))
+                    return;
+                seenFocus.add(key);
+                emitRef.current({
+                    type: 'product_focus', at: now,
+                    productId: p.id, productTitle: p.title,
+                    dwellSeconds: Math.round((now - since) / 1000),
+                    url: currentUrl(),
+                });
+            });
+        };
         const io = 'IntersectionObserver' in window
             ? new IntersectionObserver((entries) => {
                 for (const e of entries) {
-                    if (!e.isIntersecting || e.intersectionRatio < 0.5) {
-                        visibleSince.delete(e.target);
-                        continue;
+                    if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+                        if (!visibleSince.has(e.target))
+                            visibleSince.set(e.target, Date.now());
+                        intersecting.add(e.target);
                     }
-                    if (!visibleSince.has(e.target))
-                        visibleSince.set(e.target, Date.now());
-                    const since = visibleSince.get(e.target);
-                    const key = `${readProduct(e.target).id ?? ''}:${readProduct(e.target).title ?? ''}`;
-                    if (Date.now() - since >= 1500 && key !== ':' && !seenFocus.has(key)) {
-                        seenFocus.add(key);
-                        const p = readProduct(e.target);
-                        emitRef.current({
-                            type: 'product_focus', at: Date.now(),
-                            productId: p.id, productTitle: p.title,
-                            dwellSeconds: Math.round((Date.now() - since) / 1000),
-                            url: currentUrl(),
-                        });
+                    else {
+                        intersecting.delete(e.target);
+                        visibleSince.delete(e.target);
                     }
                 }
             }, { threshold: [0, 0.5, 0.75] })
