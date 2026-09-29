@@ -382,13 +382,14 @@ export function useChat(config) {
                         if (ok && CART_TOOLS.includes(toolName0)) {
                             pikuBus.emit('cart-changed', { tool: toolName0 });
                         }
-                        if (ok && resultData.action === 'open_checkout') {
-                            if (toolName0 === 'add_item_to_cart' || toolName0 === 'bulk_add_to_cart') {
-                                pikuBus.emit('cart-added', { message: resultData.message ?? '' });
-                            }
-                            else if (toolName0 === 'update_pending_order') {
-                                pikuBus.emit('order-updated', { message: resultData.message ?? '' });
-                            }
+                        // Adding to the cart celebrates — whether or not checkout also
+                        // opened (add-to-cart no longer forces the checkout panel, so we
+                        // must emit here directly rather than only under open_checkout).
+                        if (ok && (toolName0 === 'add_item_to_cart' || toolName0 === 'bulk_add_to_cart')) {
+                            pikuBus.emit('cart-added', { message: resultData.message ?? '' });
+                        }
+                        else if (ok && toolName0 === 'update_pending_order') {
+                            pikuBus.emit('order-updated', { message: resultData.message ?? '' });
                         }
                     }
                     break;
