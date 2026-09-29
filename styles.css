@@ -1628,3 +1628,18 @@
 @media (prefers-reduced-motion: reduce) {
   .gunma-chat-root, .gunma-bubble-hold, .gunma-reopen-tab { transition: none; }
 }
+
+/* ── Piku avatar in assistant messages + welcome ── */
+.gunma-msg-avatar--piku,
+.gunma-welcome-icon--piku {
+  overflow: hidden;
+  border: 1px solid rgba(13, 164, 135, .18);
+}
+.gunma-msg-avatar--piku .gunma-chef-svg,
+.gunma-welcome-icon--piku .gunma-chef-svg {
+  width: 132%;
+  height: 132%;
+  margin: -16%;
+  overflow: visible;
+}
+.gunma-welcome-icon--piku { border-radius: 50%; }

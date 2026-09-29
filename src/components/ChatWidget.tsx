@@ -13,6 +13,7 @@ import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
 import * as pikuBus from '../lib/pikuBus';
+import { reportPikuEvent } from '../lib/pikuAnalytics';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
 import { usePikuBrain } from '../hooks/usePikuBrain';
 import { usePikuSignals } from '../hooks/usePikuSignals';
@@ -103,6 +104,11 @@ export function ChatWidget(config: ChatWidgetConfig) {
       void refreshCommerceCartRef.current?.();
       const oid = payload.order_id != null ? `#${payload.order_id}` : '';
       appendLocalMessageRef.current?.(`🎉 Order ${oid} successfully placed! Kitchen-e ekhuni recipe kaj shuru korese 🙂`);
+      // Attributed order → the business-impact metric.
+      reportPikuEvent(analyticsCfgRef.current, 'order_placed', {
+        order_id: payload.order_id ?? null,
+        value: payload.value ?? payload.total ?? null,
+      }, {}, `order_${payload.order_id ?? Date.now()}`);
     };
     return pikuBus.on('order-placed', handler);
   }, []);
@@ -120,11 +126,13 @@ export function ChatWidget(config: ChatWidgetConfig) {
       setShowCommerce(true);
       commerce.setStep('cart');
       void refreshCommerceCartRef.current?.();
+      reportPikuEvent(analyticsCfgRef.current, 'checkout_opened');
     };
     const openLogin = () => {
       openChatIfClosed();
       setShowCommerce(true);
       commerce.setStep('auth');
+      reportPikuEvent(analyticsCfgRef.current, 'login_opened');
     };
 
     // Register a direct bridge too — resilient to event timing/duplicate
@@ -162,9 +170,22 @@ export function ChatWidget(config: ChatWidgetConfig) {
       : { bottom: '24px', left: '24px' }),
   };
 
+  // Analytics reporter config (fire-and-forget business impact).
+  const analyticsCfg = {
+    apiUrl: config.apiUrl,
+    routePrefix: config.routes?.prefix ?? 'api/chat',
+    getSessionId,
+    getVisitorId: () => {
+      try { const k = config.storage?.visitorIdKey; return k ? localStorage.getItem(k) : null; } catch { return null; }
+    },
+  };
+  const analyticsCfgRef = React.useRef(analyticsCfg);
+  analyticsCfgRef.current = analyticsCfg;
+
   // Doodle direct-relation: widget toggle → doodle visibility events.
   React.useEffect(() => {
     pikuBus.emit(isOpen ? 'chat-opened' : 'chat-closed');
+    if (isOpen) reportPikuEvent(analyticsCfgRef.current, 'chat_opened', {}, {}, 'chat_opened');
   }, [isOpen]);
 
   // ── Avoid right-side host overlays (cart drawer etc.) ──────────────
@@ -271,6 +292,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
 
   // Doodle click with context → open chat and let Piku answer right away.
   const openWithPrefill = useCallback((prefill?: string) => {
+    reportPikuEvent(analyticsCfgRef.current, 'chip_click', { }, { prefill: prefill ?? null });
     toggle();
     if (prefill) {
       window.setTimeout(() => sendMessage(prefill), 600);

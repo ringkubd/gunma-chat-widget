@@ -400,7 +400,7 @@ export function useCommerce(config, opts = {}) {
                 setSuccessOrderId(orderId);
                 setSuccessDelivery({ date: deliveryDate ?? null, time: deliveryTime ?? null });
                 setStep('success');
-                pikuBus.emit('order-placed', { order_id: orderId ?? null });
+                pikuBus.emit('order-placed', { order_id: orderId ?? null, value: grandTotal ?? total ?? null });
                 opts.onCartChanged?.();
                 await refreshCart();
             }
