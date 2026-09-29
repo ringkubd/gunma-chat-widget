@@ -37,6 +37,7 @@ export function ChatWidget(config) {
     const [showCommerce, setShowCommerce] = useState(false);
     // Fully hidden (reopen tab shown) vs minimized (Piku bubble stays).
     const [widgetClosed, setWidgetClosed] = useState(false);
+    const rootRef = React.useRef(null);
     const commerce = useCommerce(config, {
         onCartChanged: () => {
             if (typeof window !== 'undefined') {
@@ -129,6 +130,62 @@ export function ChatWidget(config) {
     React.useEffect(() => {
         pikuBus.emit(isOpen ? 'chat-opened' : 'chat-closed');
     }, [isOpen]);
+    // ── Avoid right-side host overlays (cart drawer etc.) ──────────────
+    // The storefront Shopping Bag is an antd Drawer sliding in from the right;
+    // Piku floats above it (widget z-index > drawer). Watch the DOM and auto-move
+    // Piku left by the drawer's width so its Total / Checkout button stay clear.
+    // When a drawer covers most of a small screen, dim Piku instead of shifting.
+    const avoidOverlays = config.doodle?.avoidRightOverlays !== false;
+    React.useEffect(() => {
+        if (typeof window === 'undefined' || !avoidOverlays)
+            return;
+        const root = rootRef.current;
+        if (!root)
+            return;
+        const SEL = config.doodle?.overlaySelector || '.ant-drawer.ant-drawer-open.ant-drawer-right';
+        let raf = 0;
+        const apply = () => {
+            raf = 0;
+            const el = document.querySelector(SEL);
+            const wrapper = el?.querySelector('.ant-drawer-content-wrapper') || el;
+            if (!wrapper) {
+                root.style.setProperty('--gunma-avoid-x', '0px');
+                root.classList.remove('gunma-obscured');
+                return;
+            }
+            const rect = wrapper.getBoundingClientRect();
+            const vw = window.innerWidth;
+            const coversScreen = vw <= 768 && rect.width >= vw * 0.9;
+            if (coversScreen) {
+                // Drawer fills the screen → step aside entirely.
+                root.classList.add('gunma-obscured');
+                root.style.setProperty('--gunma-avoid-x', '0px');
+                return;
+            }
+            const shift = Math.min(Math.round(rect.width) + 16, Math.max(0, vw - 80));
+            root.classList.remove('gunma-obscured');
+            root.style.setProperty('--gunma-avoid-x', `${shift}px`);
+        };
+        const schedule = () => {
+            if (raf)
+                return;
+            raf = window.requestAnimationFrame(apply);
+        };
+        const observer = new MutationObserver(schedule);
+        observer.observe(document.body, {
+            childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'],
+        });
+        window.addEventListener('resize', schedule);
+        apply();
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', schedule);
+            if (raf)
+                window.cancelAnimationFrame(raf);
+            root.style.setProperty('--gunma-avoid-x', '0px');
+            root.classList.remove('gunma-obscured');
+        };
+    }, [avoidOverlays, config.doodle?.overlaySelector]);
     // Agent-settings gates (widget master switch + doodle). Polled so a dashboard
     // toggle takes effect on live pages without a reload.
     const [features, setFeatures] = React.useState({ widget: null, doodle: null });
@@ -212,7 +269,7 @@ export function ChatWidget(config) {
             sendMessage(lastMessage);
         }
     }, [lastMessage, sendMessage]);
-    return (_jsxs("div", { style: positionStyle, className: `gunma-chat-root ${themeClass}`, children: [widgetEnabled && isOpen && !widgetClosed && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onCloseWidget: () => setWidgetClosed(true), onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
+    return (_jsxs("div", { ref: rootRef, style: positionStyle, className: `gunma-chat-root ${themeClass} ${position === 'bottom-right' ? 'gunma-pos-right' : 'gunma-pos-left'}`, children: [widgetEnabled && isOpen && !widgetClosed && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onCloseWidget: () => setWidgetClosed(true), onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
                             setShowCommerce(false);
                             commerce.setStep('cart'); // next open shows the fresh (empty) cart
                         }, freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥', retireCartCtas: orderJustPlaced }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsx("div", { className: "gunma-commerce-muted", style: { padding: '12px 16px', textAlign: 'center' }, children: strings.sessionEndedLocked })) : (_jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder }))] }))] })), widgetEnabled && !widgetClosed && (_jsx(ChatBubble, { isOpen: isOpen, onClick: toggle, brandColor: brandColor, unreadCount: unreadCount, speech: pikuSpeech.message, chips: pikuSpeech.chips, onChipClick: openWithPrefill, variant: config.doodle?.variant ?? 'robot' })), widgetEnabled && widgetClosed && (_jsxs("button", { className: "gunma-reopen-tab", onClick: () => { setWidgetClosed(false); if (!isOpen)

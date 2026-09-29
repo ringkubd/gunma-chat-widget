@@ -1609,3 +1609,22 @@
   .gunma-reopen-label { display: none; }
   .gunma-reopen-tab { padding: 8px; }
 }
+
+/* ── Auto-avoid right-side host overlays (cart drawer etc.) ──
+   --gunma-avoid-x is set on .gunma-chat-root by the widget's overlay watcher.
+   The fixed bubble hold / reopen tab honour it so Piku slides clear of a
+   right drawer's footer (Total / Checkout). */
+.gunma-pos-right { right: calc(24px + var(--gunma-avoid-x, 0px)) !important; }
+.gunma-pos-right .gunma-bubble-hold { right: calc(24px + var(--gunma-avoid-x, 0px)); }
+.gunma-reopen-tab { right: calc(22px + var(--gunma-avoid-x, 0px)); }
+.gunma-chat-root, .gunma-bubble-hold, .gunma-reopen-tab {
+  transition: right .28s ease, opacity .2s ease;
+}
+.gunma-obscured .gunma-bubble-hold,
+.gunma-obscured .gunma-reopen-tab {
+  opacity: .35;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gunma-chat-root, .gunma-bubble-hold, .gunma-reopen-tab { transition: none; }
+}

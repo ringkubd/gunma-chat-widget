@@ -230,6 +230,17 @@ export interface ChatDoodleConfig {
     startDelayMs?: number;
     /** Min gap between bubbles (ms). Default 45000. */
     minGapMs?: number;
+    /**
+     * Auto-move the widget out of the way when a host overlay opens from the
+     * right (e.g. an antd cart drawer), so Piku never covers its Total/Checkout.
+     * Default true.
+     */
+    avoidRightOverlays?: boolean;
+    /**
+     * CSS selector for the right-side overlay to avoid.
+     * Default '.ant-drawer.ant-drawer-open.ant-drawer-right'.
+     */
+    overlaySelector?: string;
     texts?: {
         product?: string[];
         general?: string[];

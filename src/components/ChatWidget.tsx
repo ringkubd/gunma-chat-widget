@@ -61,6 +61,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   const [showCommerce, setShowCommerce] = useState(false);
   // Fully hidden (reopen tab shown) vs minimized (Piku bubble stays).
   const [widgetClosed, setWidgetClosed] = useState(false);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
 
   const commerce = useCommerce(config, {
     onCartChanged: () => {
@@ -164,6 +165,64 @@ export function ChatWidget(config: ChatWidgetConfig) {
     pikuBus.emit(isOpen ? 'chat-opened' : 'chat-closed');
   }, [isOpen]);
 
+  // ── Avoid right-side host overlays (cart drawer etc.) ──────────────
+  // The storefront Shopping Bag is an antd Drawer sliding in from the right;
+  // Piku floats above it (widget z-index > drawer). Watch the DOM and auto-move
+  // Piku left by the drawer's width so its Total / Checkout button stay clear.
+  // When a drawer covers most of a small screen, dim Piku instead of shifting.
+  const avoidOverlays = config.doodle?.avoidRightOverlays !== false;
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !avoidOverlays) return;
+    const root = rootRef.current;
+    if (!root) return;
+
+    const SEL = config.doodle?.overlaySelector || '.ant-drawer.ant-drawer-open.ant-drawer-right';
+    let raf = 0;
+
+    const apply = () => {
+      raf = 0;
+      const el = document.querySelector<HTMLElement>(SEL);
+      const wrapper = el?.querySelector<HTMLElement>('.ant-drawer-content-wrapper') || el;
+      if (!wrapper) {
+        root.style.setProperty('--gunma-avoid-x', '0px');
+        root.classList.remove('gunma-obscured');
+        return;
+      }
+      const rect = wrapper.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const coversScreen = vw <= 768 && rect.width >= vw * 0.9;
+      if (coversScreen) {
+        // Drawer fills the screen → step aside entirely.
+        root.classList.add('gunma-obscured');
+        root.style.setProperty('--gunma-avoid-x', '0px');
+        return;
+      }
+      const shift = Math.min(Math.round(rect.width) + 16, Math.max(0, vw - 80));
+      root.classList.remove('gunma-obscured');
+      root.style.setProperty('--gunma-avoid-x', `${shift}px`);
+    };
+
+    const schedule = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(apply);
+    };
+
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'],
+    });
+    window.addEventListener('resize', schedule);
+    apply();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', schedule);
+      if (raf) window.cancelAnimationFrame(raf);
+      root.style.setProperty('--gunma-avoid-x', '0px');
+      root.classList.remove('gunma-obscured');
+    };
+  }, [avoidOverlays, config.doodle?.overlaySelector]);
+
   // Agent-settings gates (widget master switch + doodle). Polled so a dashboard
   // toggle takes effect on live pages without a reload.
   const [features, setFeatures] = React.useState<{ widget: boolean | null; doodle: boolean | null }>(
@@ -249,7 +308,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   }, [lastMessage, sendMessage]);
 
   return (
-    <div style={positionStyle} className={`gunma-chat-root ${themeClass}`}>
+    <div ref={rootRef} style={positionStyle} className={`gunma-chat-root ${themeClass} ${position === 'bottom-right' ? 'gunma-pos-right' : 'gunma-pos-left'}`}>
       {/* Floating Chat Panel (master widget gate) */}
       {widgetEnabled && isOpen && !widgetClosed && (
         <div
