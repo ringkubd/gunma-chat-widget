@@ -376,6 +376,12 @@ export function useChat(config) {
                         // Doodle direct-relation: chat actions mirror to the chef.
                         const toolName0 = String(data.name || '');
                         const ok = resultData.status === 'success';
+                        // Any successful cart mutation keeps the host site's bag/cart
+                        // page in sync (they refetch on gunma-cart-changed).
+                        const CART_TOOLS = ['add_item_to_cart', 'bulk_add_to_cart', 'remove_item_from_cart', 'update_cart_quantity', 'clear_cart'];
+                        if (ok && CART_TOOLS.includes(toolName0)) {
+                            pikuBus.emit('cart-changed', { tool: toolName0 });
+                        }
                         if (ok && resultData.action === 'open_checkout') {
                             if (toolName0 === 'add_item_to_cart' || toolName0 === 'bulk_add_to_cart') {
                                 pikuBus.emit('cart-added', { message: resultData.message ?? '' });

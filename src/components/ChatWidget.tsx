@@ -71,6 +71,20 @@ export function ChatWidget(config: ChatWidgetConfig) {
     refreshCommerceCartRef.current = commerce.refreshCart;
   }, [commerce.refreshCart]);
 
+  // AI-driven cart mutations (remove/qty/clear/add) → host bag + cart page
+  // + in-chat commerce panel all refetch without a manual reload.
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = () => {
+      try {
+        localStorage.setItem('cart_updated', String(Date.now())); // cross-tab (site convention)
+        window.dispatchEvent(new CustomEvent('gunma-cart-changed')); // same-tab host hook
+      } catch { /* ignore */ }
+      void refreshCommerceCartRef.current?.();
+    };
+    return pikuBus.on('cart-changed', handler);
+  }, []);
+
   // When the agent adds to cart / prepares checkout / asks for login, open
   // the in-chat commerce panel at the right step (no page navigation).
   React.useEffect(() => {
