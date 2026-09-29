@@ -14,6 +14,8 @@ import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
 import * as pikuBus from '../lib/pikuBus';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
+import { usePikuBrain } from '../hooks/usePikuBrain';
+import { usePikuSignals } from '../hooks/usePikuSignals';
 import { usePageTracking } from '../hooks/usePageTracking';
 
 export function ChatWidget(config: ChatWidgetConfig) {
@@ -273,9 +275,35 @@ export function ChatWidget(config: ChatWidgetConfig) {
     }
   }, [toggle, sendMessage]);
 
-  // Doodle engine: typed message pool + celebrations on the bubble icon
+  // Doodle engine: activity-driven smart brain (default) or legacy timer.
+  const pikuMode = config.doodle?.mode || 'activity';
+  const speechEnabled = widgetEnabled && doodleEnabled && !!config.apiUrl;
+
+  const pikuBrain = usePikuBrain({
+    enabled: speechEnabled && pikuMode === 'activity',
+    chatOpen: isOpen,
+    apiUrl: config.apiUrl,
+    routePrefix: config.routes?.prefix ?? 'api/chat',
+    lang: config.locale,
+    getSessionId,
+    getToken: config.getToken,
+    getVisitorId: () => {
+      try {
+        const key = config.storage?.visitorIdKey;
+        return key ? localStorage.getItem(key) : null;
+      } catch { return null; }
+    },
+    generalLines: config.doodle?.texts?.general,
+    allowIdleChatter: config.doodle?.idleChatter !== false,
+    maxBudget: config.doodle?.maxBudget,
+  });
+
+  // Activity collectors → brain decisions (no timers).
+  usePikuSignals(config, pikuBrain.onSignal, speechEnabled && pikuMode === 'activity');
+
+  // Classic timer engine (only when explicitly selected).
   const pikuSpeech = usePikuSpeech({
-    enabled: widgetEnabled && doodleEnabled && !!config.apiUrl,
+    enabled: speechEnabled && pikuMode === 'classic',
     chatOpen: isOpen,
     maxMessages: config.doodle?.maxMessages,
     startDelayMs: config.doodle?.startDelayMs,
@@ -292,6 +320,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
       } catch { return null; }
     },
   });
+
+  const activeSpeech = pikuMode === 'activity' ? pikuBrain : pikuSpeech;
 
   // Live page heartbeat so Piku knows what the customer is viewing.
   usePageTracking(config, getSessionId, widgetEnabled);
@@ -406,8 +436,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
           onClick={toggle}
           brandColor={brandColor}
           unreadCount={unreadCount}
-          speech={pikuSpeech.message}
-          chips={pikuSpeech.chips}
+          speech={activeSpeech.message}
+          chips={activeSpeech.chips}
           onChipClick={openWithPrefill}
           variant={config.doodle?.variant ?? 'robot'}
         />

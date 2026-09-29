@@ -229,6 +229,14 @@ export type CommerceStep =
  */
 export interface ChatDoodleConfig {
   enabled?: boolean;
+  /**
+   * Speech engine mode.
+   *  - 'activity' (default): event-driven smart engine — reacts to what the
+   *    customer actually does (product focus, search, dwell, intent). No fixed
+   *    time frame; a replenishing budget keeps it alive without nagging.
+   *  - 'classic': legacy fixed timer (startDelayMs → minGapMs → maxMessages).
+   */
+  mode?: 'activity' | 'classic';
   /** Mascot art style. 'robot' (default) = Piku bot with headset; 'chef' = chef. */
   variant?: 'robot' | 'chef';
   /** Probability (0..1) the doodle speaks on a tick when idle. Default 0.3. */
@@ -251,6 +259,13 @@ export interface ChatDoodleConfig {
   startDelayMs?: number;
   /** Min gap between bubbles (ms). Default 45000. */
   minGapMs?: number;
+  /**
+   * Activity mode: allow soft idle tips when the customer is genuinely idle.
+   * Automatically disabled on small screens. Default true.
+   */
+  idleChatter?: boolean;
+  /** Activity mode: maximum speech budget replenished by engagement. Default 12. */
+  maxBudget?: number;
   /**
    * Auto-move the widget out of the way when a host overlay opens from the
    * right (e.g. an antd cart drawer), so Piku never covers its Total/Checkout.

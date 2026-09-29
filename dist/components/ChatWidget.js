@@ -13,6 +13,8 @@ import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
 import * as pikuBus from '../lib/pikuBus';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
+import { usePikuBrain } from '../hooks/usePikuBrain';
+import { usePikuSignals } from '../hooks/usePikuSignals';
 import { usePageTracking } from '../hooks/usePageTracking';
 export function ChatWidget(config) {
     const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, isConnected, unreadCount, isEnded, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, getSessionId, appendAssistantLocal, } = useChat(config);
@@ -236,9 +238,35 @@ export function ChatWidget(config) {
             window.setTimeout(() => sendMessage(prefill), 600);
         }
     }, [toggle, sendMessage]);
-    // Doodle engine: typed message pool + celebrations on the bubble icon
+    // Doodle engine: activity-driven smart brain (default) or legacy timer.
+    const pikuMode = config.doodle?.mode || 'activity';
+    const speechEnabled = widgetEnabled && doodleEnabled && !!config.apiUrl;
+    const pikuBrain = usePikuBrain({
+        enabled: speechEnabled && pikuMode === 'activity',
+        chatOpen: isOpen,
+        apiUrl: config.apiUrl,
+        routePrefix: config.routes?.prefix ?? 'api/chat',
+        lang: config.locale,
+        getSessionId,
+        getToken: config.getToken,
+        getVisitorId: () => {
+            try {
+                const key = config.storage?.visitorIdKey;
+                return key ? localStorage.getItem(key) : null;
+            }
+            catch {
+                return null;
+            }
+        },
+        generalLines: config.doodle?.texts?.general,
+        allowIdleChatter: config.doodle?.idleChatter !== false,
+        maxBudget: config.doodle?.maxBudget,
+    });
+    // Activity collectors → brain decisions (no timers).
+    usePikuSignals(config, pikuBrain.onSignal, speechEnabled && pikuMode === 'activity');
+    // Classic timer engine (only when explicitly selected).
     const pikuSpeech = usePikuSpeech({
-        enabled: widgetEnabled && doodleEnabled && !!config.apiUrl,
+        enabled: speechEnabled && pikuMode === 'classic',
         chatOpen: isOpen,
         maxMessages: config.doodle?.maxMessages,
         startDelayMs: config.doodle?.startDelayMs,
@@ -258,6 +286,7 @@ export function ChatWidget(config) {
             }
         },
     });
+    const activeSpeech = pikuMode === 'activity' ? pikuBrain : pikuSpeech;
     // Live page heartbeat so Piku knows what the customer is viewing.
     usePageTracking(config, getSessionId, widgetEnabled);
     const handleSend = useCallback((text) => {
@@ -272,6 +301,6 @@ export function ChatWidget(config) {
     return (_jsxs("div", { ref: rootRef, style: positionStyle, className: `gunma-chat-root ${themeClass} ${position === 'bottom-right' ? 'gunma-pos-right' : 'gunma-pos-left'}`, children: [widgetEnabled && isOpen && !widgetClosed && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onCloseWidget: () => setWidgetClosed(true), onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
                             setShowCommerce(false);
                             commerce.setStep('cart'); // next open shows the fresh (empty) cart
-                        }, freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥', retireCartCtas: orderJustPlaced }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsx("div", { className: "gunma-commerce-muted", style: { padding: '12px 16px', textAlign: 'center' }, children: strings.sessionEndedLocked })) : (_jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder }))] }))] })), widgetEnabled && !widgetClosed && (_jsx(ChatBubble, { isOpen: isOpen, onClick: toggle, brandColor: brandColor, unreadCount: unreadCount, speech: pikuSpeech.message, chips: pikuSpeech.chips, onChipClick: openWithPrefill, variant: config.doodle?.variant ?? 'robot' })), widgetEnabled && widgetClosed && (_jsxs("button", { className: "gunma-reopen-tab", onClick: () => { setWidgetClosed(false); if (!isOpen)
+                        }, freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥', retireCartCtas: orderJustPlaced }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsx("div", { className: "gunma-commerce-muted", style: { padding: '12px 16px', textAlign: 'center' }, children: strings.sessionEndedLocked })) : (_jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder }))] }))] })), widgetEnabled && !widgetClosed && (_jsx(ChatBubble, { isOpen: isOpen, onClick: toggle, brandColor: brandColor, unreadCount: unreadCount, speech: activeSpeech.message, chips: activeSpeech.chips, onChipClick: openWithPrefill, variant: config.doodle?.variant ?? 'robot' })), widgetEnabled && widgetClosed && (_jsxs("button", { className: "gunma-reopen-tab", onClick: () => { setWidgetClosed(false); if (!isOpen)
                     toggle(); }, "aria-label": "Reopen Piku chat", title: "Open Piku chat", style: { '--gunma-brand': brandColor }, children: [_jsx("span", { className: "gunma-reopen-face", "aria-hidden": "true", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.8", children: [_jsx("rect", { x: "4", y: "7", width: "16", height: "12", rx: "5" }), _jsx("circle", { cx: "9.5", cy: "13", r: "1.6", fill: "currentColor", stroke: "none" }), _jsx("circle", { cx: "14.5", cy: "13", r: "1.6", fill: "currentColor", stroke: "none" }), _jsx("path", { d: "M10 16.5c1.2.9 2.8.9 4 0" }), _jsx("path", { d: "M12 3v3M9 4.2 10.4 6M15 4.2 13.6 6" })] }) }), _jsx("span", { className: "gunma-reopen-label", children: "Piku" })] }))] }));
 }
