@@ -6,8 +6,8 @@
 
 /* ── CSS Custom Properties ──────────────────────────────────────── */
 :root {
-  --gunma-brand: #0da487;
-  --gunma-brand-dark: #0b8a75;
+  --gunma-brand: #2AB191;
+  --gunma-brand-dark: #1d8f76;
   --gunma-bg: #ffffff;
   --gunma-bg-secondary: #f7f8f9;
   --gunma-bg-tertiary: #f4f6f7;
@@ -775,7 +775,7 @@
 
 .gunma-input:focus {
   border-color: var(--gunma-brand);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 3px rgba(42, 177, 145, 0.1);
 }
 
 .gunma-send-btn {
@@ -877,7 +877,18 @@
 }
 
 /* ── Mobile Responsive ──────────────────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
+  /* Full-screen panel that is a real, viewport-height flex column so the
+     message list scrolls and the input stays pinned to the bottom (no
+     mid-screen input / half-empty screen). */
+  .gunma-chat-root {
+    inset: 0 !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
   .gunma-chat-panel {
     position: fixed !important;
     top: 0 !important;
@@ -885,20 +896,42 @@
     right: 0 !important;
     bottom: 0 !important;
     width: 100% !important;
-    max-height: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     border-radius: 0;
+    border: none;
     z-index: 10000;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-
+  .gunma-message-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .gunma-messages {
+    flex: 1 1 auto;
+    min-height: 0;
     max-height: none;
-    flex: 1;
+    padding-bottom: 16px;
   }
-
+  .gunma-input-area {
+    flex-shrink: 0;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  }
   .gunma-bubble {
     bottom: 16px;
     right: 16px;
   }
+}
+
+/* Desktop: the message wrapper must also grow inside the panel flex column. */
+.gunma-message-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Print Hidden ───────────────────────────────────────────────── */
@@ -1238,7 +1271,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #0da487;
+  background: #2AB191;
   color: #fff;
   font-size: 28px;
   line-height: 56px;
@@ -1304,7 +1337,7 @@
   font-weight: 600;
   cursor: pointer;
 }
-.gunma-commerce-stock-fix { border-color: #0da487; color: #047857; }
+.gunma-commerce-stock-fix { border-color: #2AB191; color: #047857; }
 .gunma-commerce-stock-fix-all {
   margin-top: 8px;
   border-color: #991b1b;
@@ -1453,8 +1486,8 @@
   font-size: 13px; line-height: 1.5; font-weight: 500;
   padding: 10px 14px; border-radius: 16px 16px 16px 5px;
   max-width: 236px; min-width: 140px;
-  box-shadow: 0 10px 28px rgba(16,185,129,.22), 0 2px 6px rgba(0,0,0,.08);
-  border: 1.5px solid rgba(16,185,129,.35);
+  box-shadow: 0 10px 28px rgba(42,177,145,.22), 0 2px 6px rgba(0,0,0,.08);
+  border: 1.5px solid rgba(42,177,145,.35);
   cursor: default; pointer-events: auto;
   white-space: pre-line;
   animation: chefBubbleIn .24s cubic-bezier(.34,1.56,.64,1);
@@ -1492,11 +1525,11 @@
 .gunma-chef-bubble .gunma-chef-chip {
   display: inline-block; margin: 6px 6px 0 0;
   padding: 5px 12px; border-radius: 999px;
-  background: #fff; border: 1.5px solid #0da48750; color: #065f46;
+  background: #fff; border: 1.5px solid #2AB19150; color: #065f46;
   font-size: 12px; font-weight: 600; cursor: pointer;
   transition: transform .12s ease, background .12s ease;
 }
-.gunma-chef-bubble .gunma-chef-chip:hover { background: #0da487; color: #fff; transform: translateY(-1px); }
+.gunma-chef-bubble .gunma-chef-chip:hover { background: #2AB191; color: #fff; transform: translateY(-1px); }
 
 /* ── Bubble-holder: speech floats above the icon, never confined ── */
 .gunma-bubble-hold {
@@ -1513,8 +1546,8 @@
   color: #1f2937; font-size: 13px; line-height: 1.5; font-weight: 500;
   padding: 12px 14px; border-radius: 16px 16px 5px 16px;
   max-width: 240px; min-width: 150px;
-  box-shadow: 0 10px 28px rgba(16,185,129,.25), 0 2px 6px rgba(0,0,0,.10);
-  border: 1.5px solid rgba(16,185,129,.4);
+  box-shadow: 0 10px 28px rgba(42,177,145,.25), 0 2px 6px rgba(0,0,0,.10);
+  border: 1.5px solid rgba(42,177,145,.4);
   cursor: default; pointer-events: auto;
   animation: gunmaSlideUp .22s cubic-bezier(.34,1.56,.64,1);
 }
@@ -1526,10 +1559,10 @@
 .gunma-speech-chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; position: static; }
 .gunma-speech .gunma-chef-chip {
   display: inline-block; margin: 0; padding: 5px 12px; border-radius: 999px;
-  background: #fff; border: 1.5px solid #0da48755; color: #065f46;
+  background: #fff; border: 1.5px solid #2AB19155; color: #065f46;
   font-size: 12px; font-weight: 600; cursor: pointer; transition: all .12s ease;
 }
-.gunma-speech .gunma-chef-chip:hover { background: #0da487; color: #fff; }
+.gunma-speech .gunma-chef-chip:hover { background: #2AB191; color: #fff; }
 /* robot art fills the round button nicely */
 .gunma-bubble .gunma-chef-svg.pk-robot { width: 130% !important; height: 130% !important; margin: -15%; }
 
@@ -1564,26 +1597,26 @@
 .gunma-chat-header,
 .gunma-panel-header,
 .gunma-chat-panel .chat-header {
-  background: linear-gradient(135deg, #0da487, #15af90) !important;
+  background: linear-gradient(135deg, #2AB191, #35bda0) !important;
 }
 .gunma-chat-header button,
 .gunma-panel-header button { color: #fff !important; }
 .gunma-message.agent .gunma-msg-bubble,
-.gunma-msg.agent { background: #f2fbf8; border: 1px solid #d9efe9; color: #2d3748; }
+.gunma-msg.agent { background: #f1fbf7; border: 1px solid #c9ece2; color: #2d3748; }
 .gunma-message.user .gunma-msg-bubble,
-.gunma-msg.user { background: #0da487; color: #fff; }
+.gunma-msg.user { background: #2AB191; color: #fff; }
 .gunma-chip, .gunma-quick-chip {
-  border: 1px solid #bfe6dc !important; color: #0b8a75 !important;
-  background: #f4fbf9 !important;
+  border: 1px solid #b7e7db !important; color: #1d8f76 !important;
+  background: #f3fbf7 !important;
 }
-.gunma-chip:hover, .gunma-quick-chip:hover { background: #0da487 !important; color: #fff !important; border-color: #0da487 !important; }
-.gunma-input input:focus, .gunma-input:focus-within { border-color: #0da487 !important; box-shadow: 0 0 0 2px rgba(13,164,135,.12); }
+.gunma-chip:hover, .gunma-quick-chip:hover { background: #2AB191 !important; color: #fff !important; border-color: #2AB191 !important; }
+.gunma-input input:focus, .gunma-input:focus-within { border-color: #2AB191 !important; box-shadow: 0 0 0 2px rgba(42,177,145,.12); }
 .gunma-bulk-cart-btn, .gunma-add-to-cart-btn {
-  background: #0da487 !important; color: #fff !important; border-radius: 10px !important;
+  background: #2AB191 !important; color: #fff !important; border-radius: 10px !important;
 }
-.gunma-speaker, .gunma-typing-dot { color: #0da487; }
-.gunma-send-btn { background: #0da487 !important; }
-.gunma-ordered-note { display:inline-block; padding:6px 10px; border-radius:9px; background:#eefaf6; color:#0b8a75; font-size:12px; font-weight:600; }
+.gunma-speaker, .gunma-typing-dot { color: #2AB191; }
+.gunma-send-btn { background: #2AB191 !important; }
+.gunma-ordered-note { display:inline-block; padding:6px 10px; border-radius:9px; background:#eaf8f3; color:#1d8f76; font-size:12px; font-weight:600; }
 
 /* ── Piku widget: draggable cursor, header close, reopen tab ── */
 .gunma-bubble:not(.gunma-bubble--open) { cursor: grab; touch-action: none; }
@@ -1594,15 +1627,15 @@
   position: fixed; right: 22px; bottom: 22px; z-index: 99999;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 14px 8px 10px; border-radius: 999px;
-  border: 1.5px solid rgba(13,164,135,.45);
-  background: linear-gradient(135deg, #ffffff, #f2fbf8);
-  color: #0b8a75; font-size: 13px; font-weight: 700; font-family: inherit;
-  box-shadow: 0 10px 26px rgba(13,164,135,.28), 0 2px 6px rgba(0,0,0,.10);
+  border: 1.5px solid rgba(42,177,145,.45);
+  background: linear-gradient(135deg, #ffffff, #f1fbf7);
+  color: #1d8f76; font-size: 13px; font-weight: 700; font-family: inherit;
+  box-shadow: 0 10px 26px rgba(42,177,145,.28), 0 2px 6px rgba(0,0,0,.10);
   cursor: pointer; transition: transform .15s ease, box-shadow .15s ease;
   animation: gunmaSlideUp .24s cubic-bezier(.34,1.56,.64,1);
 }
-.gunma-reopen-tab:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(13,164,135,.34); }
-.gunma-reopen-face { display: inline-flex; width: 26px; height: 26px; color: #0da487; }
+.gunma-reopen-tab:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(42,177,145,.34); }
+.gunma-reopen-face { display: inline-flex; width: 26px; height: 26px; color: #2AB191; }
 .gunma-reopen-face svg { width: 100%; height: 100%; }
 .gunma-reopen-label { letter-spacing: .2px; }
 @media (max-width: 480px) {
@@ -1633,7 +1666,7 @@
 .gunma-msg-avatar--piku,
 .gunma-welcome-icon--piku {
   overflow: hidden;
-  border: 1px solid rgba(13, 164, 135, .18);
+  border: 1px solid rgba(42, 177, 145, .18);
 }
 .gunma-msg-avatar--piku .gunma-chef-svg,
 .gunma-welcome-icon--piku .gunma-chef-svg {

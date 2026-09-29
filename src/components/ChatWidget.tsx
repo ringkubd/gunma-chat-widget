@@ -155,7 +155,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
   }, [commerce.enabled, commerce.setStep, toggle]);
 
   const position = config.position || 'bottom-right';
-  const brandColor = config.brandColor || '#0da487';
+  const brandColor = config.brandColor || '#2AB191';
   const brandName = config.brandName || 'Piku';
   const welcomeMessage = config.welcomeMessage || 'Hello, this is Piku from Gunma Halal Food Customer Support. How may I assist you today?';
   const theme = config.theme || 'auto';
@@ -395,7 +395,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
             />
           ) : (
             <>
-              <div onClick={handleMessageClick}>
+              <div className="gunma-message-wrap" onClick={handleMessageClick}>
                 <MessageList
                   messages={messages}
                   welcomeMessage={welcomeMessage}
