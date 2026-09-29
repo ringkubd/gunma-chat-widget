@@ -63,8 +63,9 @@ export function usePageTracking(config, getSessionId, enabled = true) {
             }
             const changed = last.current.url !== url || (pid !== null && last.current.pid !== pid);
             if (!changed) {
-                // Gentle heartbeat every 30s on the same page.
-                if (Date.now() - lastSent.current >= 30000) {
+                // Gentle heartbeat on the same page — 90s (was 30s) so 1000 open
+                // tabs generate ~11 inserts/s, not ~33. Paused while hidden.
+                if (!document.hidden && Date.now() - lastSent.current >= 90000) {
                     send(pid ? 'product_view' : 'page_view', {
                         page_url: url,
                         title: ptitle,
@@ -82,7 +83,7 @@ export function usePageTracking(config, getSessionId, enabled = true) {
             });
         };
         read();
-        const interval = window.setInterval(read, 5000);
+        const interval = window.setInterval(read, 15000); // lighter scan for 1000-tab scale
         window.addEventListener('popstate', read);
         const push = window.history?.pushState;
         if (push) {
