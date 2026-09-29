@@ -1,6 +1,6 @@
 'use client';
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder }) {
     const [value, setValue] = useState('');
     const [isRecording, setIsRecording] = useState(false);
@@ -9,6 +9,14 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
     const recognitionRef = useRef(null);
     const typingTimerRef = useRef(null);
     const isTypingRef = useRef(false);
+    const wasFocusedRef = useRef(false);
+    // Re-focus when a reply finishes so the customer can keep typing without
+    // clicking again. (disabled inputs lose focus entirely — we use readOnly.)
+    useEffect(() => {
+        if (!isLoading && wasFocusedRef.current) {
+            inputRef.current?.focus();
+        }
+    }, [isLoading]);
     const handleSubmit = useCallback(() => {
         if (!value.trim() || isLoading)
             return;
@@ -76,5 +84,5 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
         setIsRecording(true);
         recognitionRef.current = recognition;
     };
-    return (_jsxs("div", { className: "gunma-input-area", children: [_jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, style: { display: 'none' }, accept: "image/*" }), _jsx("button", { className: "gunma-icon-btn", onClick: () => fileInputRef.current?.click(), disabled: isLoading, "aria-label": "Attach photo", title: "Attach photo", children: _jsx("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("path", { d: "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" }) }) }), _jsx("textarea", { ref: inputRef, className: "gunma-input gunma-input--autoresize", value: value, onChange: handleInput, onKeyDown: handleKeyDown, placeholder: placeholder, rows: 1, disabled: isLoading, "aria-label": "Chat message input" }), _jsx("button", { className: `gunma-icon-btn ${isRecording ? 'gunma-mic--active' : ''}`, onClick: toggleRecording, disabled: isLoading, "aria-label": "Voice message", title: "Voice message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("path", { d: "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" }), _jsx("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }), _jsx("line", { x1: "12", y1: "19", x2: "12", y2: "23" }), _jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })] }) }), _jsx("button", { className: "gunma-send-btn", onClick: handleSubmit, disabled: !value.trim() || isLoading, "aria-label": "Send message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), _jsx("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })] }) })] }));
+    return (_jsxs("div", { className: "gunma-input-area", children: [_jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, style: { display: 'none' }, accept: "image/*" }), _jsx("button", { className: "gunma-icon-btn", onClick: () => fileInputRef.current?.click(), disabled: isLoading, "aria-label": "Attach photo", title: "Attach photo", children: _jsx("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("path", { d: "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" }) }) }), _jsx("textarea", { ref: inputRef, className: "gunma-input gunma-input--autoresize", value: value, onChange: handleInput, onKeyDown: handleKeyDown, onFocus: () => { wasFocusedRef.current = true; }, onBlur: () => { wasFocusedRef.current = false; }, placeholder: placeholder, rows: 1, readOnly: isLoading, "aria-label": "Chat message input" }), _jsx("button", { className: `gunma-icon-btn ${isRecording ? 'gunma-mic--active' : ''}`, onClick: toggleRecording, disabled: isLoading, "aria-label": "Voice message", title: "Voice message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("path", { d: "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" }), _jsx("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }), _jsx("line", { x1: "12", y1: "19", x2: "12", y2: "23" }), _jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })] }) }), _jsx("button", { className: "gunma-send-btn", onClick: handleSubmit, disabled: !value.trim() || isLoading, "aria-label": "Send message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), _jsx("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })] }) })] }));
 }

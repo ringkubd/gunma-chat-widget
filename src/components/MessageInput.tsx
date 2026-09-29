@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
@@ -18,6 +18,15 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
   const recognitionRef = useRef<any>(null);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
+  const wasFocusedRef = useRef(false);
+
+  // Re-focus when a reply finishes so the customer can keep typing without
+  // clicking again. (disabled inputs lose focus entirely — we use readOnly.)
+  useEffect(() => {
+    if (!isLoading && wasFocusedRef.current) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading]);
 
   const handleSubmit = useCallback(() => {
     if (!value.trim() || isLoading) return;
@@ -123,9 +132,11 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
         value={value}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
+        onFocus={() => { wasFocusedRef.current = true; }}
+        onBlur={() => { wasFocusedRef.current = false; }}
         placeholder={placeholder}
         rows={1}
-        disabled={isLoading}
+        readOnly={isLoading}
         aria-label="Chat message input"
       />
 
