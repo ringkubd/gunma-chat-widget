@@ -9,7 +9,7 @@
  * Window-level fallback keeps it working even if two module instances ever
  * end up in a host bundle.
  */
-export type PikuEvent = 'cart-added' | 'order-updated' | 'cart-changed' | 'chat-closed' | 'chat-opened';
+export type PikuEvent = 'cart-added' | 'order-updated' | 'order-placed' | 'cart-changed' | 'chat-closed' | 'chat-opened';
 
 type Handler = (payload: Record<string, unknown>) => void;
 

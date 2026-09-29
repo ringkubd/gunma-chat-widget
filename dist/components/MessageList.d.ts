@@ -7,5 +7,7 @@ interface MessageListProps {
     /** Currency symbol shown on product cards. Default: '¥'. */
     currencySymbol?: string;
 }
-export declare function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol }: MessageListProps): import("react/jsx-runtime").JSX.Element;
+export declare function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol, retireCartCtas }: MessageListProps & {
+    retireCartCtas?: boolean;
+}): import("react/jsx-runtime").JSX.Element;
 export {};

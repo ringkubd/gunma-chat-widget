@@ -12,7 +12,7 @@ interface MessageBubbleProps {
   currencySymbol?: string;
 }
 
-export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥' }: MessageBubbleProps) {
+export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false }: MessageBubbleProps & { retireCartCtas?: boolean }) {
   const isUser = message.role === 'user';
 
   return (
@@ -31,7 +31,7 @@ export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol 
         <div
           className="gunma-msg-content"
           suppressHydrationWarning
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content, websiteUrl, currencySymbol) }}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content, websiteUrl, currencySymbol, retireCartCtas) }}
         />
         <span className="gunma-msg-time">
           {formatTime(message.created_at)}
@@ -41,7 +41,7 @@ export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol 
   );
 }
 
-function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string): string {
+function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string, retireCartCtas = false): string {
   if (!text) return '';
 
   // ── Step 1: Extract and replace product blocks (Improved Regex for newlines) ──
@@ -195,6 +195,13 @@ function renderMarkdown(text: string, websiteUrl: string, currencySymbol: string
   // Defence-in-depth: the raw marker must NEVER be visible to the customer.
   if (text.includes('{{BULK_BUTTON}}')) {
     text = text.replace(/\*{0,2}\{\{BULK_BUTTON\}\}\*{0,2}/g, '');
+  }
+
+  // After an order is placed, stale "Add ALL to Cart" CTAs in older
+  // messages must not invite a duplicate action.
+  if (retireCartCtas) {
+    text = text.replace(/<div class="gunma-bulk-actions">[\s\S]*?<\/div>/g, '<div class="gunma-bulk-actions gunma-ordered"><span class="gunma-ordered-note">✓ Order placed</span></div>');
+    text = text.replace(/<button[^>]*class="[^"]*gunma-add-to-cart-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g, '<span class="gunma-ordered-note">✓ Order placed</span>');
   }
 
   // ── Step 14: Final sanitize (defence-in-depth against attribute/URL XSS) ──

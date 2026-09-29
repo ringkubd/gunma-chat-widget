@@ -35,6 +35,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     endChat,
     cancelRequest,
     getSessionId,
+    appendAssistantLocal,
   } = useChat(config);
 
   // Keep an up-to-date isOpen ref so event handlers can open the panel.
@@ -83,6 +84,22 @@ export function ChatWidget(config: ChatWidgetConfig) {
       void refreshCommerceCartRef.current?.();
     };
     return pikuBus.on('cart-changed', handler);
+  }, []);
+
+  // Order placed → thank-you bubble in the chat + retire stale cart CTAs,
+  // so the flow does NOT land back on an old "Add ALL to Cart" message.
+  const [orderJustPlaced, setOrderJustPlaced] = useState(false);
+  const appendLocalMessageRef = React.useRef<((t: string) => void) | null>(null);
+  React.useEffect(() => { appendLocalMessageRef.current = appendAssistantLocal; }, [appendAssistantLocal]);
+  React.useEffect(() => {
+    const clearCtas = () => setOrderJustPlaced(true);
+    const handler = (payload: Record<string, unknown>) => {
+      setOrderJustPlaced(true);
+      void refreshCommerceCartRef.current?.();
+      const oid = payload.order_id != null ? `#${payload.order_id}` : '';
+      appendLocalMessageRef.current?.(`🎉 Order ${oid} successfully placed! Kitchen-e ekhuni recipe kaj shuru korese 🙂`);
+    };
+    return pikuBus.on('order-placed', handler);
   }, []);
 
   // When the agent adds to cart / prepares checkout / asks for login, open
@@ -252,7 +269,10 @@ export function ChatWidget(config: ChatWidgetConfig) {
             <CommercePanel
               commerce={commerce}
               brandColor={brandColor}
-              onClose={() => setShowCommerce(false)}
+              onClose={() => {
+                setShowCommerce(false);
+                commerce.setStep('cart'); // next open shows the fresh (empty) cart
+              }}
               freeShippingThreshold={commerce.freeShippingThreshold}
               strings={strings}
             />
@@ -265,6 +285,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
                   brandColor={brandColor}
                   websiteUrl={config.websiteUrl || 'https://api.gunmahalalfood.com'}
                   currencySymbol={config.commerce?.currencySymbol ?? '¥'}
+                  retireCartCtas={orderJustPlaced}
                 />
               </div>
 

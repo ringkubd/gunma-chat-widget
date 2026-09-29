@@ -15,7 +15,7 @@ import * as pikuBus from '../lib/pikuBus';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
 import { usePageTracking } from '../hooks/usePageTracking';
 export function ChatWidget(config) {
-    const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, isConnected, unreadCount, isEnded, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, getSessionId, } = useChat(config);
+    const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, isConnected, unreadCount, isEnded, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, getSessionId, appendAssistantLocal, } = useChat(config);
     // Keep an up-to-date isOpen ref so event handlers can open the panel.
     const isOpenRef = React.useRef(isOpen);
     React.useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
@@ -59,6 +59,21 @@ export function ChatWidget(config) {
             void refreshCommerceCartRef.current?.();
         };
         return pikuBus.on('cart-changed', handler);
+    }, []);
+    // Order placed → thank-you bubble in the chat + retire stale cart CTAs,
+    // so the flow does NOT land back on an old "Add ALL to Cart" message.
+    const [orderJustPlaced, setOrderJustPlaced] = useState(false);
+    const appendLocalMessageRef = React.useRef(null);
+    React.useEffect(() => { appendLocalMessageRef.current = appendAssistantLocal; }, [appendAssistantLocal]);
+    React.useEffect(() => {
+        const clearCtas = () => setOrderJustPlaced(true);
+        const handler = (payload) => {
+            setOrderJustPlaced(true);
+            void refreshCommerceCartRef.current?.();
+            const oid = payload.order_id != null ? `#${payload.order_id}` : '';
+            appendLocalMessageRef.current?.(`🎉 Order ${oid} successfully placed! Kitchen-e ekhuni recipe kaj shuru korese 🙂`);
+        };
+        return pikuBus.on('order-placed', handler);
     }, []);
     // When the agent adds to cart / prepares checkout / asks for login, open
     // the in-chat commerce panel at the right step (no page navigation).
@@ -195,5 +210,8 @@ export function ChatWidget(config) {
             sendMessage(lastMessage);
         }
     }, [lastMessage, sendMessage]);
-    return (_jsxs("div", { style: positionStyle, className: `gunma-chat-root ${themeClass}`, children: [widgetEnabled && isOpen && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => setShowCommerce(false), freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥' }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsx("div", { className: "gunma-commerce-muted", style: { padding: '12px 16px', textAlign: 'center' }, children: strings.sessionEndedLocked })) : (_jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder }))] }))] })), widgetEnabled && (_jsx(ChatBubble, { isOpen: isOpen, onClick: toggle, brandColor: brandColor, unreadCount: unreadCount, speech: pikuSpeech.message, chips: pikuSpeech.chips, onChipClick: openWithPrefill, variant: config.doodle?.variant ?? 'robot' }))] }));
+    return (_jsxs("div", { style: positionStyle, className: `gunma-chat-root ${themeClass}`, children: [widgetEnabled && isOpen && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
+                            setShowCommerce(false);
+                            commerce.setStep('cart'); // next open shows the fresh (empty) cart
+                        }, freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥', retireCartCtas: orderJustPlaced }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsx("div", { className: "gunma-commerce-muted", style: { padding: '12px 16px', textAlign: 'center' }, children: strings.sessionEndedLocked })) : (_jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder }))] }))] })), widgetEnabled && (_jsx(ChatBubble, { isOpen: isOpen, onClick: toggle, brandColor: brandColor, unreadCount: unreadCount, speech: pikuSpeech.message, chips: pikuSpeech.chips, onChipClick: openWithPrefill, variant: config.doodle?.variant ?? 'robot' }))] }));
 }

@@ -6,5 +6,7 @@ interface MessageBubbleProps {
     /** Currency symbol for product cards. Default: '¥'. */
     currencySymbol?: string;
 }
-export declare function MessageBubble({ message, brandColor, websiteUrl, currencySymbol }: MessageBubbleProps): import("react/jsx-runtime").JSX.Element;
+export declare function MessageBubble({ message, brandColor, websiteUrl, currencySymbol, retireCartCtas }: MessageBubbleProps & {
+    retireCartCtas?: boolean;
+}): import("react/jsx-runtime").JSX.Element;
 export {};

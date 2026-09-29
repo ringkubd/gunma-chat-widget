@@ -13,7 +13,7 @@ interface MessageListProps {
   currencySymbol?: string;
 }
 
-export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol = '¥' }: MessageListProps) {
+export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false }: MessageListProps & { retireCartCtas?: boolean }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new messages
@@ -37,7 +37,7 @@ export function MessageList({ messages, welcomeMessage, brandColor, websiteUrl, 
 
       {/* Messages */}
       {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} brandColor={brandColor} websiteUrl={websiteUrl} currencySymbol={currencySymbol} />
+        <MessageBubble key={msg.id} message={msg} brandColor={brandColor} websiteUrl={websiteUrl} currencySymbol={currencySymbol} retireCartCtas={retireCartCtas} />
       ))}
 
       <div ref={bottomRef} />

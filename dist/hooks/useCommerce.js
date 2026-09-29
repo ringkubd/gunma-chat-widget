@@ -1,4 +1,5 @@
 'use client';
+import * as pikuBus from '../lib/pikuBus';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { CommerceApi } from '../lib/commerceApi';
 /* ── Money helpers (mirror storefront) ──────────────────────────── */
@@ -399,6 +400,7 @@ export function useCommerce(config, opts = {}) {
                 setSuccessOrderId(orderId);
                 setSuccessDelivery({ date: deliveryDate ?? null, time: deliveryTime ?? null });
                 setStep('success');
+                pikuBus.emit('order-placed', { order_id: orderId ?? null });
                 opts.onCartChanged?.();
                 await refreshCart();
             }

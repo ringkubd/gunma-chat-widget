@@ -1583,3 +1583,4 @@
 }
 .gunma-speaker, .gunma-typing-dot { color: #0da487; }
 .gunma-send-btn { background: #0da487 !important; }
+.gunma-ordered-note { display:inline-block; padding:6px 10px; border-radius:9px; background:#eefaf6; color:#0b8a75; font-size:12px; font-weight:600; }

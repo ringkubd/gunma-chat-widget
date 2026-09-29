@@ -1,5 +1,6 @@
 'use client';
 
+import * as pikuBus from '../lib/pikuBus';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type {
   ChatCommerceConfig,
@@ -532,6 +533,7 @@ export function useCommerce(
           setSuccessOrderId(orderId);
           setSuccessDelivery({ date: deliveryDate ?? null, time: deliveryTime ?? null });
           setStep('success');
+          pikuBus.emit('order-placed', { order_id: orderId ?? null });
           opts.onCartChanged?.();
           await refreshCart();
         } else {

@@ -556,5 +556,14 @@ export function useChat(config) {
         getSessionId: () => sessionRef.current?.id ?? null,
         linkSession,
         submitFeedback,
+        /** Local (session-scope) assistant notice — used for commerce confirmations. */
+        appendAssistantLocal: (content) => {
+            setMessages((prev) => [...prev, {
+                    id: `asst_local_${Date.now()}`,
+                    role: 'assistant',
+                    content,
+                    created_at: new Date().toISOString(),
+                }]);
+        },
     };
 }

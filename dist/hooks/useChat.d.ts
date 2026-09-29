@@ -23,4 +23,6 @@ export declare function useChat(config: ChatWidgetConfig): {
     getSessionId: () => string | null;
     linkSession: (customerId: number) => Promise<void>;
     submitFeedback: (rating: number, comment?: string) => Promise<void>;
+    /** Local (session-scope) assistant notice — used for commerce confirmations. */
+    appendAssistantLocal: (content: string) => void;
 };
