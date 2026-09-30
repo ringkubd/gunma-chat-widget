@@ -120,10 +120,29 @@ export class ChatApi {
     });
   }
 
-  /** Persist the guest cart cookie the server hands back (host key). */
+  /**
+   * Persist the guest cart identity the server hands back.
+   * - localStorage[cookieKey]: the storefront's own cookie value (its bag
+   *   query is gated on this).
+   * - a `guest_id` cookie on the registrable parent domain: the storefront's
+   *   cart/checkout reads ONLY this cookie (it ignores its path param). The
+   *   chat route can't set it server-side (stateful → double-encrypted), so we
+   *   write the exact value the server gave us, client-side.
+   */
   private persistGuestCookie(value?: string | null): void {
     if (!value || typeof window === 'undefined') return;
     try { localStorage.setItem(this.cookieStoreKey, value); } catch { /* ignore */ }
+
+    try {
+      if (window.location.protocol !== 'https:') return;
+      const host = window.location.hostname;
+      if (!host || host === 'localhost' || /^\d+\.\d+\.\d+\.\d+$/.test(host)) return;
+      const parts = host.split('.');
+      if (parts.length < 3) return; // apex domain — host-only cookie suffices
+      const domain = parts.slice(-2).join('.');
+      const maxAge = 60 * 60 * 24 * 30; // 30 days
+      document.cookie = `guest_id=${value}; domain=.${domain}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+    } catch { /* never break the storefront */ }
   }
 
   /**
