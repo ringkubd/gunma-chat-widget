@@ -1779,3 +1779,32 @@
   background: #2AB191;
   animation: gunma-pulse 1.6s ease-in-out infinite;
 }
+
+/* ── Input bar icon buttons (attach photo / voice) ── */
+.gunma-icon-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border: 1px solid var(--gunma-border);
+  border-radius: var(--gunma-radius-xs);
+  background: #f4f6f7;
+  color: #1d8f76;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--gunma-transition);
+}
+.gunma-icon-btn:hover:not(:disabled) {
+  background: #eaf8f3;
+  border-color: #bfe6dc;
+  color: #0b8a75;
+}
+.gunma-icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+.gunma-icon-btn svg { width: 19px; height: 19px; }
+.gunma-icon-btn.gunma-mic--active {
+  background: #fdeeee;
+  border-color: #f3c9c9;
+  color: #dc2626;
+  animation: gunma-pulse 1.4s ease-in-out infinite;
+}
