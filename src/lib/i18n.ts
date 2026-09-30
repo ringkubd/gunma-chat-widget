@@ -51,6 +51,8 @@ export interface WidgetStrings {
   haveAccount: string;
   noAccount: string;
   orderPlaced: string;
+  linkFailed: string;
+  humanJoining: string;
   orderNo: string;
   done: string;
   tryAgain: string;
@@ -129,6 +131,8 @@ const en: WidgetStrings = {
   haveAccount: 'Already have an account?',
   noAccount: "Don't have an account?",
   orderPlaced: 'অর্ডার সফলভাবে সম্পন্ন!',
+  linkFailed: 'লগইন হয়েছে, কিন্তু চ্যাট লিংক করা যায়নি। আবার চেষ্টা করুন।',
+  humanJoining: 'আমাদের টিম মেম্বার চ্যাটে যোগ দিচ্ছেন — একটু থাকুন।',
   orderNo: 'Order No.',
   done: 'Done',
   tryAgain: 'Try again',
@@ -216,6 +220,8 @@ const bn: WidgetStrings = {
   haveAccount: 'আগে থেকেই অ্যাকাউন্ট আছে?',
   noAccount: 'অ্যাকাউন্ট নেই?',
   orderPlaced: 'অর্ডার সফলভাবে সম্পন্ন হয়েছে!',
+  linkFailed: 'লগইন হয়েছে, কিন্তু চ্যাট লিংক করা যায়নি। আবার চেষ্টা করুন।',
+  humanJoining: 'আমাদের টিম মেম্বার চ্যাটে যোগ দিচ্ছেন — একটু থাকুন।',
   orderNo: 'অর্ডার নম্বর',
   done: 'সম্পন্ন',
   tryAgain: 'আবার চেষ্টা করুন',
@@ -303,6 +309,8 @@ const ja: WidgetStrings = {
   haveAccount: 'すでにアカウントをお持ちですか？',
   noAccount: 'アカウントをお持ちでないですか？',
   orderPlaced: 'ご注文が完了しました！',
+  linkFailed: 'ログインを検出しましたが、チャットの連携に失敗しました。もう一度お試しください。',
+  humanJoining: '担当者がチャットに参加します。少々お待ちください。',
   orderNo: '注文番号',
   done: '完了',
   tryAgain: 'もう一度試す',

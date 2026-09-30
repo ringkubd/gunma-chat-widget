@@ -49,6 +49,8 @@ export interface WidgetStrings {
     haveAccount: string;
     noAccount: string;
     orderPlaced: string;
+    linkFailed: string;
+    humanJoining: string;
     orderNo: string;
     done: string;
     tryAgain: string;

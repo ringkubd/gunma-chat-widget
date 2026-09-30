@@ -76,7 +76,7 @@ export function useChat(config: ChatWidgetConfig) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.getCookieId, config.cookieId, cookieKey]);
 
-  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey), resolveCookieId, cookieKey));
+  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), config.visitorId || getVisitorId(visitorIdKey), resolveCookieId, cookieKey, resolveToken));
   const echoRef = useRef<Echo<any> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -93,13 +93,17 @@ export function useChat(config: ChatWidgetConfig) {
 
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
+  // Keep the API's session header in sync so server tools can link claims/
+  // tickets back to this conversation.
+  useEffect(() => { apiRef.current?.setSessionId(session?.id ?? null); }, [session?.id]);
   useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
   useEffect(() => { isEndedRef.current = isEnded; }, [isEnded]);
 
   // Sync apiToken when config changes
   useEffect(() => {
     const token = resolveToken();
-    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId, cookieKey);
+    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId, cookieKey, resolveToken);
+    apiRef.current.setSessionId(sessionRef.current?.id ?? null);
   }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey, resolveCookieId]);
 
   // Initialize Echo
@@ -275,9 +279,20 @@ export function useChat(config: ChatWidgetConfig) {
       const cid = detail?.customer_id ?? detail?.customerId ?? null;
       if (cid) {
         localStorage.setItem('gunma_chat_customer_id', String(cid));
-        linkSessionRef.current?.(cid).catch((err) => {
-          console.warn('[useChat] linkSession on gunma:login failed:', err);
-        });
+        linkSessionRef.current?.(cid)
+          .then(() => {
+            // Re-pull the session so the widget reflects customer name/email.
+            const sid = sessionRef.current?.id;
+            if (sid) {
+              apiRef.current.getSession(sid).then((r) => {
+                if (r?.session) setSession(r.session);
+              }).catch(() => { /* ignore */ });
+            }
+          })
+          .catch((err) => {
+            console.warn('[useChat] linkSession on gunma:login failed:', err);
+            setError(stringsRef.current.linkFailed ?? 'Login detected, but linking the chat failed. Please try again.');
+          });
       }
     };
 
@@ -399,6 +414,7 @@ export function useChat(config: ChatWidgetConfig) {
               get_cart_contents: `🛒 ${strs.loadingCart}`,
               open_checkout: `🧾 ${strs.preparingCheckout}`,
               open_login: '🔐 Opening login…',
+              hand_off_to_human: '🙋 Connecting you to our team…',
             };
             setToolStatus(friendly[name] ?? `🔍 ${name.replace(/_/g, ' ')}…`);
             break;

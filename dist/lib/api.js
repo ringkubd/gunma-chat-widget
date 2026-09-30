@@ -6,12 +6,13 @@ const MAX_RETRIES = 2;
  * API client for the Gunma AI Agent Laravel backend.
  */
 export class ChatApi {
-    constructor(apiUrl, cookieId, apiToken, visitorId, getCookieId, cookieStoreKey) {
+    constructor(apiUrl, cookieId, apiToken, visitorId, getCookieId, cookieStoreKey, getToken) {
         this.baseUrl = apiUrl.replace(/\/$/, '');
         this.cookieId = cookieId;
         this.getCookieIdFn = getCookieId;
         this.cookieStoreKey = cookieStoreKey || 'cookie';
         this.apiToken = apiToken;
+        this.getTokenFn = getToken;
         this.visitorId = visitorId;
     }
     /** Resolve the guest cart identity now: lazy resolver > static value. */
@@ -24,16 +25,36 @@ export class ChatApi {
         catch { /* ignore host errors */ }
         return this.cookieId;
     }
+    /**
+     * Resolve the auth token on EVERY request (lazy) so an in-chat login is
+     * recognised immediately — the token is captured at mount otherwise and the
+     * widget keeps talking as a guest.
+     */
+    resolveToken() {
+        try {
+            const live = this.getTokenFn?.();
+            if (live)
+                return live;
+        }
+        catch { /* ignore host errors */ }
+        return this.apiToken || undefined;
+    }
     getHeaders(additionalHeaders = {}) {
         const headers = {
             'Content-Type': 'application/json',
             ...additionalHeaders,
         };
-        if (this.apiToken) {
-            headers['Authorization'] = `Bearer ${this.apiToken}`;
+        const token = this.resolveToken();
+        if (token) {
+            headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
         }
         if (this.visitorId) {
             headers['X-Visitor-Id'] = this.visitorId;
+        }
+        // Identify the chat session so tools (e.g. claims/tickets) can be linked
+        // back to this conversation.
+        if (this.sessionId) {
+            headers['X-Chat-Session-Id'] = this.sessionId;
         }
         // Remove headers with empty values (useful for FormData)
         Object.keys(headers).forEach(key => {
@@ -42,6 +63,10 @@ export class ChatApi {
             }
         });
         return headers;
+    }
+    /** Remember the active chat session id (sent as X-Chat-Session-Id). */
+    setSessionId(id) {
+        this.sessionId = id || undefined;
     }
     /**
      * Fetch with timeout and retry for transient failures.

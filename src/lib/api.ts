@@ -15,14 +15,17 @@ export class ChatApi {
   private getCookieIdFn?: () => string | null;
   private cookieStoreKey: string;
   private apiToken?: string;
+  private getTokenFn?: () => string | null;
   private visitorId?: string;
+  private sessionId?: string;
 
-  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string) {
+  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string, getToken?: () => string | null) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
     this.cookieId = cookieId;
     this.getCookieIdFn = getCookieId;
     this.cookieStoreKey = cookieStoreKey || 'cookie';
     this.apiToken = apiToken;
+    this.getTokenFn = getToken;
     this.visitorId = visitorId;
   }
 
@@ -35,18 +38,38 @@ export class ChatApi {
     return this.cookieId;
   }
 
+  /**
+   * Resolve the auth token on EVERY request (lazy) so an in-chat login is
+   * recognised immediately — the token is captured at mount otherwise and the
+   * widget keeps talking as a guest.
+   */
+  private resolveToken(): string | undefined {
+    try {
+      const live = this.getTokenFn?.();
+      if (live) return live;
+    } catch { /* ignore host errors */ }
+    return this.apiToken || undefined;
+  }
+
   private getHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...additionalHeaders,
     };
 
-    if (this.apiToken) {
-      headers['Authorization'] = `Bearer ${this.apiToken}`;
+    const token = this.resolveToken();
+    if (token) {
+      headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
     }
 
     if (this.visitorId) {
       headers['X-Visitor-Id'] = this.visitorId;
+    }
+
+    // Identify the chat session so tools (e.g. claims/tickets) can be linked
+    // back to this conversation.
+    if (this.sessionId) {
+      headers['X-Chat-Session-Id'] = this.sessionId;
     }
 
     // Remove headers with empty values (useful for FormData)
@@ -57,6 +80,11 @@ export class ChatApi {
     });
 
     return headers;
+  }
+
+  /** Remember the active chat session id (sent as X-Chat-Session-Id). */
+  setSessionId(id?: string | null): void {
+    this.sessionId = id || undefined;
   }
 
   /**

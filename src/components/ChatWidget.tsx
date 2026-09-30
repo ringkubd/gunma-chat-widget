@@ -443,13 +443,21 @@ export function ChatWidget(config: ChatWidgetConfig) {
                   {strings.sessionEndedLocked}
                 </div>
               ) : (
-                <MessageInput
-                  onSend={handleSend}
-                  onUpload={uploadFile}
-                  onTyping={sendTyping}
-                  isLoading={isLoading}
-                  placeholder={config.placeholder || strings.placeholder}
-                />
+                <>
+                  {!isAiEnabled && (
+                    <div className="gunma-human-banner">
+                      <span className="gunma-human-dot" />
+                      {strings.humanJoining}
+                    </div>
+                  )}
+                  <MessageInput
+                    onSend={handleSend}
+                    onUpload={uploadFile}
+                    onTyping={sendTyping}
+                    isLoading={isLoading}
+                    placeholder={config.placeholder || strings.placeholder}
+                  />
+                </>
               )}
             </>
           )}

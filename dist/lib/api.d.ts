@@ -8,11 +8,21 @@ export declare class ChatApi {
     private getCookieIdFn?;
     private cookieStoreKey;
     private apiToken?;
+    private getTokenFn?;
     private visitorId?;
-    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string);
+    private sessionId?;
+    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string, getToken?: () => string | null);
     /** Resolve the guest cart identity now: lazy resolver > static value. */
     private resolveCookieId;
+    /**
+     * Resolve the auth token on EVERY request (lazy) so an in-chat login is
+     * recognised immediately — the token is captured at mount otherwise and the
+     * widget keeps talking as a guest.
+     */
+    private resolveToken;
     private getHeaders;
+    /** Remember the active chat session id (sent as X-Chat-Session-Id). */
+    setSessionId(id?: string | null): void;
     /**
      * Fetch with timeout and retry for transient failures.
      */
