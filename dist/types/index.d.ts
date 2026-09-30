@@ -41,6 +41,12 @@ export interface ChatWidgetConfig {
     theme?: 'light' | 'dark' | 'auto';
     /** UI locale. Agent replies follow the customer's own language. Default: 'en' */
     locale?: 'en' | 'bn' | 'ja';
+    /**
+     * Optional explicit BCP-47 tag for VOICE input (e.g. 'bn-BD', 'hi-IN').
+     * When omitted, the widget auto-detects from the customer's typed script and
+     * the browser language — never hardcoded.
+     */
+    speechLang?: string;
     brandName?: string;
     /**
      * Piku's profile picture URL (e.g. 'https://store.com/piku-avatar.png').

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { resolveSpeechLocale } from '../lib/speechLocale';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
@@ -8,11 +9,17 @@ interface MessageInputProps {
   onTyping?: (isTyping: boolean) => void;
   isLoading: boolean;
   placeholder: string;
+  /** Optional explicit recognition locale; otherwise auto-detected. */
+  speechLang?: string;
+  /** Texts to script-detect the recognition language from (e.g. last message). */
+  languageSamples?: Array<string | null | undefined>;
 }
 
-export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder }: MessageInputProps) {
+export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder, speechLang, languageSamples }: MessageInputProps) {
   const [value, setValue] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [voiceHint, setVoiceHint] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -83,26 +90,59 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this browser.');
+      setVoiceError('Voice input is not supported in this browser.');
       return;
     }
 
+    setVoiceError(null);
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'bn-BD'; // Default to Bengali, but works for others too
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    // Smart locale: host override → script of what they typed / last message →
+    // browser language. Never hardcoded.
+    recognition.lang = resolveSpeechLocale({
+      override: speechLang,
+      samples: [value, ...(languageSamples ?? [])],
+    });
 
+    // Live (interim) text goes into the box; the final result settles it.
     recognition.onresult = (event: any) => {
-      const text = event.results[0][0].transcript;
-      setValue((prev) => (prev ? `${prev} ${text}` : text));
+      let finalText = '';
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      if (finalText) {
+        setValue((prev) => (prev ? `${prev} ${finalText.trim()}` : finalText.trim()));
+      } else if (interim) {
+        setVoiceHint(interim.trim());
+      }
     };
 
-    recognition.onend = () => setIsRecording(false);
-    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => { setIsRecording(false); setVoiceHint(''); };
+    recognition.onerror = (e: any) => {
+      setIsRecording(false);
+      setVoiceHint('');
+      const err = e?.error || '';
+      if (err === 'not-allowed' || err === 'service-not-allowed') {
+        setVoiceError('Microphone permission was blocked. Please allow mic access.');
+      } else if (err === 'no-speech') {
+        setVoiceError('No speech detected — please try again.');
+      } else if (err !== 'aborted') {
+        setVoiceError('Voice input failed. Please try again.');
+      }
+    };
 
-    recognition.start();
-    setIsRecording(true);
-    recognitionRef.current = recognition;
+    try {
+      recognition.start();
+      setIsRecording(true);
+      recognitionRef.current = recognition;
+    } catch {
+      setVoiceError('Could not start voice input.');
+    }
   };
 
   return (
@@ -166,6 +206,19 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
           <polygon points="22 2 15 22 11 13 2 9 22 2" />
         </svg>
       </button>
+
+      {(isRecording || voiceHint || voiceError) && (
+        <div className={`gunma-voice-bar ${voiceError ? 'gunma-voice-bar--error' : ''}`}>
+          {voiceError ? (
+            <span>{voiceError}</span>
+          ) : (
+            <>
+              <span className="gunma-voice-dot" />
+              <span className="gunma-voice-text">{voiceHint || 'Listening…'}</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

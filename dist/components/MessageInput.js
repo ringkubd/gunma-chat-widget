@@ -1,9 +1,12 @@
 'use client';
-import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useRef, useCallback, useEffect } from 'react';
-export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder }) {
+import { resolveSpeechLocale } from '../lib/speechLocale';
+export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholder, speechLang, languageSamples }) {
     const [value, setValue] = useState('');
     const [isRecording, setIsRecording] = useState(false);
+    const [voiceError, setVoiceError] = useState(null);
+    const [voiceHint, setVoiceHint] = useState('');
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
     const recognitionRef = useRef(null);
@@ -67,22 +70,61 @@ export function MessageInput({ onSend, onUpload, onTyping, isLoading, placeholde
         }
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            alert('Speech recognition is not supported in this browser.');
+            setVoiceError('Voice input is not supported in this browser.');
             return;
         }
+        setVoiceError(null);
         const recognition = new SpeechRecognition();
         recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'bn-BD'; // Default to Bengali, but works for others too
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        // Smart locale: host override → script of what they typed / last message →
+        // browser language. Never hardcoded.
+        recognition.lang = resolveSpeechLocale({
+            override: speechLang,
+            samples: [value, ...(languageSamples ?? [])],
+        });
+        // Live (interim) text goes into the box; the final result settles it.
         recognition.onresult = (event) => {
-            const text = event.results[0][0].transcript;
-            setValue((prev) => (prev ? `${prev} ${text}` : text));
+            let finalText = '';
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const t = event.results[i][0].transcript;
+                if (event.results[i].isFinal)
+                    finalText += t;
+                else
+                    interim += t;
+            }
+            if (finalText) {
+                setValue((prev) => (prev ? `${prev} ${finalText.trim()}` : finalText.trim()));
+            }
+            else if (interim) {
+                setVoiceHint(interim.trim());
+            }
         };
-        recognition.onend = () => setIsRecording(false);
-        recognition.onerror = () => setIsRecording(false);
-        recognition.start();
-        setIsRecording(true);
-        recognitionRef.current = recognition;
+        recognition.onend = () => { setIsRecording(false); setVoiceHint(''); };
+        recognition.onerror = (e) => {
+            setIsRecording(false);
+            setVoiceHint('');
+            const err = e?.error || '';
+            if (err === 'not-allowed' || err === 'service-not-allowed') {
+                setVoiceError('Microphone permission was blocked. Please allow mic access.');
+            }
+            else if (err === 'no-speech') {
+                setVoiceError('No speech detected — please try again.');
+            }
+            else if (err !== 'aborted') {
+                setVoiceError('Voice input failed. Please try again.');
+            }
+        };
+        try {
+            recognition.start();
+            setIsRecording(true);
+            recognitionRef.current = recognition;
+        }
+        catch {
+            setVoiceError('Could not start voice input.');
+        }
     };
-    return (_jsxs("div", { className: "gunma-input-area", children: [_jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, style: { display: 'none' }, accept: "image/*" }), _jsx("button", { className: "gunma-icon-btn", onClick: () => fileInputRef.current?.click(), disabled: isLoading, "aria-label": "Attach photo", title: "Attach photo", children: _jsx("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("path", { d: "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" }) }) }), _jsx("textarea", { ref: inputRef, className: "gunma-input gunma-input--autoresize", value: value, onChange: handleInput, onKeyDown: handleKeyDown, onFocus: () => { wasFocusedRef.current = true; }, onBlur: () => { wasFocusedRef.current = false; }, placeholder: placeholder, rows: 1, readOnly: isLoading, "aria-label": "Chat message input" }), _jsx("button", { className: `gunma-icon-btn ${isRecording ? 'gunma-mic--active' : ''}`, onClick: toggleRecording, disabled: isLoading, "aria-label": "Voice message", title: "Voice message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("path", { d: "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" }), _jsx("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }), _jsx("line", { x1: "12", y1: "19", x2: "12", y2: "23" }), _jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })] }) }), _jsx("button", { className: "gunma-send-btn", onClick: handleSubmit, disabled: !value.trim() || isLoading, "aria-label": "Send message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), _jsx("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })] }) })] }));
+    return (_jsxs("div", { className: "gunma-input-area", children: [_jsx("input", { type: "file", ref: fileInputRef, onChange: handleFileChange, style: { display: 'none' }, accept: "image/*" }), _jsx("button", { className: "gunma-icon-btn", onClick: () => fileInputRef.current?.click(), disabled: isLoading, "aria-label": "Attach photo", title: "Attach photo", children: _jsx("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: _jsx("path", { d: "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" }) }) }), _jsx("textarea", { ref: inputRef, className: "gunma-input gunma-input--autoresize", value: value, onChange: handleInput, onKeyDown: handleKeyDown, onFocus: () => { wasFocusedRef.current = true; }, onBlur: () => { wasFocusedRef.current = false; }, placeholder: placeholder, rows: 1, readOnly: isLoading, "aria-label": "Chat message input" }), _jsx("button", { className: `gunma-icon-btn ${isRecording ? 'gunma-mic--active' : ''}`, onClick: toggleRecording, disabled: isLoading, "aria-label": "Voice message", title: "Voice message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("path", { d: "M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" }), _jsx("path", { d: "M19 10v2a7 7 0 0 1-14 0v-2" }), _jsx("line", { x1: "12", y1: "19", x2: "12", y2: "23" }), _jsx("line", { x1: "8", y1: "23", x2: "16", y2: "23" })] }) }), _jsx("button", { className: "gunma-send-btn", onClick: handleSubmit, disabled: !value.trim() || isLoading, "aria-label": "Send message", children: _jsxs("svg", { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [_jsx("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), _jsx("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })] }) }), (isRecording || voiceHint || voiceError) && (_jsx("div", { className: `gunma-voice-bar ${voiceError ? 'gunma-voice-bar--error' : ''}`, children: voiceError ? (_jsx("span", { children: voiceError })) : (_jsxs(_Fragment, { children: [_jsx("span", { className: "gunma-voice-dot" }), _jsx("span", { className: "gunma-voice-text", children: voiceHint || 'Listening…' })] })) }))] }));
 }

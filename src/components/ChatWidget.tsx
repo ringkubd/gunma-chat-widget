@@ -456,6 +456,11 @@ export function ChatWidget(config: ChatWidgetConfig) {
                     onTyping={sendTyping}
                     isLoading={isLoading}
                     placeholder={config.placeholder || strings.placeholder}
+                    speechLang={config.speechLang}
+                    languageSamples={[
+                      lastMessage,
+                      [...messages].reverse().find((m) => m.role === 'user' && m.content)?.content,
+                    ].filter(Boolean) as string[]}
                   />
                 </>
               )}
