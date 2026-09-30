@@ -837,14 +837,24 @@
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: var(--gunma-shadow-sm);
+  background: transparent;
+  box-shadow: none;
   transition: all var(--gunma-transition);
   position: relative;
+}
+
+/* The closed Piku icon floats transparently — no disc, no shadow. */
+.gunma-bubble:not(.gunma-bubble--open) {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .gunma-bubble:hover {
   transform: scale(1.08);
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+}
+.gunma-bubble:not(.gunma-bubble--open):hover {
+  box-shadow: none;
 }
 
 .gunma-bubble:active {
@@ -943,6 +953,27 @@
   .gunma-bubble-hold--open {
     display: none !important;
   }
+  /* Header controls must always fit + stay tappable on a phone, otherwise the
+     minimize button gets pushed off-screen and cannot be reached. */
+  .gunma-header {
+    padding: 12px 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+  .gunma-header-info { min-width: 0; gap: 8px; }
+  .gunma-header-title {
+    max-width: 34vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gunma-header-actions { gap: 6px; flex-shrink: 0; }
+  .gunma-header-btn {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .gunma-header-btn svg { width: 18px; height: 18px; }
 }
 
 /* Desktop: the message wrapper must also grow inside the panel flex column. */
@@ -1707,3 +1738,26 @@
   display: block;
 }
 .gunma-header-avatar .gunma-avatar-img { border-radius: 50%; }
+
+/* ── Floating icon: mobile minimize chip ── */
+.gunma-bubble-min {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #1d8f76;
+  border: 1.5px solid rgba(42, 177, 145, .45);
+  box-shadow: 0 2px 6px rgba(15, 40, 36, .2);
+  cursor: pointer;
+  z-index: 3;
+}
+.gunma-bubble-min svg { width: 13px; height: 13px; }
+@media (max-width: 640px) {
+  .gunma-bubble-min { display: inline-flex; }
+}

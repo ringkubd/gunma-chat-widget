@@ -37,10 +37,10 @@ interface UsePikuSpeechOpts {
 }
 
 const PRODUCT_LINES = [
-  '"%s" dekhchen! Recipe ba ingredient lagle bolen 💬',
-  '"%s" khub popular bhai — cart e add kori naki?',
-  'Ranna korle "%s" ekdom perfect combo!',
-  '"%s" fresh ache — ekhoni nite paren!',
+  '"%s" দেখছেন! রেসিপি বা উপকরণ লাগলে বলুন 💬',
+  '"%s" খুব পপুলার ভাই — কার্টে অ্যাড করি নাকি?',
+  'রান্না করলে "%s" একদম পারফেক্ট কম্বো!',
+  '"%s" ফ্রেশ আছে — এখনই নিতে পারেন!',
 ];
 
 export function usePikuSpeech(opts: UsePikuSpeechOpts) {
@@ -113,7 +113,7 @@ export function usePikuSpeech(opts: UsePikuSpeechOpts) {
     const offAdd = pikuBus.on('cart-added', (p) => {
       celebrateRef.current = (p as { message?: string }).message
         ? `✅ ${(p as { message?: string }).message} 🎉`
-        : '✅ Cart e add holo bhai! 🎉';
+        : '✅ কার্টে অ্যাড হয়ে গেল ভাই! 🎉';
     });
     const offOrder = pikuBus.on('order-updated', (p) => {
       celebrateRef.current = (p as { message?: string }).message
@@ -266,11 +266,11 @@ export function usePikuSpeech(opts: UsePikuSpeechOpts) {
           const pidKey = hit.key.replace(/^p:/, '');
           void fetchBriefs([pidKey]);
           say(
-            briefsRef.current.get(pidKey) || `"${hit.title}" dekhchen! Recipe ba ingredient lagle bolen 💬`,
+            briefsRef.current.get(pidKey) || `"${hit.title}" দেখছেন! রেসিপি বা উপকরণ লাগলে বলুন 💬`,
             `Ei product ta niye aro jante chai: ${hit.title}`,
           );
         } else {
-          say(`"${hit.title}" ajke darun jinish ache — dekhe nin! 💬`);
+          say(`"${hit.title}" আজকে দারুণ জিনিস আছে — দেখে নিন! 💬`);
         }
       }, 600);
     };

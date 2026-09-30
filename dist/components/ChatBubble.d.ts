@@ -8,6 +8,8 @@ interface ChatBubbleProps {
     chips?: PikuChip[];
     onChipClick: (prefill?: string) => void;
     variant?: 'robot' | 'chef';
+    /** Minimize the floating icon (mobile) → hides it, shows the reopen tab. */
+    onMinimize?: () => void;
 }
-export declare function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, chips, onChipClick, variant }: ChatBubbleProps): import("react/jsx-runtime").JSX.Element;
+export declare function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, chips, onChipClick, variant, onMinimize }: ChatBubbleProps): import("react/jsx-runtime").JSX.Element;
 export {};

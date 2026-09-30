@@ -104,7 +104,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
       setOrderJustPlaced(true);
       void refreshCommerceCartRef.current?.();
       const oid = payload.order_id != null ? `#${payload.order_id}` : '';
-      appendLocalMessageRef.current?.(`🎉 Order ${oid} successfully placed! Kitchen-e ekhuni recipe kaj shuru korese 🙂`);
+      appendLocalMessageRef.current?.(`🎉 অর্ডার ${oid} সফলভাবে সম্পন্ন! রান্নাঘরে এখনই কাজ শুরু হয়ে গেছে 🙂`);
       // Attributed order → the business-impact metric.
       reportPikuEvent(analyticsCfgRef.current, 'order_placed', {
         order_id: payload.order_id ?? null,
@@ -467,6 +467,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
           chips={activeSpeech.chips}
           onChipClick={openWithPrefill}
           variant={config.doodle?.variant ?? 'robot'}
+          onMinimize={() => setWidgetClosed(true)}
         />
       )}
 
@@ -474,7 +475,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
       {widgetEnabled && widgetClosed && (
         <button
           className="gunma-reopen-tab"
-          onClick={() => { setWidgetClosed(false); if (!isOpen) toggle(); }}
+          onClick={() => setWidgetClosed(false)}
           aria-label="Reopen Piku chat"
           title="Open Piku chat"
           style={{ '--gunma-brand': brandColor } as React.CSSProperties}

@@ -13,10 +13,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as pikuBus from '../lib/pikuBus';
 const PRODUCT_LINES = [
-    '"%s" dekhchen! Recipe ba ingredient lagle bolen 💬',
-    '"%s" khub popular bhai — cart e add kori naki?',
-    'Ranna korle "%s" ekdom perfect combo!',
-    '"%s" fresh ache — ekhoni nite paren!',
+    '"%s" দেখছেন! রেসিপি বা উপকরণ লাগলে বলুন 💬',
+    '"%s" খুব পপুলার ভাই — কার্টে অ্যাড করি নাকি?',
+    'রান্না করলে "%s" একদম পারফেক্ট কম্বো!',
+    '"%s" ফ্রেশ আছে — এখনই নিতে পারেন!',
 ];
 export function usePikuSpeech(opts) {
     const enabled = !!opts.enabled;
@@ -87,7 +87,7 @@ export function usePikuSpeech(opts) {
         const offAdd = pikuBus.on('cart-added', (p) => {
             celebrateRef.current = p.message
                 ? `✅ ${p.message} 🎉`
-                : '✅ Cart e add holo bhai! 🎉';
+                : '✅ কার্টে অ্যাড হয়ে গেল ভাই! 🎉';
         });
         const offOrder = pikuBus.on('order-updated', (p) => {
             celebrateRef.current = p.message
@@ -267,10 +267,10 @@ export function usePikuSpeech(opts) {
                 if (hit.kind === 'p') {
                     const pidKey = hit.key.replace(/^p:/, '');
                     void fetchBriefs([pidKey]);
-                    say(briefsRef.current.get(pidKey) || `"${hit.title}" dekhchen! Recipe ba ingredient lagle bolen 💬`, `Ei product ta niye aro jante chai: ${hit.title}`);
+                    say(briefsRef.current.get(pidKey) || `"${hit.title}" দেখছেন! রেসিপি বা উপকরণ লাগলে বলুন 💬`, `Ei product ta niye aro jante chai: ${hit.title}`);
                 }
                 else {
-                    say(`"${hit.title}" ajke darun jinish ache — dekhe nin! 💬`);
+                    say(`"${hit.title}" আজকে দারুণ জিনিস আছে — দেখে নিন! 💬`);
                 }
             }, 600);
         };

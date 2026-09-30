@@ -65,7 +65,7 @@ export function PikuDoodle({ doodle, brandColor, chatOpen, onOpenChat, apiUrl, r
         const offAdd = pikuBus.on('cart-added', (p) => {
             celebrateRef.current = p.message
                 ? `✅ ${p.message} 🎉`
-                : '✅ Cart e add holo bhai! 🎉';
+                : '✅ কার্টে অ্যাড হয়ে গেল ভাই! 🎉';
         });
         const offOrder = pikuBus.on('order-updated', (p) => {
             celebrateRef.current = p.message

@@ -64,10 +64,10 @@ const COOLDOWN: Record<string, number> = {
 
 const FALLBACK_LINES: Record<string, string[]> = {
   bn: [
-    'Kichu recipe lagbe? Bolo, ami ber kore dei 🙂',
-    'Aj ker special gulo dekhchen? Pasand ta bolo!',
-    'Free delivery pete aro ektu add korte paren 💸',
-    'Kon ta banate chan ajke? Ami help korbo 🍳',
+    'কিছু রেসিপি লাগবে? বলুন, আমি বের করে দেই 🙂',
+    'আজকের স্পেশালগুলো দেখছেন? পছন্দটা বলুন!',
+    'ফ্রি ডেলিভারি পেতে আরেকটু অ্যাড করতে পারেন 💸',
+    'কোনটা বানাতে চান আজকে? আমি হেল্প করবো 🍳',
   ],
   hi: [
     'कोई रेसिपी चाहिए? बताइए, मैं निकाल देती हूँ 🙂',
@@ -384,7 +384,7 @@ export function usePikuBrain(opts: BrainOpts) {
     const offAdd = pikuBus.on('cart-added', (p) => {
       celebrateRef.current = (p as { message?: string }).message
         ? `✅ ${(p as { message?: string }).message} 🎉`
-        : '✅ Cart e add holo bhai! 🎉';
+        : '✅ কার্টে অ্যাড হয়ে গেল ভাই! 🎉';
     });
     const offOrder = pikuBus.on('order-updated', (p) => {
       celebrateRef.current = (p as { message?: string }).message

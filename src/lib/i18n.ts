@@ -128,7 +128,7 @@ const en: WidgetStrings = {
   createAccount: 'Create account & continue',
   haveAccount: 'Already have an account?',
   noAccount: "Don't have an account?",
-  orderPlaced: 'Order placed successfully!',
+  orderPlaced: 'অর্ডার সফলভাবে সম্পন্ন!',
   orderNo: 'Order No.',
   done: 'Done',
   tryAgain: 'Try again',

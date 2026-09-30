@@ -13,9 +13,11 @@ interface ChatBubbleProps {
   chips?: PikuChip[];
   onChipClick: (prefill?: string) => void;
   variant?: 'robot' | 'chef';
+  /** Minimize the floating icon (mobile) → hides it, shows the reopen tab. */
+  onMinimize?: () => void;
 }
 
-export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, chips, onChipClick, variant }: ChatBubbleProps) {
+export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, chips, onChipClick, variant, onMinimize }: ChatBubbleProps) {
   const [blink, setBlink] = useState(false);
   const [speakingJump, setSpeakingJump] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -114,7 +116,7 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
           setWalking(true);
           setSpeakingJump(true);
           // funny speech: weight-loss caper (নিজের উপর হাসি)
-          setMessage('Biryani kheye nudh হলাম! Hatahati kore weight কমাচ্ছি 😄🏃');
+          setMessage('বিরিয়ানি খেয়ে নুদ হয়ে গেলাম! হাঁটাহাঁটি করে ওজন কমাচ্ছি 😄🏃');
           window.setTimeout(() => setMessage(null), 4000);
           const t3 = window.setTimeout(() => {
             bellyRef.current = 'idle';
@@ -237,6 +239,25 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
           <span className="gunma-badge">{unreadCount}</span>
         )}
       </button>
+
+      {/* Mobile-only minimize: tucks the icon away to the reopen tab.
+          Rendered as a sibling so it never nests an interactive control. */}
+      {!isOpen && onMinimize && (
+        <span
+          className="gunma-bubble-min"
+          role="button"
+          tabIndex={0}
+          aria-label="Minimize Piku"
+          title="Minimize"
+          onClick={(e) => { e.stopPropagation(); onMinimize(); }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onMinimize(); } }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="6" y1="12" x2="18" y2="12" />
+          </svg>
+        </span>
+      )}
     </div>
   );
 }
