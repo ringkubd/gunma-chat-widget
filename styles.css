@@ -75,7 +75,14 @@
   color: var(--gunma-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* The root can be full-screen on mobile — it must never swallow clicks to
+     the host page. Only its interactive children opt back in. */
+  pointer-events: none;
 }
+
+/* Interactive surfaces re-enable pointer events on top of the root. */
+.gunma-chat-panel { pointer-events: auto; }
+.gunma-bubble-hold { pointer-events: auto; }
 
 /* ── Floating Chat Panel ────────────────────────────────────────── */
 .gunma-chat-panel {
@@ -931,6 +938,11 @@
     bottom: 16px;
     right: 16px;
   }
+  /* Panel is full-screen here and already has minimize/close in its header —
+     the floating (x) would sit on top of the send button, so hide it. */
+  .gunma-bubble-hold--open {
+    display: none !important;
+  }
 }
 
 /* Desktop: the message wrapper must also grow inside the panel flex column. */
@@ -1632,6 +1644,7 @@
 
 .gunma-reopen-tab {
   position: fixed; right: 22px; bottom: 22px; z-index: 99999;
+  pointer-events: auto;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 14px 8px 10px; border-radius: 999px;
   border: 1.5px solid rgba(42,177,145,.45);

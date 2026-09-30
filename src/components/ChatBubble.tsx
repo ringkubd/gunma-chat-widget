@@ -166,7 +166,7 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
   return (
     <div
       ref={holdRef}
-      className={`gunma-bubble-hold pk-robot-wrap ${bellyRef.current === 'eating' ? 'chef-eating' : ''} ${chubby ? 'chef-chubby' : ''} ${walking ? 'chef-walking' : ''}`}
+      className={`gunma-bubble-hold pk-robot-wrap ${isOpen ? 'gunma-bubble-hold--open' : ''} ${bellyRef.current === 'eating' ? 'chef-eating' : ''} ${chubby ? 'chef-chubby' : ''} ${walking ? 'chef-walking' : ''}`}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
         pointerEvents: 'auto',

@@ -158,7 +158,7 @@ export function ChatBubble({ isOpen, onClick, brandColor, unreadCount, speech, c
             hold.style.transition = '';
         }
     }, [isOpen]);
-    return (_jsxs("div", { ref: holdRef, className: `gunma-bubble-hold pk-robot-wrap ${bellyRef.current === 'eating' ? 'chef-eating' : ''} ${chubby ? 'chef-chubby' : ''} ${walking ? 'chef-walking' : ''}`, style: {
+    return (_jsxs("div", { ref: holdRef, className: `gunma-bubble-hold pk-robot-wrap ${isOpen ? 'gunma-bubble-hold--open' : ''} ${bellyRef.current === 'eating' ? 'chef-eating' : ''} ${chubby ? 'chef-chubby' : ''} ${walking ? 'chef-walking' : ''}`, style: {
             display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10,
             pointerEvents: 'auto',
             transition: 'transform 1.9s cubic-bezier(.42,.05,.29,1.02)',
