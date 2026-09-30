@@ -322,6 +322,9 @@ export function useCommerce(config, opts = {}) {
                 time: order?.delivery_time ?? deliveryTime ?? null,
             });
             setStep('success');
+            // Cash-on-Delivery order placed → notify Piku for the chat confirmation
+            // (parity with the card path; previously only card emitted this).
+            pikuBus.emit('order-placed', { order_id: id ?? null, value: round(total - appliedCoins) });
             opts.onCartChanged?.();
             await refreshCart();
         }
