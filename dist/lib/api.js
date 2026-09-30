@@ -6,10 +6,11 @@ const MAX_RETRIES = 2;
  * API client for the Gunma AI Agent Laravel backend.
  */
 export class ChatApi {
-    constructor(apiUrl, cookieId, apiToken, visitorId, getCookieId) {
+    constructor(apiUrl, cookieId, apiToken, visitorId, getCookieId, cookieStoreKey) {
         this.baseUrl = apiUrl.replace(/\/$/, '');
         this.cookieId = cookieId;
         this.getCookieIdFn = getCookieId;
+        this.cookieStoreKey = cookieStoreKey || 'cookie';
         this.apiToken = apiToken;
         this.visitorId = visitorId;
     }
@@ -95,6 +96,15 @@ export class ChatApi {
             body: JSON.stringify({ rating, comment }),
         });
     }
+    /** Persist the guest cart cookie the server hands back (host key). */
+    persistGuestCookie(value) {
+        if (!value || typeof window === 'undefined')
+            return;
+        try {
+            localStorage.setItem(this.cookieStoreKey, value);
+        }
+        catch { /* ignore */ }
+    }
     /**
      * Create or resume a chat session.
      */
@@ -113,6 +123,9 @@ export class ChatApi {
             throw new Error(`Failed to create session: ${response.status}`);
         }
         const data = await response.json();
+        // Keep the host's guest cart cookie in sync so the storefront bag (which
+        // queries off localStorage['cookie']) shows what chat added.
+        this.persistGuestCookie(data?.guest_cookie);
         return data.session;
     }
     /**

@@ -6,9 +6,10 @@ export declare class ChatApi {
     private baseUrl;
     private cookieId?;
     private getCookieIdFn?;
+    private cookieStoreKey;
     private apiToken?;
     private visitorId?;
-    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null);
+    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string);
     /** Resolve the guest cart identity now: lazy resolver > static value. */
     private resolveCookieId;
     private getHeaders;
@@ -25,6 +26,8 @@ export declare class ChatApi {
      * Submit feedback after chat ends.
      */
     submitFeedback(sessionId: string, rating: number, comment?: string): Promise<void>;
+    /** Persist the guest cart cookie the server hands back (host key). */
+    private persistGuestCookie;
     /**
      * Create or resume a chat session.
      */

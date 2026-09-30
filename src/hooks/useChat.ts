@@ -76,7 +76,7 @@ export function useChat(config: ChatWidgetConfig) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.getCookieId, config.cookieId, cookieKey]);
 
-  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey), resolveCookieId));
+  const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey), resolveCookieId, cookieKey));
   const echoRef = useRef<Echo<any> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const initRef = useRef(false);
@@ -99,7 +99,7 @@ export function useChat(config: ChatWidgetConfig) {
   // Sync apiToken when config changes
   useEffect(() => {
     const token = resolveToken();
-    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId);
+    apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId, cookieKey);
   }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey, resolveCookieId]);
 
   // Initialize Echo

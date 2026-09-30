@@ -13,13 +13,15 @@ export class ChatApi {
   private baseUrl: string;
   private cookieId?: string;
   private getCookieIdFn?: () => string | null;
+  private cookieStoreKey: string;
   private apiToken?: string;
   private visitorId?: string;
 
-  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null) {
+  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
     this.cookieId = cookieId;
     this.getCookieIdFn = getCookieId;
+    this.cookieStoreKey = cookieStoreKey || 'cookie';
     this.apiToken = apiToken;
     this.visitorId = visitorId;
   }
@@ -118,6 +120,12 @@ export class ChatApi {
     });
   }
 
+  /** Persist the guest cart cookie the server hands back (host key). */
+  private persistGuestCookie(value?: string | null): void {
+    if (!value || typeof window === 'undefined') return;
+    try { localStorage.setItem(this.cookieStoreKey, value); } catch { /* ignore */ }
+  }
+
   /**
    * Create or resume a chat session.
    */
@@ -142,6 +150,9 @@ export class ChatApi {
     }
 
     const data = await response.json();
+    // Keep the host's guest cart cookie in sync so the storefront bag (which
+    // queries off localStorage['cookie']) shows what chat added.
+    this.persistGuestCookie(data?.guest_cookie);
     return data.session;
   }
 
