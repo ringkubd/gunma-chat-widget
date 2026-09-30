@@ -390,8 +390,14 @@ export function useChat(config) {
                     setToolStatus(friendly[name] ?? `🔍 ${name.replace(/_/g, ' ')}…`);
                     break;
                 }
-                case 'tool_result':
+                case 'tool_result': {
                     setToolStatus(null);
+                    const trName = String(data.name || '');
+                    const trRes = data.result;
+                    if (trName === 'hand_off_to_human' && trRes?.handoff) {
+                        // Reflect the handoff instantly — no need to wait for the pusher event.
+                        setIsAiEnabled(false);
+                    }
                     const resultData = data.result;
                     // The commerce panel (when enabled) reacts to these events; when it is
                     // not enabled, fall back to navigating the host site.
@@ -428,6 +434,7 @@ export function useChat(config) {
                         }
                     }
                     break;
+                }
                 case 'message': {
                     const assistantMsg = {
                         id: data.id ? String(data.id) : `asst_${Date.now()}`,
