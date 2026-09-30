@@ -170,7 +170,9 @@ export function useChat(config) {
                         id: data.id,
                         role: data.role,
                         content: data.content,
-                        created_at: data.created_at
+                        created_at: data.created_at,
+                        author: data.author === 'human' ? 'human' : 'ai',
+                        agent_name: data.agent_name ?? null,
                     }];
             });
             if (data.role === 'assistant') {

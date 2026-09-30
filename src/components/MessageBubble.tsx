@@ -17,22 +17,35 @@ interface MessageBubbleProps {
 
 export function MessageBubble({ message, brandColor, websiteUrl, currencySymbol = '¥', retireCartCtas = false, avatarUrl }: MessageBubbleProps & { retireCartCtas?: boolean }) {
   const isUser = message.role === 'user';
+  const isHuman = !isUser && message.author === 'human';
 
   return (
-    <div className={`gunma-msg ${isUser ? 'gunma-msg--user' : 'gunma-msg--assistant'}`}>
+    <div className={`gunma-msg ${isUser ? 'gunma-msg--user' : 'gunma-msg--assistant'} ${isHuman ? 'gunma-msg--human' : ''}`}>
       {!isUser && (
-        <div className="gunma-msg-avatar gunma-msg-avatar--piku gunma-avatar-round" style={{ backgroundColor: `${brandColor}14` }}>
-          {avatarUrl ? (
-            <img className="gunma-avatar-img" src={avatarUrl} alt="Piku" loading="lazy" />
-          ) : (
-            <PikuRobotArt blink={false} talking={false} />
-          )}
-        </div>
+        isHuman ? (
+          <div className="gunma-msg-avatar gunma-msg-avatar--human gunma-avatar-round" title={message.agent_name || 'Support team'}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.4" />
+              <path d="M5 20a7 7 0 0 1 14 0" />
+            </svg>
+          </div>
+        ) : (
+          <div className="gunma-msg-avatar gunma-msg-avatar--piku gunma-avatar-round" style={{ backgroundColor: `${brandColor}14` }}>
+            {avatarUrl ? (
+              <img className="gunma-avatar-img" src={avatarUrl} alt="Piku" loading="lazy" />
+            ) : (
+              <PikuRobotArt blink={false} talking={false} />
+            )}
+          </div>
+        )
       )}
       <div
-        className={`gunma-msg-bubble ${isUser ? 'gunma-msg-bubble--user' : 'gunma-msg-bubble--assistant'}`}
+        className={`gunma-msg-bubble ${isUser ? 'gunma-msg-bubble--user' : 'gunma-msg-bubble--assistant'} ${isHuman ? 'gunma-msg-bubble--human' : ''}`}
         style={isUser ? { backgroundColor: brandColor } : undefined}
       >
+        {isHuman && (
+          <div className="gunma-msg-author">{message.agent_name || 'Support team'}</div>
+        )}
         <div
           className="gunma-msg-content"
           suppressHydrationWarning

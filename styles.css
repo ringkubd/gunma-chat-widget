@@ -1808,3 +1808,20 @@
   color: #dc2626;
   animation: gunma-pulse 1.4s ease-in-out infinite;
 }
+
+/* ── Human-agent replies (distinct from Piku AI) ── */
+.gunma-msg-avatar--human {
+  background: #fff7e6;
+  border: 1px solid #f0d9a8;
+  color: #a16207;
+}
+.gunma-msg-bubble--human {
+  background: #fffdf7;
+  border: 1px solid #f0d9a8;
+}
+.gunma-msg-author {
+  font-size: 11px;
+  font-weight: 700;
+  color: #a16207;
+  margin-bottom: 2px;
+}

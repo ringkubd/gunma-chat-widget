@@ -140,6 +140,10 @@ export interface ChatMessage {
   content: string;
   model?: string;
   created_at: string;
+  /** Who authored an assistant turn: 'human' = a real agent, else Piku AI. */
+  author?: 'human' | 'ai';
+  /** Name of the human agent, when author === 'human'. */
+  agent_name?: string | null;
 }
 
 export interface ChatSession {
