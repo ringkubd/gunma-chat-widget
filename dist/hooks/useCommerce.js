@@ -85,7 +85,23 @@ export function useCommerce(config, opts = {}) {
     const apiBase = cfg?.apiBase ?? config.apiUrl;
     const routePrefix = cfg?.routePrefix ?? '/customer/Frontend';
     const getToken = useCallback(() => config.getToken?.() ?? (typeof window !== 'undefined' ? localStorage.getItem('tk') : null), [config.getToken]);
-    const api = useMemo(() => new CommerceApi({ apiBase, routePrefix, getToken }), [apiBase, routePrefix, getToken]);
+    // Guest cart identity: lazy resolver (config.getCookieId > localStorage).
+    const getCookie = useCallback(() => {
+        try {
+            const v = config.getCookieId?.();
+            if (v)
+                return v;
+        }
+        catch { /* ignore */ }
+        try {
+            if (typeof window !== 'undefined') {
+                return localStorage.getItem(config.storage?.cookieKey ?? 'cookie');
+            }
+        }
+        catch { /* ignore */ }
+        return null;
+    }, [config.getCookieId, config.storage?.cookieKey]);
+    const api = useMemo(() => new CommerceApi({ apiBase, routePrefix, getToken, getCookie }), [apiBase, routePrefix, getToken, getCookie]);
     const [step, setStep] = useState('cart');
     const [cart, setCart] = useState([]);
     const [addresses, setAddresses] = useState([]);

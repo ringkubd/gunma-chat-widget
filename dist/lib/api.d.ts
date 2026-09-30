@@ -5,9 +5,12 @@ import type { ChatSession, ChatMessage } from '../types';
 export declare class ChatApi {
     private baseUrl;
     private cookieId?;
+    private getCookieIdFn?;
     private apiToken?;
     private visitorId?;
-    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string);
+    constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null);
+    /** Resolve the guest cart identity now: lazy resolver > static value. */
+    private resolveCookieId;
     private getHeaders;
     /**
      * Fetch with timeout and retry for transient failures.

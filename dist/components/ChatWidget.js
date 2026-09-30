@@ -31,6 +31,7 @@ export function ChatWidget(config) {
         cookieKey: config.storage?.cookieKey,
         apiToken: config.apiToken,
         getToken: config.getToken,
+        getCookieId: config.getCookieId,
         onAdded: () => {
             setShowCommerce(true);
             void refreshCommerceCartRef.current?.();

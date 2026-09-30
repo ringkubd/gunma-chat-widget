@@ -6,11 +6,22 @@ const MAX_RETRIES = 2;
  * API client for the Gunma AI Agent Laravel backend.
  */
 export class ChatApi {
-    constructor(apiUrl, cookieId, apiToken, visitorId) {
+    constructor(apiUrl, cookieId, apiToken, visitorId, getCookieId) {
         this.baseUrl = apiUrl.replace(/\/$/, '');
         this.cookieId = cookieId;
+        this.getCookieIdFn = getCookieId;
         this.apiToken = apiToken;
         this.visitorId = visitorId;
+    }
+    /** Resolve the guest cart identity now: lazy resolver > static value. */
+    resolveCookieId() {
+        try {
+            const live = this.getCookieIdFn?.();
+            if (live)
+                return live;
+        }
+        catch { /* ignore host errors */ }
+        return this.cookieId;
     }
     getHeaders(additionalHeaders = {}) {
         const headers = {
@@ -95,7 +106,7 @@ export class ChatApi {
                 visitor_id: visitorId,
                 customer_name: customerName || null,
                 channel,
-                cookie_id: this.cookieId,
+                cookie_id: this.resolveCookieId(),
             }),
         });
         if (!response.ok) {
@@ -139,7 +150,7 @@ export class ChatApi {
             method: 'POST',
             headers: this.getHeaders(),
             credentials: 'include',
-            body: JSON.stringify({ message, cookie_id: this.cookieId }),
+            body: JSON.stringify({ message, cookie_id: this.resolveCookieId() }),
             signal: controller.signal,
         })
             .then(async (response) => {

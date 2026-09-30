@@ -39,6 +39,12 @@ interface UseCartActionsConfig {
   getToken?: () => string | null;
 
   /**
+   * Optional function to resolve the guest cart cookie lazily (host-provided).
+   * Falls back to localStorage[cookieKey] when omitted.
+   */
+  getCookieId?: () => string | null;
+
+  /**
    * Called after a successful add. When provided, the widget opens the
    * in-chat commerce panel instead of reloading the page.
    */
@@ -60,6 +66,14 @@ export function useCartActions(config: UseCartActionsConfig) {
     if (config.apiToken) return config.apiToken;
     if (config.getToken) return config.getToken();
     return null;
+  };
+
+  const resolveCookie = (): string | null => {
+    try {
+      const live = config.getCookieId?.();
+      if (live) return live;
+    } catch { /* host errors never break cart */ }
+    try { return cookieKey ? localStorage.getItem(cookieKey) : null; } catch { return null; }
   };
 
   const buildHeaders = (): Record<string, string> => {
@@ -94,7 +108,7 @@ export function useCartActions(config: UseCartActionsConfig) {
       // Prefer the host's real (encrypted) guest cookie. If a cookieKey value
       // exists in localStorage use it; otherwise omit `cookie` and rely on the
       // `guest_id` cookie sent via credentials:'include'.
-      const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
+      const storedCookie = resolveCookie();
 
       const res = await fetch(config.cartUrl, {
         method: 'POST',
@@ -151,7 +165,7 @@ export function useCartActions(config: UseCartActionsConfig) {
 
     try {
       const token = resolveToken();
-      const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
+      const storedCookie = resolveCookie();
 
       const res = await fetch(`${config.apiUrl}/${routePrefix}/cart/bulk`, {
         method: 'POST',

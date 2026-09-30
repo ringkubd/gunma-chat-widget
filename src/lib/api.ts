@@ -12,14 +12,25 @@ const MAX_RETRIES = 2;
 export class ChatApi {
   private baseUrl: string;
   private cookieId?: string;
+  private getCookieIdFn?: () => string | null;
   private apiToken?: string;
   private visitorId?: string;
 
-  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string) {
+  constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
     this.cookieId = cookieId;
+    this.getCookieIdFn = getCookieId;
     this.apiToken = apiToken;
     this.visitorId = visitorId;
+  }
+
+  /** Resolve the guest cart identity now: lazy resolver > static value. */
+  private resolveCookieId(): string | undefined {
+    try {
+      const live = this.getCookieIdFn?.();
+      if (live) return live;
+    } catch { /* ignore host errors */ }
+    return this.cookieId;
   }
 
   private getHeaders(additionalHeaders: Record<string, string> = {}): Record<string, string> {
@@ -122,7 +133,7 @@ export class ChatApi {
         visitor_id: visitorId,
         customer_name: customerName || null,
         channel,
-        cookie_id: this.cookieId,
+        cookie_id: this.resolveCookieId(),
       }),
     });
 
@@ -178,7 +189,7 @@ export class ChatApi {
                     method: 'POST',
                     headers: this.getHeaders(),
                     credentials: 'include',
-                    body: JSON.stringify({ message, cookie_id: this.cookieId }),
+                    body: JSON.stringify({ message, cookie_id: this.resolveCookieId() }),
                     signal: controller.signal,
                 })
       .then(async (response) => {

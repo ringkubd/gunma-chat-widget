@@ -17,6 +17,20 @@ export function useCartActions(config) {
             return config.getToken();
         return null;
     };
+    const resolveCookie = () => {
+        try {
+            const live = config.getCookieId?.();
+            if (live)
+                return live;
+        }
+        catch { /* host errors never break cart */ }
+        try {
+            return cookieKey ? localStorage.getItem(cookieKey) : null;
+        }
+        catch {
+            return null;
+        }
+    };
     const buildHeaders = () => {
         const headers = {
             'Content-Type': 'application/json',
@@ -46,7 +60,7 @@ export function useCartActions(config) {
             // Prefer the host's real (encrypted) guest cookie. If a cookieKey value
             // exists in localStorage use it; otherwise omit `cookie` and rely on the
             // `guest_id` cookie sent via credentials:'include'.
-            const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
+            const storedCookie = resolveCookie();
             const res = await fetch(config.cartUrl, {
                 method: 'POST',
                 headers: buildHeaders(),
@@ -106,7 +120,7 @@ export function useCartActions(config) {
         target.style.opacity = '0.7';
         try {
             const token = resolveToken();
-            const storedCookie = cookieKey ? localStorage.getItem(cookieKey) : null;
+            const storedCookie = resolveCookie();
             const res = await fetch(`${config.apiUrl}/${routePrefix}/cart/bulk`, {
                 method: 'POST',
                 headers: buildHeaders(),

@@ -63,6 +63,14 @@ export interface ChatWidgetConfig {
   zIndex?: number;
   websiteUrl?: string;
   cookieId?: string;
+  /**
+   * Lazily resolve the guest cart identity (the host's encrypted `cookie`
+   * value) on every request. Use this instead of the static `cookieId` when
+   * the value is captured/persisted by the host AFTER the widget mounts, so
+   * chat cart actions always share the storefront's cart identity.
+   * Defaults to reading `storage.cookieKey` from localStorage.
+   */
+  getCookieId?: () => string | null;
   /** Directly pass a Bearer token (skips localStorage lookup) */
   apiToken?: string;
   /** Provide a function to get the token dynamically (e.g. from Redux/Zustand) */

@@ -29,6 +29,11 @@ interface UseCartActionsConfig {
      */
     getToken?: () => string | null;
     /**
+     * Optional function to resolve the guest cart cookie lazily (host-provided).
+     * Falls back to localStorage[cookieKey] when omitted.
+     */
+    getCookieId?: () => string | null;
+    /**
      * Called after a successful add. When provided, the widget opens the
      * in-chat commerce panel instead of reloading the page.
      */

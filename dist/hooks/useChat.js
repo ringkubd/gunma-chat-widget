@@ -61,7 +61,25 @@ export function useChat(config) {
         return '';
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [config.apiToken, config.getToken, tokenKeys.join(',')]);
-    const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey)));
+    // Lazily resolve the host guest cart identity on EVERY request — the value
+    // is often persisted (localStorage) by the host AFTER the widget mounts.
+    const cookieKey = config.storage?.cookieKey ?? 'gunma_cookie';
+    const resolveCookieId = useCallback(() => {
+        try {
+            const v = config.getCookieId?.();
+            if (v)
+                return v;
+        }
+        catch { /* host errors never break chat */ }
+        try {
+            if (typeof window !== 'undefined')
+                return localStorage.getItem(cookieKey);
+        }
+        catch { /* ignore */ }
+        return config.cookieId ?? null;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [config.getCookieId, config.cookieId, cookieKey]);
+    const apiRef = useRef(new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, resolveToken(), getVisitorId(visitorIdKey), resolveCookieId));
     const echoRef = useRef(null);
     const abortRef = useRef(null);
     const initRef = useRef(false);
@@ -81,8 +99,8 @@ export function useChat(config) {
     // Sync apiToken when config changes
     useEffect(() => {
         const token = resolveToken();
-        apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey));
-    }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey]);
+        apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId);
+    }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey, resolveCookieId]);
     // Initialize Echo
     useEffect(() => {
         if (typeof window === 'undefined' || !config.apiUrl)

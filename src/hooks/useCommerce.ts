@@ -190,9 +190,23 @@ export function useCommerce(
     [config.getToken],
   );
 
+  // Guest cart identity: lazy resolver (config.getCookieId > localStorage).
+  const getCookie = useCallback(
+    (): string | null => {
+      try { const v = config.getCookieId?.(); if (v) return v; } catch { /* ignore */ }
+      try {
+        if (typeof window !== 'undefined') {
+          return localStorage.getItem(config.storage?.cookieKey ?? 'cookie');
+        }
+      } catch { /* ignore */ }
+      return null;
+    },
+    [config.getCookieId, config.storage?.cookieKey],
+  );
+
   const api = useMemo(
-    () => new CommerceApi({ apiBase, routePrefix, getToken }),
-    [apiBase, routePrefix, getToken],
+    () => new CommerceApi({ apiBase, routePrefix, getToken, getCookie }),
+    [apiBase, routePrefix, getToken, getCookie],
   );
 
   const [step, setStep] = useState<CommerceStep>('cart');
