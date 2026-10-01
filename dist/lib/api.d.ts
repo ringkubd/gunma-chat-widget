@@ -51,8 +51,10 @@ export declare class ChatApi {
     private persistGuestCookie;
     /**
      * Create or resume a chat session.
+     * @param forceNew  Force a brand-new session (used by "Start new chat"),
+     *                  bypassing the server's recently-ended reuse window.
      */
-    createSession(visitorId: string, customerName?: string, channel?: string): Promise<ChatSession>;
+    createSession(visitorId: string, customerName?: string, channel?: string, forceNew?: boolean): Promise<ChatSession>;
     /**
      * Get session details with messages.
      */

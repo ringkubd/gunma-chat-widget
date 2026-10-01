@@ -350,11 +350,11 @@ export function useChat(config) {
     /**
      * Initialize or resume a chat session.
      */
-    const initSession = useCallback(async () => {
-        if (sessionRef.current)
+    const initSession = useCallback(async (forceNew = false) => {
+        if (sessionRef.current && !forceNew)
             return sessionRef.current;
         // If a previous session ID is saved, try to reuse it before creating a new one.
-        const savedSessionId = typeof window !== 'undefined' ? localStorage.getItem(sessionIdKey) : null;
+        const savedSessionId = (!forceNew && typeof window !== 'undefined') ? localStorage.getItem(sessionIdKey) : null;
         if (savedSessionId) {
             try {
                 const detail = await apiRef.current.getSession(savedSessionId);
@@ -383,7 +383,7 @@ export function useChat(config) {
         }
         try {
             const visitorId = config.visitorId || getVisitorId(visitorIdKey);
-            const newSession = await apiRef.current.createSession(visitorId, config.customerName, config.channel || 'web');
+            const newSession = await apiRef.current.createSession(visitorId, config.customerName, config.channel || 'web', forceNew);
             setSession(newSession);
             sessionRef.current = newSession;
             // If the team already ended this chat (returned within the grace window),
@@ -602,7 +602,8 @@ export function useChat(config) {
         isEndedRef.current = false;
         if (typeof window !== 'undefined')
             localStorage.removeItem(sessionIdKey);
-        const s = await initSession();
+        const s = await initSession(true);
+        // Keep the panel OPEN (do not let the widget collapse) once ready.
         if (s) {
             setIsOpen(true);
             isOpenRef.current = true;

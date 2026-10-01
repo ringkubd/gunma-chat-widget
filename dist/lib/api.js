@@ -162,8 +162,10 @@ export class ChatApi {
     }
     /**
      * Create or resume a chat session.
+     * @param forceNew  Force a brand-new session (used by "Start new chat"),
+     *                  bypassing the server's recently-ended reuse window.
      */
-    async createSession(visitorId, customerName, channel = 'web') {
+    async createSession(visitorId, customerName, channel = 'web', forceNew = false) {
         const response = await this.fetchWithRetry(`${this.baseUrl}/sessions`, {
             method: 'POST',
             headers: this.getHeaders(),
@@ -172,6 +174,7 @@ export class ChatApi {
                 customer_name: customerName || null,
                 channel,
                 cookie_id: this.resolveCookieId(),
+                force_new: forceNew,
             }),
         });
         if (!response.ok) {

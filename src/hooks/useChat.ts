@@ -359,11 +359,11 @@ export function useChat(config: ChatWidgetConfig) {
   /**
    * Initialize or resume a chat session.
    */
-  const initSession = useCallback(async () => {
-    if (sessionRef.current) return sessionRef.current;
+  const initSession = useCallback(async (forceNew: boolean = false) => {
+    if (sessionRef.current && !forceNew) return sessionRef.current;
 
     // If a previous session ID is saved, try to reuse it before creating a new one.
-    const savedSessionId = typeof window !== 'undefined' ? localStorage.getItem(sessionIdKey) : null;
+    const savedSessionId = (!forceNew && typeof window !== 'undefined') ? localStorage.getItem(sessionIdKey) : null;
     if (savedSessionId) {
       try {
         const detail = await apiRef.current.getSession(savedSessionId);
@@ -396,6 +396,7 @@ export function useChat(config: ChatWidgetConfig) {
         visitorId,
         config.customerName,
         config.channel || 'web',
+        forceNew,
       );
 
       setSession(newSession);
@@ -621,7 +622,8 @@ export function useChat(config: ChatWidgetConfig) {
     setIsEnded(false);
     isEndedRef.current = false;
     if (typeof window !== 'undefined') localStorage.removeItem(sessionIdKey);
-    const s = await initSession();
+    const s = await initSession(true);
+    // Keep the panel OPEN (do not let the widget collapse) once ready.
     if (s) { setIsOpen(true); isOpenRef.current = true; }
     return s;
   }, [initSession]);
