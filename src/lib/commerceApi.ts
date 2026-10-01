@@ -320,7 +320,14 @@ export class CommerceApi {
       body: JSON.stringify({ amount, email, order_id: orderId }),
     });
     const secret = data?.clientSecret ?? data?.data?.clientSecret;
-    if (!secret) throw new Error('Could not create payment intent.');
+    if (!secret) {
+      // The host returns { error: "..." } with HTTP 200 on Stripe failures —
+      // surface the real reason instead of a generic message.
+      const detail = data?.error ?? data?.message ?? data?.data?.error;
+      throw new Error(typeof detail === 'string' && detail.trim()
+        ? detail
+        : 'Could not create payment intent.');
+    }
     return secret;
   }
 

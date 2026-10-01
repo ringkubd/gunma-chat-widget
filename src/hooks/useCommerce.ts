@@ -526,8 +526,15 @@ export function useCommerce(
       const order = await api.createOrder(payload);
       const id = order?.id ?? (order as any)?.data?.id;
       setOrderId(id);
-      // JPY has no minor units — Stripe rejects fractional amounts.
-      const secret = await api.getStripeSecret(Math.round(grandTotal), email || selectedAddress?.email || '', id);
+      // JPY has no minor units — Stripe rejects fractional amounts, and needs
+      // at least the minimum charge. Also send a usable email (fall back to the
+      // order/customer email) so the host can resolve the Stripe customer.
+      const amount = Math.round(grandTotal);
+      if (amount < 50) {
+        throw new Error('Order amount is too small for card payment. Please add more items.');
+      }
+      const payEmail = (email || selectedAddress?.email || (order as any)?.email || '').trim();
+      const secret = await api.getStripeSecret(amount, payEmail, id);
       setStripeSecret(secret);
     } catch (e: any) {
       setErrorMessage(e?.message ?? 'Could not initialise payment.');
