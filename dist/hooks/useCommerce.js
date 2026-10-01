@@ -239,8 +239,14 @@ export function useCommerce(config, opts = {}) {
             setCustomerName((prev) => prev || addr.customer_name || addr.name || '');
             if (cfg?.enableCoins !== false) {
                 try {
-                    const c = await api.getCoins();
-                    setCoins(c);
+                    // Available loyalty points (what the customer can apply), not the
+                    // already-applied temp coins.
+                    const [available, applied] = await Promise.all([
+                        api.getAvailablePoints(),
+                        api.getCoins().catch(() => 0),
+                    ]);
+                    setCoins(available);
+                    setAppliedCoins(applied && applied <= available ? applied : 0);
                 }
                 catch { /* ignore */ }
             }
@@ -255,6 +261,35 @@ export function useCommerce(config, opts = {}) {
             busyRef.current = false;
         }
     }, [getToken, refreshCart, api, selectedAddress, cfg, computeEarliestDate]);
+    /* ── Coins (persist server-side, like the storefront) ─────────── */
+    const [coinsBusy, setCoinsBusy] = useState(false);
+    const toggleCoins = useCallback(async (apply) => {
+        if (coinsBusy)
+            return;
+        setCoinsBusy(true);
+        setErrorMessage(null);
+        try {
+            if (apply && coins > 0) {
+                // Server validates coins <= available points and <= total_amount.
+                await api.applyCoins(coins, total);
+                setAppliedCoins(coins);
+            }
+            else {
+                try {
+                    await api.deleteCoins();
+                }
+                catch { /* nothing applied — fine */ }
+                setAppliedCoins(0);
+            }
+            opts.onCartChanged?.();
+        }
+        catch (e) {
+            setErrorMessage(e?.message ?? 'Could not apply coins.');
+        }
+        finally {
+            setCoinsBusy(false);
+        }
+    }, [coinsBusy, coins, total, api, opts]);
     const selectAddressFn = useCallback(async (a) => {
         setSelectedAddress(a);
         setEmail((prev) => prev || a.email || '');
@@ -359,7 +394,8 @@ export function useCommerce(config, opts = {}) {
             const order = await api.createOrder(payload);
             const id = order?.id ?? order?.data?.id;
             setOrderId(id);
-            const secret = await api.getStripeSecret(grandTotal, email || selectedAddress?.email || '', id);
+            // JPY has no minor units — Stripe rejects fractional amounts.
+            const secret = await api.getStripeSecret(Math.round(grandTotal), email || selectedAddress?.email || '', id);
             setStripeSecret(secret);
         }
         catch (e) {
@@ -616,6 +652,8 @@ export function useCommerce(config, opts = {}) {
         coins,
         appliedCoins,
         setAppliedCoins,
+        toggleCoins,
+        coinsBusy,
         grandTotal,
         email,
         customerName,

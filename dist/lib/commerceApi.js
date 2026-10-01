@@ -181,17 +181,26 @@ export class CommerceApi {
         return this.request('/day-off');
     }
     /* ── Coins ──────────────────────────────────────────────────── */
+    /** Coins already applied (temp) for this customer — /use-coins. */
     async getCoins() {
         const data = await this.request('/use-coins');
         const n = typeof data === 'number' ? data : Number(data?.coins ?? data ?? 0);
         return Number.isFinite(n) ? n : 0;
     }
+    /** Available loyalty points for this customer — /get-points. */
+    async getAvailablePoints() {
+        const data = await this.request('/get-points');
+        const n = Number(data?.customer_point ?? data?.data?.customer_point ?? data ?? 0);
+        return Number.isFinite(n) ? n : 0;
+    }
+    /** Apply (persist) coins for checkout — mirrors the storefront Apply button. */
     async applyCoins(coins, totalAmount) {
         await this.request('/apply-coins', {
             method: 'POST',
             body: JSON.stringify({ coins, total_amount: totalAmount }),
         });
     }
+    /** Remove previously applied coins — mirrors the storefront Remove button. */
     async deleteCoins() {
         await this.request('/delete-use-coins', { method: 'DELETE' });
     }

@@ -53,8 +53,13 @@ export declare class CommerceApi {
         order_cutoff_time?: string;
     }>;
     getDayOff(): Promise<any>;
+    /** Coins already applied (temp) for this customer — /use-coins. */
     getCoins(): Promise<number>;
+    /** Available loyalty points for this customer — /get-points. */
+    getAvailablePoints(): Promise<number>;
+    /** Apply (persist) coins for checkout — mirrors the storefront Apply button. */
     applyCoins(coins: number, totalAmount: number): Promise<void>;
+    /** Remove previously applied coins — mirrors the storefront Remove button. */
     deleteCoins(): Promise<void>;
     login(email: string, password: string): Promise<{
         token: string;

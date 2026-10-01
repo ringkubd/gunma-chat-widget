@@ -73,6 +73,9 @@ export interface UseCommerceResult {
   coins: number;
   appliedCoins: number;
   setAppliedCoins: (n: number) => void;
+  /** Persist/remove coins server-side (mirrors the storefront Apply/Remove). */
+  toggleCoins: (apply: boolean) => Promise<void>;
+  coinsBusy: boolean;
   grandTotal: number;
 
   email: string;
@@ -367,8 +370,14 @@ export function useCommerce(
 
       if (cfg?.enableCoins !== false) {
         try {
-          const c = await api.getCoins();
-          setCoins(c);
+          // Available loyalty points (what the customer can apply), not the
+          // already-applied temp coins.
+          const [available, applied] = await Promise.all([
+            api.getAvailablePoints(),
+            api.getCoins().catch(() => 0),
+          ]);
+          setCoins(available);
+          setAppliedCoins(applied && applied <= available ? applied : 0);
         } catch { /* ignore */ }
       }
 
@@ -381,6 +390,30 @@ export function useCommerce(
       busyRef.current = false;
     }
   }, [getToken, refreshCart, api, selectedAddress, cfg, computeEarliestDate]);
+
+  /* ── Coins (persist server-side, like the storefront) ─────────── */
+
+  const [coinsBusy, setCoinsBusy] = useState(false);
+  const toggleCoins = useCallback(async (apply: boolean) => {
+    if (coinsBusy) return;
+    setCoinsBusy(true);
+    setErrorMessage(null);
+    try {
+      if (apply && coins > 0) {
+        // Server validates coins <= available points and <= total_amount.
+        await api.applyCoins(coins, total);
+        setAppliedCoins(coins);
+      } else {
+        try { await api.deleteCoins(); } catch { /* nothing applied — fine */ }
+        setAppliedCoins(0);
+      }
+      opts.onCartChanged?.();
+    } catch (e: any) {
+      setErrorMessage(e?.message ?? 'Could not apply coins.');
+    } finally {
+      setCoinsBusy(false);
+    }
+  }, [coinsBusy, coins, total, api, opts]);
 
   const selectAddressFn = useCallback(
     async (a: CommerceAddress) => {
@@ -493,7 +526,8 @@ export function useCommerce(
       const order = await api.createOrder(payload);
       const id = order?.id ?? (order as any)?.data?.id;
       setOrderId(id);
-      const secret = await api.getStripeSecret(grandTotal, email || selectedAddress?.email || '', id);
+      // JPY has no minor units — Stripe rejects fractional amounts.
+      const secret = await api.getStripeSecret(Math.round(grandTotal), email || selectedAddress?.email || '', id);
       setStripeSecret(secret);
     } catch (e: any) {
       setErrorMessage(e?.message ?? 'Could not initialise payment.');
@@ -745,6 +779,8 @@ export function useCommerce(
     coins,
     appliedCoins,
     setAppliedCoins,
+    toggleCoins,
+    coinsBusy,
     grandTotal,
     email,
     customerName,

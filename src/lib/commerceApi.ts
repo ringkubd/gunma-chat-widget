@@ -222,12 +222,21 @@ export class CommerceApi {
 
   /* ── Coins ──────────────────────────────────────────────────── */
 
+  /** Coins already applied (temp) for this customer — /use-coins. */
   async getCoins(): Promise<number> {
     const data = await this.request<any>('/use-coins');
     const n = typeof data === 'number' ? data : Number(data?.coins ?? data ?? 0);
     return Number.isFinite(n) ? n : 0;
   }
 
+  /** Available loyalty points for this customer — /get-points. */
+  async getAvailablePoints(): Promise<number> {
+    const data = await this.request<any>('/get-points');
+    const n = Number(data?.customer_point ?? data?.data?.customer_point ?? data ?? 0);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  /** Apply (persist) coins for checkout — mirrors the storefront Apply button. */
   async applyCoins(coins: number, totalAmount: number): Promise<void> {
     await this.request('/apply-coins', {
       method: 'POST',
@@ -235,6 +244,7 @@ export class CommerceApi {
     });
   }
 
+  /** Remove previously applied coins — mirrors the storefront Remove button. */
   async deleteCoins(): Promise<void> {
     await this.request('/delete-use-coins', { method: 'DELETE' });
   }

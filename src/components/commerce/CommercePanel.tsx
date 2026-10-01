@@ -71,7 +71,7 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
     step, cart, subtotal, shippingCharge, totalTax, total, grandTotal,
     addresses, selectedAddress, selectAddress,
     deliveryInfo, earliestDate, deliveryDate, setDeliveryDate, deliveryTime, setDeliveryTime,
-    coins, appliedCoins, setAppliedCoins,
+    coins, appliedCoins, setAppliedCoins, toggleCoins, coinsBusy,
     email, setEmail, customerName,
     successOrderId, errorMessage, loading, cartLoading,
     refreshCart, removeItem, startCheckout, confirmCash, prepareCard, login, register,
@@ -424,7 +424,8 @@ export function CommercePanel({ commerce, brandColor, onClose, strings }: Commer
               <input
                 type="checkbox"
                 checked={appliedCoins > 0}
-                onChange={(e) => setAppliedCoins(e.target.checked ? coins : 0)}
+                disabled={coinsBusy}
+                onChange={(e) => { void toggleCoins(e.target.checked); }}
               />
               {s.useCoins(coins)}
             </label>

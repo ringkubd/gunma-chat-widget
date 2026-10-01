@@ -21,6 +21,9 @@ export interface UseCommerceResult {
     coins: number;
     appliedCoins: number;
     setAppliedCoins: (n: number) => void;
+    /** Persist/remove coins server-side (mirrors the storefront Apply/Remove). */
+    toggleCoins: (apply: boolean) => Promise<void>;
+    coinsBusy: boolean;
     grandTotal: number;
     email: string;
     customerName: string;
