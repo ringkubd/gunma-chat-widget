@@ -19,6 +19,7 @@ export declare function useChat(config: ChatWidgetConfig): {
     sendTyping: (isTyping: boolean) => void;
     uploadFile: (file: File) => Promise<void>;
     endChat: () => Promise<void>;
+    startNewChat: () => Promise<ChatSession | null>;
     cancelRequest: () => void;
     getSessionId: () => string | null;
     linkSession: (customerId: number) => Promise<void>;

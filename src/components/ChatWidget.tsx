@@ -31,6 +31,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     isConnected,
     unreadCount,
     isEnded,
+    startNewChat,
     toggle,
     sendMessage,
     sendTyping,
@@ -439,8 +440,18 @@ export function ChatWidget(config: ChatWidgetConfig) {
               )}
 
               {isEnded ? (
-                <div className="gunma-commerce-muted" style={{ padding: '12px 16px', textAlign: 'center' }}>
-                  {strings.sessionEndedLocked}
+                <div className="gunma-ended-box">
+                  <div className="gunma-commerce-muted" style={{ textAlign: 'center' }}>
+                    {strings.sessionEndedLocked}
+                  </div>
+                  <button
+                    type="button"
+                    className="gunma-newchat-btn"
+                    style={{ backgroundColor: brandColor }}
+                    onClick={() => { void startNewChat(); }}
+                  >
+                    {strings.startNewChat}
+                  </button>
                 </div>
               ) : (
                 <>

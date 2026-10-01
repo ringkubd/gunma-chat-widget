@@ -1849,3 +1849,12 @@
   animation: gunma-pulse 1.2s ease-in-out infinite;
 }
 .gunma-voice-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Ended-session box + start-new-chat ── */
+.gunma-ended-box { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.gunma-newchat-btn {
+  border: none; border-radius: 10px; padding: 10px 14px;
+  color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.gunma-newchat-btn:hover { transform: translateY(-1px); opacity: .95; }

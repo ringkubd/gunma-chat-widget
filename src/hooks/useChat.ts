@@ -242,10 +242,12 @@ export function useChat(config: ChatWidgetConfig) {
         }];
       });
 
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(sessionIdKey);
+      // Keep the session id + ref so a refresh restores THIS ended session
+      // (locked) instead of creating a brand-new active one — removing the id
+      // here was what silently "revived" the chat.
+      if (typeof window !== 'undefined' && sessionRef.current?.id) {
+        localStorage.setItem(sessionIdKey, sessionRef.current.id);
       }
-      sessionRef.current = null;
     });
 
     return () => {
@@ -269,15 +271,29 @@ export function useChat(config: ChatWidgetConfig) {
 
     const savedSessionId = localStorage.getItem(sessionIdKey);
     if (savedSessionId) {
-      apiRef.current.getMessages(savedSessionId)
-        .then((msgs) => {
-          const restored: ChatSession = { id: savedSessionId } as ChatSession;
+      // Fetch the FULL session (status included) so an already-ended chat is
+      // restored as locked instead of looking live. Fall back to messages-only.
+      apiRef.current.getSession(savedSessionId)
+        .then((detail) => {
+          const restored: ChatSession = (detail?.session ?? { id: savedSessionId }) as ChatSession;
           setSession(restored);
           sessionRef.current = restored;
-          setMessages(msgs);
+          setIsEnded(restored.status === 'ended');
+          isEndedRef.current = restored.status === 'ended';
+          const msgs = detail?.session?.messages;
+          if (Array.isArray(msgs)) setMessages(msgs);
+          else apiRef.current.getMessages(savedSessionId).then(setMessages).catch(() => {});
         })
         .catch(() => {
-          localStorage.removeItem(sessionIdKey);
+          // getSession failed — try messages-only, else drop the saved id.
+          apiRef.current.getMessages(savedSessionId)
+            .then((msgs) => {
+              const restored: ChatSession = { id: savedSessionId } as ChatSession;
+              setSession(restored);
+              sessionRef.current = restored;
+              setMessages(msgs);
+            })
+            .catch(() => localStorage.removeItem(sessionIdKey));
         });
     }
   }, []);
@@ -581,6 +597,23 @@ export function useChat(config: ChatWidgetConfig) {
   }, []);
 
   /**
+   * Start a brand-new chat after a session was ended (customer explicitly
+   * chooses this). Clears the finished session + its saved id, then opens a
+   * fresh active session.
+   */
+  const startNewChat = useCallback(async () => {
+    sessionRef.current = null;
+    setSession(null);
+    setMessages([]);
+    setIsEnded(false);
+    isEndedRef.current = false;
+    if (typeof window !== 'undefined') localStorage.removeItem(sessionIdKey);
+    const s = await initSession();
+    if (s) { setIsOpen(true); isOpenRef.current = true; }
+    return s;
+  }, [initSession]);
+
+  /**
    * Cancel any in-progress request.
    */
   const cancelRequest = useCallback(() => {
@@ -670,6 +703,7 @@ export function useChat(config: ChatWidgetConfig) {
     sendTyping,
     uploadFile,
     endChat,
+    startNewChat,
     cancelRequest,
     getSessionId: () => sessionRef.current?.id ?? null,
     linkSession,

@@ -81,5 +81,6 @@ export interface WidgetStrings {
     addrState: string;
     sessionEndedFarewell: string;
     sessionEndedLocked: string;
+    startNewChat: string;
 }
 export declare function getStrings(locale?: WidgetLocale): WidgetStrings;
