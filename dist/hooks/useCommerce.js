@@ -419,7 +419,10 @@ export function useCommerce(config, opts = {}) {
             return;
         setLoading(true);
         setErrorMessage(null);
-        setStep('processing');
+        // NOTE: do NOT switch to the 'processing' step here. That step unmounts
+        // the <PaymentElement>, and stripe.confirmPayment() then throws
+        // "elements should have a mounted Payment Element". Keep the payment
+        // view mounted; Stripe renders its own progress UI while confirming.
         try {
             const { error: submitError } = await elements.submit();
             if (submitError)
