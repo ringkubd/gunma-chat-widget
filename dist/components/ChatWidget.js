@@ -11,6 +11,7 @@ import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
+import { LANGUAGES } from '../lib/languages';
 import * as pikuBus from '../lib/pikuBus';
 import { reportPikuEvent } from '../lib/pikuAnalytics';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
@@ -18,7 +19,7 @@ import { usePikuBrain } from '../hooks/usePikuBrain';
 import { usePikuSignals } from '../hooks/usePikuSignals';
 import { usePageTracking } from '../hooks/usePageTracking';
 export function ChatWidget(config) {
-    const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, isConnected, unreadCount, isEnded, startNewChat, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, getSessionId, appendAssistantLocal, } = useChat(config);
+    const { isOpen, isLoading, messages, error, toolStatus, isAiEnabled, isAgentTyping, isConnected, unreadCount, isEnded, startNewChat, chatLang, setChatLang, toggle, sendMessage, sendTyping, uploadFile, endChat, cancelRequest, getSessionId, appendAssistantLocal, } = useChat(config);
     // Keep an up-to-date isOpen ref so event handlers can open the panel.
     const isOpenRef = React.useRef(isOpen);
     React.useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
@@ -278,7 +279,7 @@ export function ChatWidget(config) {
         chatOpen: isOpen,
         apiUrl: config.apiUrl,
         routePrefix: config.routes?.prefix ?? 'api/chat',
-        lang: config.locale,
+        lang: chatLang || config.locale,
         getSessionId,
         getToken: config.getToken,
         getVisitorId: () => {
@@ -305,7 +306,7 @@ export function ChatWidget(config) {
         minGapMs: config.doodle?.minGapMs,
         apiUrl: config.apiUrl,
         routePrefix: config.routes?.prefix ?? 'api/chat',
-        lang: config.locale,
+        lang: chatLang || config.locale,
         getSessionId,
         getToken: config.getToken,
         getVisitorId: () => {
@@ -330,7 +331,7 @@ export function ChatWidget(config) {
             sendMessage(lastMessage);
         }
     }, [lastMessage, sendMessage]);
-    return (_jsxs("div", { ref: rootRef, style: positionStyle, className: `gunma-chat-root ${themeClass} ${position === 'bottom-right' ? 'gunma-pos-right' : 'gunma-pos-left'}`, children: [widgetEnabled && isOpen && !widgetClosed && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onCloseWidget: () => setWidgetClosed(true), onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, avatarUrl: config.avatarUrl, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
+    return (_jsxs("div", { ref: rootRef, style: positionStyle, className: `gunma-chat-root ${themeClass} ${position === 'bottom-right' ? 'gunma-pos-right' : 'gunma-pos-left'}`, children: [widgetEnabled && isOpen && !widgetClosed && (_jsxs("div", { className: "gunma-chat-panel", style: { '--gunma-brand': brandColor }, children: [_jsx(ChatHeader, { brandName: brandName, brandColor: brandColor, onClose: toggle, onCloseWidget: () => setWidgetClosed(true), onEndChat: endChat, isConnected: isConnected, onCartClick: commerce.enabled ? () => setShowCommerce((v) => !v) : undefined, cartCount: commerce.enabled ? commerce.cart.length : 0, avatarUrl: config.avatarUrl, lang: chatLang, onLangChange: setChatLang, languages: LANGUAGES, strings: strings }), commerce.enabled && showCommerce ? (_jsx(CommercePanel, { commerce: commerce, brandColor: brandColor, onClose: () => {
                             setShowCommerce(false);
                             commerce.setStep('cart'); // next open shows the fresh (empty) cart
                         }, freeShippingThreshold: commerce.freeShippingThreshold, strings: strings })) : (_jsxs(_Fragment, { children: [_jsx("div", { className: "gunma-message-wrap", onClick: handleMessageClick, children: _jsx(MessageList, { messages: messages, welcomeMessage: welcomeMessage, brandColor: brandColor, websiteUrl: config.websiteUrl || 'https://api.gunmahalalfood.com', currencySymbol: config.commerce?.currencySymbol ?? '¥', retireCartCtas: orderJustPlaced, avatarUrl: config.avatarUrl }) }), (isLoading || toolStatus || isAgentTyping) && (_jsxs("div", { className: "gunma-status-bar", children: [(isLoading || isAgentTyping) && _jsx(TypingIndicator, {}), toolStatus && (_jsx("span", { className: "gunma-tool-status", children: toolStatus })), isLoading && (_jsx("button", { className: "gunma-cancel-btn", onClick: cancelRequest, "aria-label": "Cancel request", title: "Cancel", children: "\u2715" }))] })), error && (_jsxs("div", { className: "gunma-error-bar", children: [_jsx("span", { children: error }), _jsx("button", { className: "gunma-retry-btn", onClick: handleRetry, children: "Retry" })] })), isEnded ? (_jsxs("div", { className: "gunma-ended-box", children: [_jsx("div", { className: "gunma-commerce-muted", style: { textAlign: 'center' }, children: strings.sessionEndedLocked }), _jsx("button", { type: "button", className: "gunma-newchat-btn", style: { backgroundColor: brandColor }, onClick: () => { void startNewChat(); }, children: strings.startNewChat })] })) : (_jsxs(_Fragment, { children: [!isAiEnabled && (_jsxs("div", { className: "gunma-human-banner", children: [_jsx("span", { className: "gunma-human-dot" }), strings.humanJoining] })), _jsx(MessageInput, { onSend: handleSend, onUpload: uploadFile, onTyping: sendTyping, isLoading: isLoading, placeholder: config.placeholder || strings.placeholder, speechLang: config.speechLang, languageSamples: [

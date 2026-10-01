@@ -21,6 +21,8 @@ export declare function useChat(config: ChatWidgetConfig): {
     endChat: () => Promise<void>;
     startNewChat: () => Promise<ChatSession | null>;
     cancelRequest: () => void;
+    chatLang: string;
+    setChatLang: (code: string) => void;
     getSessionId: () => string | null;
     linkSession: (customerId: number) => Promise<void>;
     submitFeedback: (rating: number, comment?: string) => Promise<void>;

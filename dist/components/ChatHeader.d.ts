@@ -12,6 +12,16 @@ interface ChatHeaderProps {
     cartCount?: number;
     /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
     avatarUrl?: string;
+    /** Current reply language code (e.g. 'bn'); shows the globe selector. */
+    lang?: string;
+    /** Called when the customer picks a different language. */
+    onLangChange?: (code: string) => void;
+    /** Language options for the picker. */
+    languages?: Array<{
+        code: string;
+        label: string;
+        name?: string;
+    }>;
     /** UI strings (i18n). */
     strings?: {
         online: string;
@@ -21,5 +31,5 @@ interface ChatHeaderProps {
         cart: string;
     };
 }
-export declare function ChatHeader({ brandName, brandColor, onClose, onCloseWidget, onEndChat, isConnected, onCartClick, cartCount, avatarUrl, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
+export declare function ChatHeader({ brandName, brandColor, onClose, onCloseWidget, onEndChat, isConnected, onCartClick, cartCount, avatarUrl, lang, onLangChange, languages, strings, }: ChatHeaderProps): import("react/jsx-runtime").JSX.Element;
 export {};

@@ -3,6 +3,7 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import { ChatApi } from '../lib/api';
 import { getStrings } from '../lib/i18n';
+import { loadStoredLanguage, storeLanguage, defaultLanguage } from '../lib/languages';
 import * as pikuBus from '../lib/pikuBus';
 import type { ChatMessage, ChatSession, ChatWidgetConfig } from '../types';
 
@@ -91,6 +92,17 @@ export function useChat(config: ChatWidgetConfig) {
   const stringsRef = useRef(getStrings(config.locale));
   useEffect(() => { stringsRef.current = getStrings(config.locale); }, [config.locale]);
 
+  // Customer-chosen reply language (persisted; sent as X-Chat-Lang).
+  const [chatLang, setChatLangState] = useState<string>(() => loadStoredLanguage() || config.locale || defaultLanguage());
+  const setChatLang = useCallback((code: string) => {
+    const c = (code || '').trim();
+    if (!c) return;
+    setChatLangState(c);
+    storeLanguage(c);
+    try { apiRef.current?.setLang(c); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { try { apiRef.current?.setLang(chatLang); } catch { /* ignore */ } }, [chatLang]);
+
   // Keep refs in sync so callbacks don't need session/isOpen in their dep arrays
   useEffect(() => { sessionRef.current = session; }, [session]);
   // Keep the API's session header in sync so server tools can link claims/
@@ -104,6 +116,7 @@ export function useChat(config: ChatWidgetConfig) {
     const token = resolveToken();
     apiRef.current = new ChatApi(`${config.apiUrl}/${routePrefix}`, config.cookieId, token, config.visitorId || getVisitorId(visitorIdKey), resolveCookieId, cookieKey, resolveToken);
     apiRef.current.setSessionId(sessionRef.current?.id ?? null);
+    apiRef.current.setLang((loadStoredLanguage() || chatLang) ?? null);
   }, [config.apiUrl, config.cookieId, config.apiToken, config.getToken, config.visitorId, routePrefix, resolveToken, visitorIdKey, resolveCookieId]);
 
   // Initialize Echo
@@ -705,6 +718,8 @@ export function useChat(config: ChatWidgetConfig) {
     endChat,
     startNewChat,
     cancelRequest,
+    chatLang,
+    setChatLang,
     getSessionId: () => sessionRef.current?.id ?? null,
     linkSession,
     submitFeedback,

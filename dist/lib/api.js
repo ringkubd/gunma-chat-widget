@@ -56,6 +56,10 @@ export class ChatApi {
         if (this.sessionId) {
             headers['X-Chat-Session-Id'] = this.sessionId;
         }
+        // Customer-chosen reply language (so the agent honors it over guessing).
+        if (this.chatLang) {
+            headers['X-Chat-Lang'] = this.chatLang;
+        }
         // Remove headers with empty values (useful for FormData)
         Object.keys(headers).forEach(key => {
             if (headers[key] === '') {
@@ -67,6 +71,10 @@ export class ChatApi {
     /** Remember the active chat session id (sent as X-Chat-Session-Id). */
     setSessionId(id) {
         this.sessionId = id || undefined;
+    }
+    /** Set the customer-chosen reply language (sent as X-Chat-Lang). */
+    setLang(code) {
+        this.chatLang = code || undefined;
     }
     /**
      * Fetch with timeout and retry for transient failures.

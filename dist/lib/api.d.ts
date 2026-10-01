@@ -11,6 +11,7 @@ export declare class ChatApi {
     private getTokenFn?;
     private visitorId?;
     private sessionId?;
+    private chatLang?;
     constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string, getToken?: () => string | null);
     /** Resolve the guest cart identity now: lazy resolver > static value. */
     private resolveCookieId;
@@ -23,6 +24,8 @@ export declare class ChatApi {
     private getHeaders;
     /** Remember the active chat session id (sent as X-Chat-Session-Id). */
     setSessionId(id?: string | null): void;
+    /** Set the customer-chosen reply language (sent as X-Chat-Lang). */
+    setLang(code?: string | null): void;
     /**
      * Fetch with timeout and retry for transient failures.
      */

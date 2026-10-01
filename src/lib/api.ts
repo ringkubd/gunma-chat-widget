@@ -18,6 +18,7 @@ export class ChatApi {
   private getTokenFn?: () => string | null;
   private visitorId?: string;
   private sessionId?: string;
+  private chatLang?: string;
 
   constructor(apiUrl: string, cookieId?: string, apiToken?: string, visitorId?: string, getCookieId?: () => string | null, cookieStoreKey?: string, getToken?: () => string | null) {
     this.baseUrl = apiUrl.replace(/\/$/, '');
@@ -72,6 +73,11 @@ export class ChatApi {
       headers['X-Chat-Session-Id'] = this.sessionId;
     }
 
+    // Customer-chosen reply language (so the agent honors it over guessing).
+    if (this.chatLang) {
+      headers['X-Chat-Lang'] = this.chatLang;
+    }
+
     // Remove headers with empty values (useful for FormData)
     Object.keys(headers).forEach(key => {
         if (headers[key] === '') {
@@ -85,6 +91,11 @@ export class ChatApi {
   /** Remember the active chat session id (sent as X-Chat-Session-Id). */
   setSessionId(id?: string | null): void {
     this.sessionId = id || undefined;
+  }
+
+  /** Set the customer-chosen reply language (sent as X-Chat-Lang). */
+  setLang(code?: string | null): void {
+    this.chatLang = code || undefined;
   }
 
   /**

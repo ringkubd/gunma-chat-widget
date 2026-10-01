@@ -1858,3 +1858,23 @@
   transition: transform .15s ease, opacity .15s ease;
 }
 .gunma-newchat-btn:hover { transform: translateY(-1px); opacity: .95; }
+
+/* ── Language selector (header globe) ── */
+.gunma-lang { position: relative; display: inline-flex; }
+.gunma-lang-backdrop { position: fixed; inset: 0; z-index: 40; }
+.gunma-lang-menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 41;
+  min-width: 150px; max-height: 260px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--gunma-border);
+  border-radius: 12px; box-shadow: 0 12px 30px rgba(15,40,36,.22);
+  padding: 6px; display: flex; flex-direction: column; gap: 2px;
+}
+.gunma-lang-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  border: none; background: transparent; cursor: pointer;
+  padding: 8px 10px; border-radius: 8px; text-align: left;
+  font-size: 13px; color: #2d3748; font-family: inherit;
+}
+.gunma-lang-item:hover { background: #f1fbf7; }
+.gunma-lang-item.is-active { background: #eaf8f3; color: #0b8a75; font-weight: 700; }
+.gunma-lang-check { color: #0da487; font-weight: 700; }

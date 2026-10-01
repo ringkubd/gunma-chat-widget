@@ -12,6 +12,7 @@ import { MessageInput } from './MessageInput';
 import { TypingIndicator } from './TypingIndicator';
 import { CommercePanel } from './commerce/CommercePanel';
 import { getStrings } from '../lib/i18n';
+import { LANGUAGES } from '../lib/languages';
 import * as pikuBus from '../lib/pikuBus';
 import { reportPikuEvent } from '../lib/pikuAnalytics';
 import { usePikuSpeech } from '../hooks/usePikuSpeech';
@@ -32,6 +33,8 @@ export function ChatWidget(config: ChatWidgetConfig) {
     unreadCount,
     isEnded,
     startNewChat,
+    chatLang,
+    setChatLang,
     toggle,
     sendMessage,
     sendTyping,
@@ -310,7 +313,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     chatOpen: isOpen,
     apiUrl: config.apiUrl,
     routePrefix: config.routes?.prefix ?? 'api/chat',
-    lang: config.locale,
+    lang: chatLang || config.locale,
     getSessionId,
     getToken: config.getToken,
     getVisitorId: () => {
@@ -336,7 +339,7 @@ export function ChatWidget(config: ChatWidgetConfig) {
     minGapMs: config.doodle?.minGapMs,
     apiUrl: config.apiUrl,
     routePrefix: config.routes?.prefix ?? 'api/chat',
-    lang: config.locale,
+    lang: chatLang || config.locale,
     getSessionId,
     getToken: config.getToken,
     getVisitorId: () => {
@@ -381,6 +384,9 @@ export function ChatWidget(config: ChatWidgetConfig) {
             onCartClick={commerce.enabled ? () => setShowCommerce((v) => !v) : undefined}
             cartCount={commerce.enabled ? commerce.cart.length : 0}
             avatarUrl={config.avatarUrl}
+            lang={chatLang}
+            onLangChange={setChatLang}
+            languages={LANGUAGES}
             strings={strings}
           />
 

@@ -16,6 +16,12 @@ interface ChatHeaderProps {
   cartCount?: number;
   /** Piku profile picture URL. Falls back to the built-in avatar when absent. */
   avatarUrl?: string;
+  /** Current reply language code (e.g. 'bn'); shows the globe selector. */
+  lang?: string;
+  /** Called when the customer picks a different language. */
+  onLangChange?: (code: string) => void;
+  /** Language options for the picker. */
+  languages?: Array<{ code: string; label: string; name?: string }>;
   /** UI strings (i18n). */
   strings?: {
     online: string;
@@ -36,6 +42,9 @@ export function ChatHeader({
   onCartClick,
   cartCount = 0,
   avatarUrl,
+  lang,
+  onLangChange,
+  languages,
   strings,
 }: ChatHeaderProps) {
   const s = strings ?? {
@@ -45,6 +54,7 @@ export function ChatHeader({
     minimize: 'Minimize',
     cart: 'Cart & checkout',
   };
+  const [langOpen, setLangOpen] = React.useState(false);
   return (
     <div className="gunma-header" style={{ background: `linear-gradient(135deg, ${brandColor}, ${adjustColor(brandColor, -30)})` }}>
       <div className="gunma-header-info">
@@ -67,6 +77,43 @@ export function ChatHeader({
         </div>
       </div>
       <div className="gunma-header-actions">
+        {/* Language selector */}
+        {onLangChange && languages && languages.length > 1 && (
+          <div className="gunma-lang">
+            <button
+              className="gunma-header-btn"
+              onClick={() => setLangOpen((v) => !v)}
+              title="Change language"
+              aria-label="Change language"
+              aria-haspopup="listbox"
+              aria-expanded={langOpen}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" />
+              </svg>
+            </button>
+            {langOpen && (
+              <>
+                <div className="gunma-lang-backdrop" onClick={() => setLangOpen(false)} />
+                <div className="gunma-lang-menu" role="listbox">
+                  {languages.map((l) => (
+                    <button
+                      key={l.code}
+                      role="option"
+                      aria-selected={l.code === lang}
+                      className={`gunma-lang-item ${l.code === lang ? 'is-active' : ''}`}
+                      onClick={() => { onLangChange(l.code); setLangOpen(false); }}
+                    >
+                      <span className="gunma-lang-label">{l.label}</span>
+                      {l.code === lang && <span className="gunma-lang-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
         {/* Cart / Checkout Button */}
         {onCartClick && (
           <button
