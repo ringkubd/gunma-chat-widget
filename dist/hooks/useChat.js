@@ -162,10 +162,29 @@ export function useChat(config) {
         channelListenersRef.current.add(channelKey);
         channel.listen('.message.new', (data) => {
             setMessages((prev) => {
-                const isDuplicate = prev.some(m => String(m.id) === String(data.id) ||
-                    (m.role === data.role && m.content === data.content));
+                // Dedup by id (server uuid) only — content-based dedup dropped
+                // legitimate repeated replies (same greeting / same text twice),
+                // silencing Piku.
+                const isDuplicate = data.id != null && prev.some(m => String(m.id) === String(data.id));
                 if (isDuplicate)
                     return prev;
+                // The server also broadcasts the USER's message, but the widget already
+                // added it optimistically (id `user_<ts>`). Collapse the echo by
+                // adopting the server id into the optimistic row instead of duplicating.
+                if (data.role === 'user') {
+                    const lastUserIdx = (() => {
+                        for (let i = prev.length - 1; i >= 0; i--) {
+                            if (prev[i].role === 'user')
+                                return i;
+                        }
+                        return -1;
+                    })();
+                    if (lastUserIdx >= 0 && prev[lastUserIdx].content === data.content) {
+                        const next = prev.slice();
+                        next[lastUserIdx] = { ...next[lastUserIdx], id: String(data.id) };
+                        return next;
+                    }
+                }
                 return [...prev, {
                         id: data.id,
                         role: data.role,
@@ -301,14 +320,25 @@ export function useChat(config) {
         const savedSessionId = typeof window !== 'undefined' ? localStorage.getItem(sessionIdKey) : null;
         if (savedSessionId) {
             try {
-                const msgs = await apiRef.current.getMessages(savedSessionId);
-                const restored = { id: savedSessionId };
-                setSession(restored);
-                sessionRef.current = restored;
+                const detail = await apiRef.current.getSession(savedSessionId);
+                const restoredSession = detail?.session ?? { id: savedSessionId };
+                const msgs = detail?.session?.messages ?? await apiRef.current.getMessages(savedSessionId);
+                // A session the team already ended must stay ended — show the locked
+                // state instead of silently reviving a new chat.
+                if (restoredSession.status === 'ended') {
+                    setSession(restoredSession);
+                    sessionRef.current = restoredSession;
+                    setMessages(msgs);
+                    setIsEnded(true);
+                    isEndedRef.current = true;
+                    return restoredSession;
+                }
+                setSession(restoredSession);
+                sessionRef.current = restoredSession;
                 setMessages(msgs);
                 setIsEnded(false);
                 isEndedRef.current = false;
-                return restored;
+                return restoredSession;
             }
             catch {
                 localStorage.removeItem(sessionIdKey);
@@ -319,8 +349,16 @@ export function useChat(config) {
             const newSession = await apiRef.current.createSession(visitorId, config.customerName, config.channel || 'web');
             setSession(newSession);
             sessionRef.current = newSession;
-            setIsEnded(false);
-            isEndedRef.current = false;
+            // If the team already ended this chat (returned within the grace window),
+            // keep it locked rather than pretending it is live.
+            if (newSession.status === 'ended') {
+                setIsEnded(true);
+                isEndedRef.current = true;
+            }
+            else {
+                setIsEnded(false);
+                isEndedRef.current = false;
+            }
             localStorage.setItem(sessionIdKey, newSession.id);
             return newSession;
         }
@@ -445,8 +483,13 @@ export function useChat(config) {
                         created_at: new Date().toISOString(),
                     };
                     setMessages((prev) => {
-                        const exists = prev.some(m => String(m.id) === String(assistantMsg.id) ||
-                            (m.role === assistantMsg.role && m.content === assistantMsg.content));
+                        // Dedup by message id (server uuid) only — content equality
+                        // wrongly suppressed legitimate repeated replies (e.g. the
+                        // same greeting twice), making Piku look silent.
+                        const hasRealId = data.id != null && String(data.id) !== '';
+                        const exists = prev.some(m => hasRealId
+                            ? String(m.id) === String(assistantMsg.id)
+                            : (m.role === assistantMsg.role && m.content === assistantMsg.content && m.id === assistantMsg.id));
                         if (exists)
                             return prev;
                         return [...prev, assistantMsg];
